@@ -1,0 +1,24 @@
+name: Verify audit environment
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Offline evaluator and benchmark
+        run: make docker-verify
+      - name: Closed evaluator with separate agent container
+        run: make docker-agent
+      - name: Train and evaluate the micro model in an isolated agent
+        run: make docker-micro

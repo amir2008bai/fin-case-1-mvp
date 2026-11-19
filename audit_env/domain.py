@@ -1,0 +1,6 @@
+"""Account names shared by the generator and public baseline."""
+CURRENCY = "KZT"
+EXPENSE = "expense"
+PAYABLE = "accounts_payable"
+BANK = "cash"
+SUSPENSE = "payment_suspense"

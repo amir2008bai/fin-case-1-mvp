@@ -1,0 +1,17 @@
+**
+!Dockerfile
+!audit_env/
+!audit_env/*.py
+!tests/
+!tests/*.py
+!configs/
+!configs/*.json
+!audit_env/scenarios/
+!audit_env/scenarios/*.py
+**/__pycache__/
+**/*.pyc
+!build/
+build/**
+!build/micro/
+build/micro/**
+!build/micro/model.json

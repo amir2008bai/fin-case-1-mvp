@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0",
+  "train": [
+    {
+      "seed": 202601,
+      "config": {
+        "invoice_count": 67,
+        "duplicate_count": 1,
+        "allocation_count": 1
+      }
+    },
+    {
+      "seed": 202602,
+      "config": {
+        "invoice_count": 84,
+        "duplicate_count": 0,
+        "allocation_count": 2
+      }
+    },
+    {
+      "seed": 202603,
+      "config": {
+        "invoice_count": 55,
+        "duplicate_count": 3,
+        "allocation_count": 0
+      }
+    },
+    {
+      "seed": 202604,
+      "config": {
+        "invoice_count": 72,
+        "duplicate_count": 0,
+        "allocation_count": 0
+      }
+    },
+    {
+      "seed": 202605,
+      "config": {
+        "invoice_count": 89,
+        "duplicate_count": 1,
+        "allocation_count": 1
+      }
+    },
+    {
+      "seed": 202606,
+      "config": {
+        "invoice_count": 60,
+        "duplicate_count": 0,
+        "allocation_count": 2
+      }
+    },
+    {
+      "seed": 202607,
+      "config": {
+        "invoice_count": 77,
+        "duplicate_count": 3,
+        "allocation_count": 0
+      }
+    },
+    {
+      "seed": 202608,
+      "config": {
+        "invoice_count": 94,
+        "duplicate_count": 2,
+        "allocation_count": 3
+      }
+    },
+    {
+      "seed": 202609,
+      "config": {
+        "invoice_count": 65,
+        "duplicate_count": 0,
+        "allocation_count": 0
+      }
+    },
+    {
+      "seed": 202610,
+      "config": {
+        "invoice_count": 82,
+        "duplicate_count": 0,
+        "allocation_count": 2
+      }
+    }
+  ],
+  "dev": [
+    {
+      "seed": 292701,
+      "config": {
+        "invoice_count": 53,
+        "duplicate_count": 1,
+        "allocation_count": 1
+      }
+    },
+    {
+      "seed": 292702,
+      "config": {
+        "invoice_count": 70,
+        "duplicate_count": 0,
+        "allocation_count": 2
+      }
+    },
+    {
+      "seed": 292703,
+      "config": {
+        "invoice_count": 87,
+        "duplicate_count": 0,
+        "allocation_count": 0
+      }
+    },
+    {
+      "seed": 292704,
+      "config": {
+        "invoice_count": 58,
+        "duplicate_count": 2,
+        "allocation_count": 3
+      }
+    },
+    {
+      "seed": 292705,
+      "config": {
+        "invoice_count": 75,
+        "duplicate_count": 0,
+        "allocation_count": 0
+      }
+    },
+    {
+      "seed": 292706,
+      "config": {
+        "invoice_count": 92,
+        "duplicate_count": 0,
+        "allocation_count": 2
+      }
+    },
+    {
+      "seed": 292707,
+      "config": {
+        "invoice_count": 63,
+        "duplicate_count": 3,
+        "allocation_count": 0
+      }
+    },
+    {
+      "seed": 292708,
+      "config": {
+        "invoice_count": 80,
+        "duplicate_count": 2,
+        "allocation_count": 3
+      }
+    },
+    {
+      "seed": 292709,
+      "config": {
+        "invoice_count": 51,
+        "duplicate_count": 1,
+        "allocation_count": 1
+      }
+    },
+    {
+      "seed": 292710,
+      "config": {
+        "invoice_count": 68,
+        "duplicate_count": 0,
+        "allocation_count": 0
+      }
+    }
+  ]
+}
