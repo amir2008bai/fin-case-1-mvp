@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "payment.schema.json",
+  "title": "payment",
+  "type": "object",
+  "properties": {
+    "doc_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "payment_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}$"
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "amount_minor": {
+      "type": "integer"
+    },
+    "invoice_refs": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
+    }
+  },
+  "required": [
+    "doc_id",
+    "payment_id",
+    "timestamp",
+    "currency",
+    "amount_minor",
+    "invoice_refs"
+  ],
+  "additionalProperties": false
+}

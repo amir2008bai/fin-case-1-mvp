@@ -1,0 +1,499 @@
+{
+  "schema_version": "2.0",
+  "name": "curriculum.v2",
+  "keyspace": "secret",
+  "splits": {
+    "easy": [
+      {
+        "case_id": "easy-01",
+        "category": "clean",
+        "config": {
+          "difficulty": "easy",
+          "month": 1,
+          "timezone": "+05:00",
+          "acts": 25,
+          "customers": 12,
+          "filler": 10,
+          "foreign_percent": 15,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "easy-02",
+        "category": "single:fx_rate",
+        "config": {
+          "difficulty": "easy",
+          "month": 3,
+          "timezone": "+06:00",
+          "acts": 25,
+          "customers": 12,
+          "filler": 10,
+          "foreign_percent": 15,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 2,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "easy-03",
+        "category": "single:period_cutoff",
+        "config": {
+          "difficulty": "easy",
+          "month": 5,
+          "timezone": "+03:00",
+          "acts": 25,
+          "customers": 12,
+          "filler": 10,
+          "foreign_percent": 15,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 2,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "easy-04",
+        "category": "multi",
+        "config": {
+          "difficulty": "easy",
+          "month": 7,
+          "timezone": "+05:00",
+          "acts": 25,
+          "customers": 12,
+          "filler": 10,
+          "foreign_percent": 15,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 1,
+            "payment_allocation": 1,
+            "fx_rate": 1,
+            "period_cutoff": 1,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "easy-05",
+        "category": "interacting",
+        "config": {
+          "difficulty": "easy",
+          "month": 9,
+          "timezone": "+06:00",
+          "acts": 25,
+          "customers": 12,
+          "filler": 10,
+          "foreign_percent": 15,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 1,
+            "fx_partial_allocation": 1
+          }
+        }
+      },
+      {
+        "case_id": "easy-06",
+        "category": "real_practice",
+        "config": {
+          "difficulty": "easy",
+          "month": 11,
+          "timezone": "+03:00",
+          "acts": 25,
+          "customers": 12,
+          "filler": 10,
+          "foreign_percent": 15,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 1,
+            "uncollected_service": 1
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      }
+    ],
+    "medium": [
+      {
+        "case_id": "medium-01",
+        "category": "clean",
+        "config": {
+          "difficulty": "medium",
+          "month": 2,
+          "timezone": "+05:00",
+          "acts": 50,
+          "customers": 22,
+          "filler": 40,
+          "foreign_percent": 20,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "medium-02",
+        "category": "single:fx_rate",
+        "config": {
+          "difficulty": "medium",
+          "month": 4,
+          "timezone": "+06:00",
+          "acts": 50,
+          "customers": 22,
+          "filler": 40,
+          "foreign_percent": 20,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 2,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "medium-03",
+        "category": "single:period_cutoff",
+        "config": {
+          "difficulty": "medium",
+          "month": 6,
+          "timezone": "+03:00",
+          "acts": 50,
+          "customers": 22,
+          "filler": 40,
+          "foreign_percent": 20,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 2,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "medium-04",
+        "category": "multi",
+        "config": {
+          "difficulty": "medium",
+          "month": 8,
+          "timezone": "+05:00",
+          "acts": 50,
+          "customers": 22,
+          "filler": 40,
+          "foreign_percent": 20,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 1,
+            "payment_allocation": 1,
+            "fx_rate": 1,
+            "period_cutoff": 1,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "medium-05",
+        "category": "interacting",
+        "config": {
+          "difficulty": "medium",
+          "month": 10,
+          "timezone": "+06:00",
+          "acts": 50,
+          "customers": 22,
+          "filler": 40,
+          "foreign_percent": 20,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 1,
+            "fx_partial_allocation": 1
+          }
+        }
+      },
+      {
+        "case_id": "medium-06",
+        "category": "real_practice",
+        "config": {
+          "difficulty": "medium",
+          "month": 12,
+          "timezone": "+03:00",
+          "acts": 50,
+          "customers": 22,
+          "filler": 40,
+          "foreign_percent": 20,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 1,
+            "uncollected_service": 1
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      }
+    ],
+    "hard": [
+      {
+        "case_id": "hard-01",
+        "category": "clean",
+        "config": {
+          "difficulty": "hard",
+          "month": 3,
+          "timezone": "+05:00",
+          "acts": 75,
+          "customers": 32,
+          "filler": 600,
+          "foreign_percent": 25,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "hard-02",
+        "category": "single:fx_rate",
+        "config": {
+          "difficulty": "hard",
+          "month": 6,
+          "timezone": "+06:00",
+          "acts": 75,
+          "customers": 32,
+          "filler": 600,
+          "foreign_percent": 25,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 2,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "hard-03",
+        "category": "single:period_cutoff",
+        "config": {
+          "difficulty": "hard",
+          "month": 9,
+          "timezone": "+03:00",
+          "acts": 75,
+          "customers": 32,
+          "filler": 600,
+          "foreign_percent": 25,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 2,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "hard-04",
+        "category": "multi",
+        "config": {
+          "difficulty": "hard",
+          "month": 12,
+          "timezone": "+05:00",
+          "acts": 75,
+          "customers": 32,
+          "filler": 600,
+          "foreign_percent": 25,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 1,
+            "payment_allocation": 1,
+            "fx_rate": 1,
+            "period_cutoff": 1,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "hard-05",
+        "category": "interacting",
+        "config": {
+          "difficulty": "hard",
+          "month": 2,
+          "timezone": "+06:00",
+          "acts": 75,
+          "customers": 32,
+          "filler": 600,
+          "foreign_percent": 25,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 1,
+            "fx_partial_allocation": 1
+          }
+        }
+      },
+      {
+        "case_id": "hard-06",
+        "category": "real_practice",
+        "config": {
+          "difficulty": "hard",
+          "month": 5,
+          "timezone": "+03:00",
+          "acts": 75,
+          "customers": 32,
+          "filler": 600,
+          "foreign_percent": 25,
+          "goods_percent": 50,
+          "vat": true,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0,
+            "vat_on_top": 1,
+            "uncollected_service": 1
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      }
+    ]
+  }
+}

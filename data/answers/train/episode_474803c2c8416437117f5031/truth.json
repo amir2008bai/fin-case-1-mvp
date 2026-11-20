@@ -1,0 +1,195 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_474803c2c8416437117f5031",
+  "issues": [
+    {
+      "issue_id": "issue_6325222b3dd244d0c1189152",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "invoice_7551a83215086ae59ee881cd",
+        "invoice_c54f8c2055871ee56e9ced2c"
+      ],
+      "expected_amount_minor": 460000,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_ae2919ad2b7c3751c6eefe05",
+          "doc_18eb2f58c56c187d2fb99ea8",
+          "row_773c09b44a98472bb55cc682",
+          "row_d1eb75dbc397102dab616510"
+        ],
+        [
+          "doc_ae2919ad2b7c3751c6eefe05",
+          "doc_18eb2f58c56c187d2fb99ea8",
+          "row_f3abfb0e9beb44207c51ba55",
+          "row_3121ff911a48065f94c60c80"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_18eb2f58c56c187d2fb99ea8",
+        "doc_ae2919ad2b7c3751c6eefe05",
+        "row_3121ff911a48065f94c60c80",
+        "row_5b98f26d022cc31898d38feb",
+        "row_773c09b44a98472bb55cc682",
+        "row_d1eb75dbc397102dab616510",
+        "row_f3abfb0e9beb44207c51ba55"
+      ]
+    },
+    {
+      "issue_id": "issue_b6328fd9cdcb66d04aedb668",
+      "type": "payment_allocation",
+      "affected_ids": [
+        "payment_560547472450aeac6268c970"
+      ],
+      "expected_amount_minor": 4200000,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_95e2d1488ceb9d2b3f410527",
+          "doc_5dde93366b1010c25734f9cb",
+          "row_ec621f1d1d3ecc1e74298894",
+          "row_ccf6b75257e1c14e8c1446f6"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_5dde93366b1010c25734f9cb",
+        "doc_95e2d1488ceb9d2b3f410527",
+        "row_6c79d03ab92beb1335a3786b",
+        "row_709379820130098df3e4570e",
+        "row_8093e23ab35b0d1e793bb65c",
+        "row_93344d3352627bb68688ec43",
+        "row_ccf6b75257e1c14e8c1446f6",
+        "row_ec621f1d1d3ecc1e74298894",
+        "row_f98090aee24a9c4867602cc8"
+      ]
+    },
+    {
+      "issue_id": "issue_1d563accd540008ead41027d",
+      "type": "fx_rate",
+      "affected_ids": [
+        "invoice_0ffc7597fdd062d117a95fcd"
+      ],
+      "expected_amount_minor": 600,
+      "currency": "KZT",
+      "tolerance_minor": 2,
+      "evidence_sets": [
+        [
+          "doc_834a55dbb9424cea4b069b66",
+          "fx_cef5fa4d223cf02ab5ef8ceb",
+          "row_421065eb59b7615220025ab8"
+        ],
+        [
+          "doc_834a55dbb9424cea4b069b66",
+          "fx_cef5fa4d223cf02ab5ef8ceb",
+          "row_75dabda03ab8a165e001aa47"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_834a55dbb9424cea4b069b66",
+        "fx_05580443a12d6545810bad18",
+        "fx_0e5da31729df4f915c8b57b0",
+        "fx_2cba248c03b0d4a51a48cffa",
+        "fx_3376f4e5cd9718a8b6a8929d",
+        "fx_51a18077de573735bb300fac",
+        "fx_52ebc0346df1884a946068db",
+        "fx_56f507ad404a8c2f6a74ff74",
+        "fx_6d04a3851c5fa02e39ed1757",
+        "fx_7cf7d4df11157074165dce74",
+        "fx_925ccb1e796a6e1100a1c7c4",
+        "fx_968d2c0b15489cc2be03cd15",
+        "fx_a31ef2bbe574081f260d353a",
+        "fx_c09789bb57d8deb7af435030",
+        "fx_cd004bf89d0234b606968e3b",
+        "fx_cdd3872fd7e42ea96ba778b3",
+        "fx_cef5fa4d223cf02ab5ef8ceb",
+        "row_421065eb59b7615220025ab8",
+        "row_6dfb587cb784d8bcc418f020",
+        "row_75dabda03ab8a165e001aa47"
+      ]
+    },
+    {
+      "issue_id": "issue_43abbb0019d97c7d15650eac",
+      "type": "period_cutoff",
+      "affected_ids": [
+        "invoice_b666f5df38c3e3aaf913cc5a"
+      ],
+      "expected_amount_minor": 862069,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_b176b98ccc2efad38460e9f6",
+          "row_b3ababd5ad016b645961d77f"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_b176b98ccc2efad38460e9f6",
+        "row_50b10f91348d1f6d41cdcdad",
+        "row_63942a9df43f7a1d6ad0d0dd",
+        "row_782b48d96a02e01f772ae2ce",
+        "row_b3ababd5ad016b645961d77f"
+      ]
+    },
+    {
+      "issue_id": "issue_c704fec5965624124525da9b",
+      "type": "vat_on_top",
+      "affected_ids": [
+        "invoice_96bf3afb330dec1786b3329d"
+      ],
+      "expected_amount_minor": 1760000,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_15f964c078223c6d3745f698",
+          "row_9cc68224eee7fd706b3f41f4"
+        ],
+        [
+          "doc_15f964c078223c6d3745f698",
+          "doc_92889e46d373838c952bfa6a",
+          "row_9cc68224eee7fd706b3f41f4"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_15f964c078223c6d3745f698",
+        "doc_92889e46d373838c952bfa6a",
+        "row_0134f171a762a588810eea33",
+        "row_04b181d49a6240a69571a3fb",
+        "row_0e3324fd4326f109488ccc62",
+        "row_9cc68224eee7fd706b3f41f4",
+        "row_c53b64d0cb517da64d154ea5",
+        "row_caca2ba2a0e340ef2ff0b28f",
+        "row_ce5aa28431018b2ae253dd92",
+        "row_f1b9ae51258e0124413a7bf7"
+      ]
+    },
+    {
+      "issue_id": "issue_6ccd3a42292f27d291e30c8a",
+      "type": "uncollected_service",
+      "affected_ids": [
+        "invoice_a5c1f181abbf62d3896dbfb9"
+      ],
+      "expected_amount_minor": 2000000,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_44c9d283bf55d53fe1768552",
+          "doc_ebed1de0ed506c56a4c136a8",
+          "row_8704276a80baea740a3c57db",
+          "row_c5fd08b00d8a7a868e848ee8"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_44c9d283bf55d53fe1768552",
+        "doc_ebed1de0ed506c56a4c136a8",
+        "row_108e385a69191afc40ea6555",
+        "row_8704276a80baea740a3c57db",
+        "row_b032b6421d872244382efe57",
+        "row_c5fd08b00d8a7a868e848ee8"
+      ]
+    }
+  ]
+}

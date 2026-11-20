@@ -1,0 +1,36 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_419901a6e9e74dc0e65edb65",
+  "company": {
+    "name": "АО «Дала Логистик»",
+    "country": "KZ"
+  },
+  "base_currency": "KZT",
+  "period_start": "2026-06-01T00:00:00+06:00",
+  "period_end": "2026-07-01T00:00:00+06:00",
+  "timezone": "+06:00",
+  "counts": {
+    "ledger": 377,
+    "invoices": 55,
+    "payments": 50,
+    "fx": 164
+  },
+  "document_count": 105,
+  "minor_units": {
+    "KZT": 2,
+    "RUB": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "ROUND_HALF_UP",
+    "fx": "per converted amount",
+    "vat": "per line, included in price"
+  },
+  "id_fields": {
+    "ledger": "row_id",
+    "invoices": "invoice_id",
+    "payments": "payment_id",
+    "fx": "fx_id",
+    "documents": "doc_id"
+  }
+}

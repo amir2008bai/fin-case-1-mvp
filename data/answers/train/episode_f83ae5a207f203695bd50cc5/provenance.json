@@ -1,0 +1,191 @@
+{
+  "schema_version": "2.0",
+  "generator_version": "2.0.0",
+  "episode_id": "episode_f83ae5a207f203695bd50cc5",
+  "seed": 2026006,
+  "config": {
+    "keyspace": "open",
+    "presentation_seed": 0,
+    "difficulty": "medium",
+    "month": 2,
+    "timezone": "+03:00",
+    "acts": 35,
+    "customers": 16,
+    "foreign_percent": 35,
+    "goods_percent": 50,
+    "vat": true,
+    "filler": 30,
+    "errors": {
+      "duplicate_invoice": 0,
+      "payment_allocation": 0,
+      "fx_rate": 2,
+      "period_cutoff": 0,
+      "vat_on_top": 0,
+      "uncollected_service": 0
+    },
+    "interactions": {
+      "fx_boundary_payment": 0,
+      "fx_partial_allocation": 0
+    },
+    "distractors": {
+      "split_payments": true,
+      "multi_act_payments": true,
+      "overpayments": true,
+      "prepayments": true,
+      "unreferenced_payments": true,
+      "opening_balances": true,
+      "late_acts": true,
+      "boundary_timestamps": true,
+      "repeated_amounts": true,
+      "refunds": true,
+      "double_payments": true,
+      "paid_renewals": true,
+      "underpaid_vat": true,
+      "partial_refs": true
+    }
+  },
+  "keyspace": "open",
+  "key_fingerprint": "4c251e205e774643",
+  "world": {
+    "summary": {
+      "acts.late": 2,
+      "acts.next_period": 2,
+      "acts.prior_open": 4,
+      "acts.regular": 27,
+      "documents.goods": 16,
+      "documents.service": 19,
+      "filler": 30,
+      "goods_deliveries": 4,
+      "opening_advances": 1,
+      "payments.after_period": 1,
+      "payments.boundary_inside": 2,
+      "payments.full": 16,
+      "payments.prepayment_next": 2,
+      "payments.split": 8
+    },
+    "customers": 16,
+    "invoices": 35,
+    "payments": 29
+  },
+  "clean_ledger_sha256": "284bc36f6394fd52bc2611e2acd58a7fda22221335a7c1a0008a9889f7a14ef3",
+  "changes": [
+    {
+      "issue_ids": [
+        "issue_04186825cbe064294d1aa9e5"
+      ],
+      "scenario": "fx_rate.invoice_wrong_rate",
+      "causes": [
+        "При пересчёте счёта введён неверный курс."
+      ],
+      "documents_added": [],
+      "documents_changed": [],
+      "before": [
+        {
+          "row_id": "row_d24b05d0b460a51b6ca03dfb",
+          "timestamp": "2026-02-20T00:00:00+03:00",
+          "account": "6010",
+          "debit_minor": 0,
+          "credit_minor": 52830000,
+          "currency": "KZT",
+          "entity_id": "entity_2608430ca0aa3e9e9307c401",
+          "invoice_id": "invoice_73dee23c229619c3aabb1b99",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_e891b966f5853fc32ed45a54",
+          "timestamp": "2026-02-20T00:00:00+03:00",
+          "account": "1210",
+          "debit_minor": 52830000,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_2608430ca0aa3e9e9307c401",
+          "invoice_id": "invoice_73dee23c229619c3aabb1b99",
+          "payment_id": null
+        }
+      ],
+      "after": [
+        {
+          "row_id": "row_d24b05d0b460a51b6ca03dfb",
+          "timestamp": "2026-02-20T00:00:00+03:00",
+          "account": "6010",
+          "debit_minor": 0,
+          "credit_minor": 77130000,
+          "currency": "KZT",
+          "entity_id": "entity_2608430ca0aa3e9e9307c401",
+          "invoice_id": "invoice_73dee23c229619c3aabb1b99",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_e891b966f5853fc32ed45a54",
+          "timestamp": "2026-02-20T00:00:00+03:00",
+          "account": "1210",
+          "debit_minor": 77130000,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_2608430ca0aa3e9e9307c401",
+          "invoice_id": "invoice_73dee23c229619c3aabb1b99",
+          "payment_id": null
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "issue_ceeb51a0fcff35c3c8f35f55"
+      ],
+      "scenario": "fx_rate.invoice_wrong_date",
+      "causes": [
+        "Счёт пересчитан по курсу не той даты (нужна дата окончания услуги)."
+      ],
+      "documents_added": [],
+      "documents_changed": [],
+      "before": [
+        {
+          "row_id": "row_0ea6da2f61ab35a399e4494e",
+          "timestamp": "2026-02-10T00:00:00+03:00",
+          "account": "1210",
+          "debit_minor": 44215200,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_576d436045eea82eba29ba48",
+          "invoice_id": "invoice_cd379ee50524919a5e25301b",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_8e61c450c22e81b132817c67",
+          "timestamp": "2026-02-10T00:00:00+03:00",
+          "account": "6010",
+          "debit_minor": 0,
+          "credit_minor": 44215200,
+          "currency": "KZT",
+          "entity_id": "entity_576d436045eea82eba29ba48",
+          "invoice_id": "invoice_cd379ee50524919a5e25301b",
+          "payment_id": null
+        }
+      ],
+      "after": [
+        {
+          "row_id": "row_0ea6da2f61ab35a399e4494e",
+          "timestamp": "2026-02-10T00:00:00+03:00",
+          "account": "1210",
+          "debit_minor": 44225100,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_576d436045eea82eba29ba48",
+          "invoice_id": "invoice_cd379ee50524919a5e25301b",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_8e61c450c22e81b132817c67",
+          "timestamp": "2026-02-10T00:00:00+03:00",
+          "account": "6010",
+          "debit_minor": 0,
+          "credit_minor": 44225100,
+          "currency": "KZT",
+          "entity_id": "entity_576d436045eea82eba29ba48",
+          "invoice_id": "invoice_cd379ee50524919a5e25301b",
+          "payment_id": null
+        }
+      ]
+    }
+  ]
+}

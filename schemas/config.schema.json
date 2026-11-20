@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "config.schema.json",
+  "title": "config",
+  "type": "object",
+  "properties": {
+    "keyspace": {
+      "enum": [
+        "open",
+        "secret"
+      ]
+    },
+    "presentation_seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "description": "density of look-alikes: easy halves, hard doubles and adds hard-only kinds"
+    },
+    "month": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 12
+    },
+    "timezone": {
+      "enum": [
+        "+03:00",
+        "+05:00",
+        "+06:00"
+      ]
+    },
+    "acts": {
+      "type": "integer",
+      "minimum": 15,
+      "maximum": 80
+    },
+    "customers": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 60
+    },
+    "foreign_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 50
+    },
+    "goods_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 80,
+      "description": "share of all invoices that are waybills for goods"
+    },
+    "vat": {
+      "type": "boolean"
+    },
+    "filler": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 800
+    },
+    "errors": {
+      "type": "object",
+      "properties": {
+        "duplicate_invoice": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "payment_allocation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "fx_rate": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "period_cutoff": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "vat_on_top": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "uncollected_service": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        }
+      },
+      "required": [
+        "duplicate_invoice",
+        "payment_allocation",
+        "fx_rate",
+        "period_cutoff"
+      ],
+      "additionalProperties": false
+    },
+    "interactions": {
+      "type": "object",
+      "properties": {
+        "fx_boundary_payment": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        },
+        "fx_partial_allocation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      },
+      "required": [
+        "fx_boundary_payment",
+        "fx_partial_allocation"
+      ],
+      "additionalProperties": false
+    },
+    "distractors": {
+      "type": "object",
+      "properties": {
+        "split_payments": {
+          "type": "boolean"
+        },
+        "multi_act_payments": {
+          "type": "boolean"
+        },
+        "overpayments": {
+          "type": "boolean"
+        },
+        "prepayments": {
+          "type": "boolean"
+        },
+        "unreferenced_payments": {
+          "type": "boolean"
+        },
+        "opening_balances": {
+          "type": "boolean"
+        },
+        "late_acts": {
+          "type": "boolean"
+        },
+        "boundary_timestamps": {
+          "type": "boolean"
+        },
+        "repeated_amounts": {
+          "type": "boolean"
+        },
+        "refunds": {
+          "type": "boolean"
+        },
+        "double_payments": {
+          "type": "boolean"
+        },
+        "paid_renewals": {
+          "type": "boolean"
+        },
+        "underpaid_vat": {
+          "type": "boolean"
+        },
+        "partial_refs": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "split_payments",
+        "multi_act_payments",
+        "overpayments",
+        "prepayments",
+        "unreferenced_payments",
+        "opening_balances",
+        "late_acts",
+        "boundary_timestamps",
+        "repeated_amounts",
+        "refunds"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "keyspace",
+    "presentation_seed",
+    "month",
+    "timezone",
+    "acts",
+    "customers",
+    "foreign_percent",
+    "vat",
+    "filler",
+    "errors",
+    "interactions",
+    "distractors"
+  ],
+  "additionalProperties": false
+}

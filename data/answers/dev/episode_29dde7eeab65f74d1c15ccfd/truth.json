@@ -1,0 +1,55 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_29dde7eeab65f74d1c15ccfd",
+  "issues": [
+    {
+      "issue_id": "issue_459037a87dfa98c0e6798c85",
+      "type": "period_cutoff",
+      "affected_ids": [
+        "invoice_d1b7f821f519fc1b5da84cf5"
+      ],
+      "expected_amount_minor": 12931034,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_7779d8c4cab812459f9806af",
+          "row_23dfad85630ced0d7bb6059b"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_7779d8c4cab812459f9806af",
+        "row_0497a79164d58839c5635169",
+        "row_23dfad85630ced0d7bb6059b",
+        "row_7f9cf840fa6867994334d617",
+        "row_cf5f534d1f144718ba6e340c"
+      ]
+    },
+    {
+      "issue_id": "issue_4546e9273d3ff87489e5c38d",
+      "type": "period_cutoff",
+      "affected_ids": [
+        "payment_a55cf509d1307af48d8639d8"
+      ],
+      "expected_amount_minor": 1500000,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_6f61d9acc4c761ba203467b1",
+          "row_19a740de7f1644062f0241c0"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_6f61d9acc4c761ba203467b1",
+        "doc_d9e0fb66c8f874b4235aeff4",
+        "row_02501a43ff1603ea8305960a",
+        "row_19a740de7f1644062f0241c0",
+        "row_1c9c2fbfc0b734e90cd860be",
+        "row_602d19bc00bd28ab792cce34",
+        "row_9b1e3f817cc6f84daf091acc",
+        "row_b20e2f45ebb427f79f6cd276"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "version": 4,
+  "features": {
+    "vat_on_top": [
+      "bias",
+      "extra_share",
+      "has_extra",
+      "vat_line_share",
+      "paid_base_share"
+    ],
+    "uncollected_service": [
+      "bias",
+      "overdue",
+      "renewed_after_due",
+      "same_code_later",
+      "overdue_months"
+    ],
+    "duplicate_invoice": [
+      "bias",
+      "identical_supply",
+      "issue_gap_days",
+      "both_recognized",
+      "line_count"
+    ],
+    "payment_allocation": [
+      "bias",
+      "advance_share",
+      "recognized_before",
+      "expected_excess_share",
+      "refs_count",
+      "foreign",
+      "unexplained_share",
+      "fully_explained"
+    ],
+    "fx_rate": [
+      "bias",
+      "log_gap_correct",
+      "log_gap_issue_or_wall",
+      "is_payment",
+      "booked_outside",
+      "over_tolerance"
+    ],
+    "period_cutoff": [
+      "bias",
+      "service_in_period",
+      "issue_in_period",
+      "instant_in_period",
+      "wall_in_period",
+      "is_payment"
+    ]
+  },
+  "weights": {
+    "duplicate_invoice": [
+      -2.468906,
+      5.53947,
+      -2.298333,
+      0.882892,
+      -0.528586
+    ],
+    "payment_allocation": [
+      -1.223687,
+      -1.692873,
+      5.076704,
+      -2.228834,
+      -0.611844,
+      1.163311,
+      0.535961,
+      -3.801026
+    ],
+    "fx_rate": [
+      -3.365432,
+      3.477078,
+      0.24025,
+      -0.029095,
+      0.687552,
+      3.683428
+    ],
+    "period_cutoff": [
+      1.169649,
+      -3.860647,
+      1.268546,
+      -3.860647,
+      1.268546,
+      0.093123
+    ],
+    "vat_on_top": [
+      -1.773815,
+      0.861811,
+      6.248127,
+      -1.719805,
+      0.506956
+    ],
+    "uncollected_service": [
+      -3.818421,
+      0.594508,
+      4.521134,
+      2.111253,
+      0.265653
+    ]
+  },
+  "threshold": 0.5,
+  "meta": {
+    "train_episodes": 120,
+    "candidates": {
+      "duplicate_invoice": 458,
+      "payment_allocation": 353,
+      "fx_rate": 1547,
+      "period_cutoff": 8034,
+      "vat_on_top": 3507,
+      "uncollected_service": 1076
+    },
+    "positives": {
+      "duplicate_invoice": 36,
+      "payment_allocation": 48,
+      "fx_rate": 72,
+      "period_cutoff": 60,
+      "vat_on_top": 66,
+      "uncollected_service": 66
+    },
+    "threshold_rewards": {
+      "0.3": 0.922005,
+      "0.4": 0.973467,
+      "0.5": 0.973467,
+      "0.6": 0.973467,
+      "0.7": 0.973467,
+      "0.8": 0.973467,
+      "0.9": 0.973467
+    },
+    "suite": "suite.v2.json",
+    "seed": 20261120
+  }
+}
