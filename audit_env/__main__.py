@@ -34,12 +34,10 @@ def table(rows, order=None):
     return "\n".join(lines)
 
 
-def red_team(seed_source, key, repeats=1):
-    """Every attack on the jury template, the extended template and the hard level, in closed mode."""
+def closed_episodes(seed_source, key, repeats=1):
+    """Closed episodes of the jury template, the extended template and the hard level."""
     from dataclasses import replace
 
-    from .attacks import bruteforce_demo, run_suite
-    from .contracts import Config
     from .dataset import suite
     from .generator import generate
 
@@ -50,6 +48,57 @@ def red_team(seed_source, key, repeats=1):
                 continue
             for _ in range(repeats):
                 episodes.append(generate(seed_source.randrange(2**31), replace(config, keyspace="secret"), key=key))
+    return episodes
+
+
+def derived_key(seed):
+    """A secret key fixed by --seed, so that a printed table can be reproduced byte for byte."""
+    import hashlib
+
+    return hashlib.sha256(f"red-team:{seed}".encode()).digest()
+
+
+def economy_lines(result):
+    lines = [f"  {result['episodes']} episodes: jury template + extended template + hard level"]
+    for name, item in result["waste"].items():
+        lines.append(f"  {name}: complete read {item['complete_read_steps']} steps on average; "
+                     f"wasted {item['wasted_steps']}, skipped {item['skipped_steps']} steps")
+    lines.append("  reading less of the ledger, honest rules on what was read:")
+    lines.append(f"  {'read':16s} {'clean':>8s} {'errors':>8s} {'all':>8s} {'TP':>5s} {'FP':>5s} {'FN':>5s} {'steps':>6s}")
+    for row in result["skim_curve"]:
+        clean = "—" if row["clean_reward"] is None else f"{row['clean_reward']:+.3f}"
+        errors = "—" if row["error_reward"] is None else f"{row['error_reward']:+.3f}"
+        lines.append(f"  {row['name']:16s} {clean:>8s} {errors:>8s} {row['reward']:+8.3f} {row['tp']:5d} "
+                     f"{row['fp']:5d} {row['fn']:5d} {row['steps']:6.1f}")
+    largest = result["largest_books"]
+    counts = ", ".join(f"{name} {value}" for name, value in largest["counts"].items())
+    lines.append(f"  largest allowed books ({counts}): complete read {largest['complete_read_steps']} "
+                 f"steps of {largest['step_limit']}")
+    lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
+    lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
+    return "\n".join(lines)
+
+
+def command_economy(args):
+    import random
+
+    from .economy import report as economy_report
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    result = economy_report(closed_episodes(random.Random(args.seed), key, repeats=args.repeats))
+    out(economy_lines(result))
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 1 if result["violations"] else 0
+
+
+def red_team(episodes, key):
+    """Every attack on the given closed episodes, plus the seed brute force against `key`."""
+    from .attacks import bruteforce_demo, run_suite
+    from .contracts import Config
+
     rows, violations = run_suite(episodes)
     bruteforce = bruteforce_demo(Config(errors={"duplicate_invoice": 1}), secret_key=key)
     if not bruteforce["ok"]:
@@ -78,13 +127,12 @@ def red_team_lines(result):
 
 def command_attacks(args):
     """Red team. By default the secret key is derived from --seed, so the printed table is reproducible."""
-    import hashlib
     import random
 
     from .selfcheck import fresh_key
 
-    key = fresh_key() if args.fresh_key else hashlib.sha256(f"red-team:{args.seed}".encode()).digest()
-    result = red_team(random.Random(args.seed), key, repeats=args.repeats)
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    result = red_team(closed_episodes(random.Random(args.seed), key, repeats=args.repeats), key)
     out(red_team_lines(result))
     if args.report:
         Path(args.report).parent.mkdir(parents=True, exist_ok=True)
@@ -194,11 +242,22 @@ def command_verify(args):
         failed.append("curriculum oracle/paired checks")
 
     out("\n== 8. Red team: adversarial answers against the grader (closed mode, fresh secret key)")
-    result = red_team(random.Random(os.urandom(8)), fresh_key(), repeats=1)
+    key = fresh_key()
+    episodes = closed_episodes(random.Random(os.urandom(8)), key, repeats=1)
+    result = red_team(episodes, key)
     out(red_team_lines(result))
     report["sections"]["red_team"] = result
     if result["violations"]:
         failed.append("red team")
+
+    out("\n== 9. Step economy: no wasted step, reading less never pays, the largest books fit the limit")
+    from .economy import report as economy_report
+
+    result = economy_report(episodes)
+    out(economy_lines(result))
+    report["sections"]["economy"] = result
+    if result["violations"]:
+        failed.append("step economy")
 
     report["seconds"] = round(time.time() - started, 1)
     report["ok"] = not failed
@@ -409,6 +468,11 @@ def main():
     attacks.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
     attacks.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     attacks.add_argument("--report", help="write the full result as JSON")
+    economy = commands.add_parser("economy", help="step economy: wasted steps, the cost of reading less, the largest books")
+    economy.add_argument("--repeats", type=int, default=3, help="seeds per configuration")
+    economy.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
+    economy.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
+    economy.add_argument("--report", help="write the full result as JSON")
     data = commands.add_parser("dataset", help="export open episodes, answers, trajectories, checksums")
     data.add_argument("output", type=Path)
     data.add_argument("--suite", default=DEFAULT_SUITE)
@@ -440,7 +504,7 @@ def main():
     handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
                 "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
-                "failures": command_failures, "attacks": command_attacks}
+                "failures": command_failures, "attacks": command_attacks, "economy": command_economy}
     raise SystemExit(handlers[args.command](args))
 
 

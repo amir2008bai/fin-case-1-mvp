@@ -31,7 +31,11 @@ def report(kind, affected, amount, currency, evidence, explanation):
 
 
 class ScanPolicy:
-    """Read every table page by page (within the step budget), then submit findings."""
+    """Read every table that can matter, page by page (within the step budget), then submit findings.
+
+    Every page is read exactly once at the maximum page size. The exchange-rate table is skipped when
+    no invoice and no payment is in a foreign currency: then no rate can change a finding.
+    """
 
     def __init__(self, findings_function, tables=SCAN_ORDER):
         self.findings_function = findings_function
@@ -42,19 +46,42 @@ class ScanPolicy:
             self.episode_id = observation["manifest"]["episode_id"]
             self.manifest, self.policy = observation["manifest"], observation["policy"]
             self.tables = {table: [] for table in TABLE_IDS}
+            self.read, self.pages = set(), dict.fromkeys(TABLE_IDS, 0)
             counts = self.manifest["counts"]
             self.pending = iter([table for table in self.order if counts.get(table)])
-            self.table = next(self.pending, None)
+            self.table = self.next_table()
             cursor = None
         else:
             page = observation.get("result") or {}
             self.tables[self.table].extend(page.get("records", []))
+            self.pages[self.table] += 1
             cursor = page.get("next_cursor")
-            if cursor is None:
-                self.table = next(self.pending, None)
+            if cursor is None or not self.wants_more(self.table):
+                self.read.add(self.table)
+                self.table, cursor = self.next_table(), None
         if self.table is None or observation["remaining_steps"] <= 1:
             return submission(self.episode_id, self.findings_function(self.tables, self.manifest, self.policy))
         return {"type": "list_records", "table": self.table, "limit": 50, "cursor": cursor}
+
+    def next_table(self):
+        for table in self.pending:
+            if table == "fx" and self.documents_read() and not self.foreign():
+                continue
+            if self.wants_more(table):
+                return table
+        return None
+
+    def wants_more(self, table):
+        """Hook for partial readers (see economy.py); a complete auditor reads every page."""
+        return True
+
+    def documents_read(self):
+        counts = self.manifest["counts"]
+        return all(table in self.read or not counts.get(table) for table in ("invoices", "payments"))
+
+    def foreign(self):
+        base = self.manifest["base_currency"]
+        return any(row.get("currency") != base for table in ("invoices", "payments") for row in self.tables[table])
 
 
 def naive_rates(tables):
