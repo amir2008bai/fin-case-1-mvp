@@ -17,9 +17,14 @@ ALLOCATION = "payment_allocation"
 FX_RATE = "fx_rate"
 CUTOFF = "period_cutoff"
 ERROR_TYPES = (DUPLICATE, ALLOCATION, FX_RATE, CUTOFF)
-SUPPORTED_TYPES = frozenset(ERROR_TYPES)
+# Extra types from real practice of a Kazakhstan service company; off by default.
+VAT_ON_TOP = "vat_on_top"
+UNCOLLECTED = "uncollected_service"
+EXTRA_TYPES = (VAT_ON_TOP, UNCOLLECTED)
+ALL_TYPES = ERROR_TYPES + EXTRA_TYPES
+SUPPORTED_TYPES = frozenset(ALL_TYPES)
 # Published matcher tolerances in minor units of the finding currency.
-TOLERANCE_MINOR = {DUPLICATE: 0, ALLOCATION: 0, FX_RATE: 2, CUTOFF: 0}
+TOLERANCE_MINOR = {DUPLICATE: 0, ALLOCATION: 0, FX_RATE: 2, CUTOFF: 0, VAT_ON_TOP: 0, UNCOLLECTED: 0}
 
 FX_BOUNDARY = "fx_boundary_payment"
 FX_PARTIAL = "fx_partial_allocation"
@@ -64,6 +69,7 @@ class Config:
     acts: int = 40
     customers: int = 18
     foreign_percent: int = 20
+    goods_percent: int = 50
     vat: bool = True
     filler: int = 30
     errors: dict = field(default_factory=lambda: {kind: 1 for kind in ERROR_TYPES})
@@ -81,10 +87,11 @@ class Config:
         _int_in("acts", self.acts, 15, 80)
         _int_in("customers", self.customers, 5, 60)
         _int_in("foreign_percent", self.foreign_percent, 0, 50)
+        _int_in("goods_percent", self.goods_percent, 0, 80)
         if type(self.vat) is not bool:
             raise ValueError("vat: expected boolean")
         _int_in("filler", self.filler, 0, 400)
-        object.__setattr__(self, "errors", self._merge("errors", self.errors, ERROR_TYPES, 0))
+        object.__setattr__(self, "errors", self._merge("errors", self.errors, ALL_TYPES, 0))
         object.__setattr__(self, "interactions",
                            self._merge("interactions", self.interactions, INTERACTIONS, 0))
         object.__setattr__(self, "distractors",

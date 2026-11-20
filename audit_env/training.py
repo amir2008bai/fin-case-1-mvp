@@ -14,7 +14,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from .agents import create_policy, oracle
-from .contracts import Config
+from .contracts import EXTRA_TYPES, Config
 from .dataset import suite
 from .environment import AuditEnv
 from .generator import generate
@@ -35,10 +35,19 @@ def run(episode, policy, closed=False):
     return outcome, len(trace) - 1, seconds
 
 
+def augmented(config, index):
+    """Every other training episode also carries the real-practice error types."""
+    if index % 2 == 0:
+        return config
+    errors = dict(config.errors) | {kind: 1 for kind in EXTRA_TYPES}
+    return replace(config, errors=errors)
+
+
 def train(suite_path, output, *, seeds_per_config=12, seed=20261120):
     rng = random.Random(seed)
     configs = train_configs(suite_path)
-    episodes = [generate(rng.randrange(2**31), config) for _, config in configs for _ in range(seeds_per_config)]
+    episodes = [generate(rng.randrange(2**31), augmented(config, index))
+                for _, config in configs for index in range(seeds_per_config)]
     rows = defaultdict(list)
     for episode in episodes:
         for candidate, label in labelled(episode):
@@ -61,15 +70,18 @@ def train(suite_path, output, *, seeds_per_config=12, seed=20261120):
     return model
 
 
-def compare(model, suite_path, holdout_path, *, holdout_seed=99, key=b"micro-holdout-key"):
+def compare(model, suite_path, holdout_path, extended_path=None, *, holdout_seed=99, key=b"micro-holdout-key"):
     cases = [(split, case_id, category, seed, config) for split, case_id, category, seed, config in suite(suite_path)
              if split == "dev"]
     rng = random.Random(holdout_seed)
-    for split, case_id, category, _, config in suite(holdout_path):
-        cases.append((split, case_id, category, rng.randrange(2**31), config))
+    for path in (holdout_path, extended_path):
+        if path is None:
+            continue
+        for split, case_id, category, _, config in suite(path):
+            cases.append((split, case_id, category, rng.randrange(2**31), config))
     results = defaultdict(list)
     for split, case_id, category, seed, config in cases:
-        if split == "holdout":
+        if split != "dev":
             episode = generate(seed, replace(config, keyspace="secret"), key=key)
         else:
             episode = generate(seed, config)

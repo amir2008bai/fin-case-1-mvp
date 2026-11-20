@@ -11,19 +11,22 @@ import json
 import math
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from .agents import ScanPolicy, report
 from .checks import Auditor, kzt
 
-MODEL_VERSION = 2
-TYPES = ("duplicate_invoice", "payment_allocation", "fx_rate", "period_cutoff")
+MODEL_VERSION = 3
+FX_TOLERANCE = 2  # the published matcher tolerance for fx_rate, in minor units
+TYPES = ("duplicate_invoice", "payment_allocation", "fx_rate", "period_cutoff", "vat_on_top", "uncollected_service")
 FEATURES = {
+    "vat_on_top": ("bias", "extra_share", "has_extra", "vat_line_share", "paid_base_share"),
+    "uncollected_service": ("bias", "overdue", "renewed_after_due", "same_code_later", "overdue_months"),
     "duplicate_invoice": ("bias", "same_lines", "same_period", "issue_gap_days", "both_recognized", "line_count"),
     "payment_allocation": ("bias", "advance_share", "recognized_before", "expected_excess_share", "refs_count",
                            "foreign"),
-    "fx_rate": ("bias", "log_gap_correct", "log_gap_issue_or_wall", "is_payment", "booked_outside"),
+    "fx_rate": ("bias", "log_gap_correct", "log_gap_issue_or_wall", "is_payment", "booked_outside", "over_tolerance"),
     "period_cutoff": ("bias", "service_in_period", "issue_in_period", "instant_in_period", "wall_in_period",
                       "is_payment"),
 }
@@ -91,7 +94,47 @@ def candidates(tables, manifest, policy):
             at_issue = kzt(invoice["total_minor"], invoice["currency"], other["rate"], view.units)
             found.append(Candidate("fx_rate", (invoice["invoice_id"],), abs(posted - correct), base,
                                    (invoice["doc_id"], fx["fx_id"], *(row["row_id"] for row in revenue))[:10],
-                                   (1.0, log_gap(posted - correct), log_gap(posted - at_issue), 0.0, float(not service_in))))
+                                   (1.0, log_gap(posted - correct), log_gap(posted - at_issue), 0.0, float(not service_in),
+                                    float(abs(posted - correct) > FX_TOLERANCE))))
+    received = defaultdict(int)
+    for row in view.ledger:
+        if row["account"] == "1210" and row["credit_minor"] and row["invoice_id"]:
+            received[row["invoice_id"]] += row["credit_minor"]
+    for invoice in invoices:
+        lines = invoice["line_items"]
+        taxed = [line for line in lines if line["vat_rate"]]
+        if not taxed or invoice["currency"] != base:
+            continue
+        extra = sum(line["total_minor"] - line["quantity"] * line["unit_price_minor"] for line in lines)
+        vat_rows = [row["row_id"] for row in view.by_invoice[invoice["invoice_id"]]
+                    if row["account"] == "3130" and row["credit_minor"]]
+        total = invoice["total_minor"] or 1
+        base_amount = sum(line["quantity"] * line["unit_price_minor"] for line in lines) or 1
+        found.append(Candidate("vat_on_top", (invoice["invoice_id"],), max(extra, 0), invoice["currency"],
+                               (invoice["doc_id"], *vat_rows)[:10],
+                               (1.0, max(extra, 0) / total, float(extra > 0), len(taxed) / len(lines),
+                                min(received[invoice["invoice_id"]] / base_amount, 2.0))))
+    for invoice in invoices:
+        rows = view.by_invoice[invoice["invoice_id"]]
+        debits = [row for row in rows if row["account"] == "1210" and row["debit_minor"]]
+        if invoice["currency"] != base or not debits or received[invoice["invoice_id"]]:
+            continue
+        due = datetime.fromisoformat(invoice["due_at"])
+        codes = {line["service_code"] for line in invoice["line_items"]}
+        follows = {(line["service_code"], (date.fromisoformat(line["service_period_end"]) + timedelta(days=1)).isoformat())
+                   for line in invoice["line_items"]}
+        later = [other for other in invoices if other["invoice_id"] != invoice["invoice_id"]
+                 and other["entity_id"] == invoice["entity_id"]
+                 and codes & {line["service_code"] for line in other["line_items"]}
+                 and other["issued_at"] > invoice["issued_at"]]
+        renewals = [other for other in later if datetime.fromisoformat(other["issued_at"]) > due
+                    and follows & {(line["service_code"], line["service_period_start"]) for line in other["line_items"]}]
+        overdue_days = max(0, (view.end - due).days)
+        evidence = (invoice["doc_id"], *(item["doc_id"] for item in renewals[:1]), *(row["row_id"] for row in debits))
+        found.append(Candidate("uncollected_service", (invoice["invoice_id"],), invoice["total_minor"], base,
+                               evidence[:10],
+                               (1.0, float(due < view.end), float(bool(renewals)), float(bool(later)),
+                                min(overdue_days, 90) / 30)))
     for payment in view.payments.values():
         bank = view.bank_rows(payment["payment_id"])
         if not bank or payment["amount_minor"] <= 0:
@@ -112,7 +155,8 @@ def candidates(tables, manifest, policy):
             at_wall = kzt(payment["amount_minor"], payment["currency"], wall_fx["rate"], view.units)
             found.append(Candidate("fx_rate", (payment["payment_id"],), abs(debit - correct), base,
                                    (payment["doc_id"], fx["fx_id"], *(row["row_id"] for row in bank))[:10],
-                                   (1.0, log_gap(debit - correct), log_gap(debit - at_wall), 1.0, float(not instant_in))))
+                                   (1.0, log_gap(debit - correct), log_gap(debit - at_wall), 1.0, float(not instant_in),
+                                    float(abs(debit - correct) > FX_TOLERANCE))))
         advances = [row for row in view.by_payment[payment["payment_id"]]
                     if row["account"] == "3510" and row["credit_minor"]]
         refs = [ref for ref in payment["invoice_refs"] or () if ref in view.invoices]

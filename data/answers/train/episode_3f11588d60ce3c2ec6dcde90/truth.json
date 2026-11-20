@@ -1,0 +1,84 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_3f11588d60ce3c2ec6dcde90",
+  "issues": [
+    {
+      "issue_id": "issue_a2643e93bb3783fc36f3f74a",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "invoice_65ea9e7cad90a25669b28a63",
+        "invoice_763f65e0a1438986881c7ef7"
+      ],
+      "expected_amount_minor": 15000000,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_51bdabbedc934894b3c21780",
+          "doc_dec8b65018467a9e257bd187",
+          "row_374e535774c9208d1daf17ff",
+          "row_a8fcfb3c84cff499758c2a13"
+        ],
+        [
+          "doc_51bdabbedc934894b3c21780",
+          "doc_dec8b65018467a9e257bd187",
+          "row_adfbffeebb3bd03a2d70f8bb",
+          "row_1816d160f2a673bdce130215",
+          "row_89f5481e202151bbc36c7a93",
+          "row_4bccd073c4bf7bb4b9b9e824"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_51bdabbedc934894b3c21780",
+        "doc_dec8b65018467a9e257bd187",
+        "row_1816d160f2a673bdce130215",
+        "row_374e535774c9208d1daf17ff",
+        "row_4bccd073c4bf7bb4b9b9e824",
+        "row_86f371733664889a855f1822",
+        "row_89f5481e202151bbc36c7a93",
+        "row_a8fcfb3c84cff499758c2a13",
+        "row_adfbffeebb3bd03a2d70f8bb",
+        "row_c284d57548100ee35ff68e08"
+      ]
+    },
+    {
+      "issue_id": "issue_925e92f70b513e40016d143a",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "invoice_0027a1dc594b971709ee69ac",
+        "invoice_d0ccd57f1dc5808d33436ad5"
+      ],
+      "expected_amount_minor": 2000000,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_91b91178c38ea5897327314e",
+          "doc_9f68255c82518e3d1b6fce91",
+          "row_0818f0e149f561df210da99b",
+          "row_7d2850151316f128e42a1e75"
+        ],
+        [
+          "doc_91b91178c38ea5897327314e",
+          "doc_9f68255c82518e3d1b6fce91",
+          "row_0daba16339072473c9d6319a",
+          "row_640e53b63181818a79903be1",
+          "row_95c645b1d823c559ff2cdbc6",
+          "row_8d12439c517e77a3b70b1b04"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_91b91178c38ea5897327314e",
+        "doc_9f68255c82518e3d1b6fce91",
+        "row_071f13df80eb9606211e0279",
+        "row_0818f0e149f561df210da99b",
+        "row_0daba16339072473c9d6319a",
+        "row_58f3e081e42fea8b5b283e79",
+        "row_640e53b63181818a79903be1",
+        "row_7d2850151316f128e42a1e75",
+        "row_8d12439c517e77a3b70b1b04",
+        "row_95c645b1d823c559ff2cdbc6"
+      ]
+    }
+  ]
+}

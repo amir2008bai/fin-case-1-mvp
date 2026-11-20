@@ -1,0 +1,102 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_7f4d24b7e64ea937ab4c8993",
+  "issues": [
+    {
+      "issue_id": "issue_f85b6f539a904f62e60c11d0",
+      "type": "period_cutoff",
+      "affected_ids": [
+        "invoice_2b0e1923c94cdf318473d252"
+      ],
+      "expected_amount_minor": 10344828,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_eb742e09430f6099b8ec3443",
+          "row_41e0113f0669b7fb4c6352a7"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_eb742e09430f6099b8ec3443",
+        "row_30ddf88bc158ce698bd65b02",
+        "row_41e0113f0669b7fb4c6352a7",
+        "row_7ef8b977cfee7c7462d0c147",
+        "row_c6ff8c562e70369bd30b16af"
+      ]
+    },
+    {
+      "issue_id": "issue_00d872a7b3b80006271c6f8a",
+      "type": "payment_allocation",
+      "affected_ids": [
+        "payment_0074651f5e8e20285b6163d7"
+      ],
+      "expected_amount_minor": 31600800,
+      "currency": "KZT",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_4dae4c42e7af42d0dcbaf421",
+          "doc_e7b36393c79a80c3c24c12c5",
+          "row_94c3e7bfe86858d75f9241c4",
+          "row_16bbe0a0fc1ed8c932c26bf1"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_4dae4c42e7af42d0dcbaf421",
+        "doc_e7b36393c79a80c3c24c12c5",
+        "row_07799820249b8adfbabdfd6b",
+        "row_16bbe0a0fc1ed8c932c26bf1",
+        "row_7adff167dc124c17f3e7c609",
+        "row_94c3e7bfe86858d75f9241c4",
+        "row_c5ae83e9cf6a36c9c66029d1"
+      ]
+    },
+    {
+      "issue_id": "issue_c581362edcc20847a0dd46af",
+      "type": "fx_rate",
+      "affected_ids": [
+        "payment_0074651f5e8e20285b6163d7"
+      ],
+      "expected_amount_minor": 180000,
+      "currency": "KZT",
+      "tolerance_minor": 2,
+      "evidence_sets": [
+        [
+          "doc_4dae4c42e7af42d0dcbaf421",
+          "fx_44270f604d0a09b57109ca1d",
+          "row_94c3e7bfe86858d75f9241c4"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_4dae4c42e7af42d0dcbaf421",
+        "doc_e7b36393c79a80c3c24c12c5",
+        "fx_1893ffade5a1a2332efc64cf",
+        "fx_276b5f5e89b86f131a12eb24",
+        "fx_3c02f9bdf74e45a014a7672a",
+        "fx_44270f604d0a09b57109ca1d",
+        "fx_4483acef59b078bee0751787",
+        "fx_520353763e300ccb27861c8a",
+        "fx_6ae05208b3821456e3a391ba",
+        "fx_769826fc47185ee27ccada2b",
+        "fx_80d4af8cb0d2228b6291b97e",
+        "fx_8c05c117035a5aa8439c7d07",
+        "fx_8e192954fe25fa9070789b89",
+        "fx_9669c792f6471a8b767e0ec2",
+        "fx_a171dd024e84d8eee5befb71",
+        "fx_aaeb4116fa3e9bca822e5605",
+        "fx_ad21f4bbdc90803f5e898352",
+        "fx_b3b6aff91c777883574737b1",
+        "fx_d021803e3f6157153efb88e7",
+        "fx_d1845bb0033facc6cb3e74f0",
+        "fx_dc11a7864b00f1fc3dbd5ca4",
+        "fx_eceb46d407f3d4f85a8e04f7",
+        "row_07799820249b8adfbabdfd6b",
+        "row_16bbe0a0fc1ed8c932c26bf1",
+        "row_7adff167dc124c17f3e7c609",
+        "row_94c3e7bfe86858d75f9241c4",
+        "row_c5ae83e9cf6a36c9c66029d1"
+      ]
+    }
+  ]
+}

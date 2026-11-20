@@ -19,6 +19,9 @@ def restore_clean(episode):
     tables = deepcopy(episode.tables)
     tables["ledger"] = sorted(ledger.values(), key=lambda row: row["row_id"])
     tables["invoices"] = [row for row in tables["invoices"] if row["invoice_id"] not in removed_invoices]
+    originals = {item["before"]["invoice_id"]: item["before"] for change in episode.provenance["changes"]
+                 for item in change.get("documents_changed", ())}
+    tables["invoices"] = [originals.get(row["invoice_id"], row) for row in tables["invoices"]]
     if canonical_hash(tables["ledger"]) != episode.provenance["clean_ledger_sha256"]:
         raise ValueError("reverted ledger does not match the recorded clean ledger hash")
     manifest = deepcopy(episode.manifest)

@@ -1,0 +1,165 @@
+{
+  "schema_version": "2.0",
+  "generator_version": "2.0.0",
+  "episode_id": "episode_568b4aa4700ffe8d79d7768b",
+  "seed": 2026107,
+  "config": {
+    "keyspace": "open",
+    "presentation_seed": 0,
+    "month": 6,
+    "timezone": "+06:00",
+    "acts": 50,
+    "customers": 22,
+    "foreign_percent": 20,
+    "goods_percent": 50,
+    "vat": true,
+    "filler": 30,
+    "errors": {
+      "duplicate_invoice": 0,
+      "payment_allocation": 0,
+      "fx_rate": 0,
+      "period_cutoff": 2,
+      "vat_on_top": 0,
+      "uncollected_service": 0
+    },
+    "interactions": {
+      "fx_boundary_payment": 0,
+      "fx_partial_allocation": 0
+    },
+    "distractors": {
+      "split_payments": true,
+      "multi_act_payments": true,
+      "overpayments": true,
+      "prepayments": true,
+      "unreferenced_payments": true,
+      "opening_balances": true,
+      "late_acts": true,
+      "boundary_timestamps": true,
+      "repeated_amounts": true,
+      "refunds": true
+    }
+  },
+  "keyspace": "open",
+  "key_fingerprint": "4c251e205e774643",
+  "world": {
+    "summary": {
+      "acts.late": 2,
+      "acts.next_period": 3,
+      "acts.prior_open": 5,
+      "acts.regular": 40,
+      "documents.goods": 25,
+      "documents.service": 25,
+      "filler": 30,
+      "goods_deliveries": 6,
+      "opening_advances": 2,
+      "payments.after_period": 1,
+      "payments.boundary_inside": 2,
+      "payments.boundary_start": 1,
+      "payments.full": 25,
+      "payments.multi_act": 2,
+      "payments.refund": 1,
+      "payments.split": 3,
+      "payments.unreferenced": 6
+    },
+    "customers": 22,
+    "invoices": 50,
+    "payments": 41
+  },
+  "clean_ledger_sha256": "ff33abd44306d887d8cfefafd6c00b48fe420818ff9c2a98eeb5072b49d0141e",
+  "changes": [
+    {
+      "issue_ids": [
+        "issue_aac0f65fde3c1686159149ab"
+      ],
+      "scenario": "period_cutoff.receipt_after_end",
+      "causes": [
+        "Поступление после окончания периода проведено в периоде по дате в часовом поясе плательщика."
+      ],
+      "documents_added": [],
+      "documents_changed": [],
+      "before": [],
+      "after": [
+        {
+          "row_id": "row_0452d46c818ba6f0416054b6",
+          "timestamp": "2026-06-30T13:42:00+06:00",
+          "account": "1210",
+          "debit_minor": 0,
+          "credit_minor": 15000000,
+          "currency": "KZT",
+          "entity_id": "entity_632439943f26b8bc5aa5d9a7",
+          "invoice_id": "invoice_8685d9a5aae09b5e406e4842",
+          "payment_id": "payment_08adfe807ac5d5250030021c"
+        },
+        {
+          "row_id": "row_386499beca71b4f5517d2250",
+          "timestamp": "2026-06-30T13:42:00+06:00",
+          "account": "1030",
+          "debit_minor": 15000000,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_632439943f26b8bc5aa5d9a7",
+          "invoice_id": null,
+          "payment_id": "payment_08adfe807ac5d5250030021c"
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "issue_ef8e6183bd0307b78f0769cb"
+      ],
+      "scenario": "period_cutoff.act_next",
+      "causes": [
+        "Услуга следующего периода признана в выручке по дате выписки счёта."
+      ],
+      "documents_added": [],
+      "documents_changed": [],
+      "before": [],
+      "after": [
+        {
+          "row_id": "row_0131ade1bb09eb9ed62f21ae",
+          "timestamp": "2026-06-28T13:19:43+06:00",
+          "account": "6010",
+          "debit_minor": 0,
+          "credit_minor": 3448276,
+          "currency": "KZT",
+          "entity_id": "entity_e2c9af9999f0c16254257943",
+          "invoice_id": "invoice_6620903437b08bc4dc8eb7ec",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_121d5d778f24b2acc7477c76",
+          "timestamp": "2026-06-28T13:19:43+06:00",
+          "account": "1210",
+          "debit_minor": 3448276,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_e2c9af9999f0c16254257943",
+          "invoice_id": "invoice_6620903437b08bc4dc8eb7ec",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_75a78a0802728046d98137ce",
+          "timestamp": "2026-06-28T13:19:43+06:00",
+          "account": "1210",
+          "debit_minor": 551724,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_e2c9af9999f0c16254257943",
+          "invoice_id": "invoice_6620903437b08bc4dc8eb7ec",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_b72f6f363e2b93ebc98c9bfa",
+          "timestamp": "2026-06-28T13:19:43+06:00",
+          "account": "3130",
+          "debit_minor": 0,
+          "credit_minor": 551724,
+          "currency": "KZT",
+          "entity_id": "entity_e2c9af9999f0c16254257943",
+          "invoice_id": "invoice_6620903437b08bc4dc8eb7ec",
+          "payment_id": null
+        }
+      ]
+    }
+  ]
+}

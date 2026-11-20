@@ -22,7 +22,7 @@ def iso(moment, zone):
 class Presenter:
     def __init__(self, world, overrides, *, key, seed, config):
         self.world = world
-        self.acts = {**world.acts, **overrides.extra_acts}
+        self.acts = {**world.acts, **overrides.extra_acts, **overrides.replace_acts}
         self.salt = (seed, config.semantic_json(), config.presentation_seed)
         self.key = key
         self.rng = keys.stream(key, "presentation", *self.salt)
@@ -30,12 +30,21 @@ class Presenter:
         currencies = {BASE_CURRENCY} | {customer.currency for customer in world.customers.values()}
         self.currencies = sorted(currencies)
         self.numbers = {}
-        base = self.rng.randrange(100, 5000)
-        for index, act in enumerate(sorted(self.acts.values(), key=lambda item: (item.issued_at, item.key))):
-            self.numbers[act.key] = f"АВР-{base + index:05d}"
+        for kind, prefix in (("service", "АВР"), ("goods", "НК")):
+            base = self.rng.randrange(100, 5000)
+            ordered = sorted((act for act in self.acts.values() if act.kind == kind),
+                             key=lambda item: (item.issued_at, item.key))
+            for index, act in enumerate(ordered):
+                self.numbers[act.key] = f"{prefix}-{base + index:05d}"
         base = self.rng.randrange(100, 5000)
         for index, payment in enumerate(sorted(world.payments.values(), key=lambda item: (item.instant, item.key))):
             self.numbers[payment.key] = f"ПП-{base + index:05d}"
+        self.esf = {}  # electronic VAT invoices (ЭСФ) accompany every invoice with VAT
+        base = self.rng.randrange(1000, 90000)
+        taxed = sorted((act for act in self.acts.values() if any(line.vat_minor for line in act.lines)),
+                       key=lambda item: (item.issued_at, item.key))
+        for index, act in enumerate(taxed):
+            self.esf[act.key] = f"ЭСФ-{base + index:06d}"
 
     def oid(self, kind, internal):
         return keys.opaque(self.key, kind, *self.salt, internal)
@@ -149,8 +158,16 @@ class Presenter:
                                 f"Согласно счёту на оплату {cited}. {acts[0].lines[0].description}"))
 
     def invoice_document(self, act):
-        return self.invoice_row(act) | {
+        if act.kind == "goods":
+            title = "Накладная на отпуск запасов на сторону (форма З-2)"
+        elif act.currency != BASE_CURRENCY:
+            title = "Акт оказанных услуг (экспорт услуг)"
+        else:
+            title = "Акт выполненных работ (оказанных услуг) (форма Р-1)"
+        document = self.invoice_row(act) | {
             "doc_type": "invoice",
+            "document_kind": "waybill" if act.kind == "goods" else "act",
+            "title": title,
             "number": self.numbers[act.key],
             "customer": self.counterparty(act.customer),
             "contract": act.contract,
@@ -158,6 +175,11 @@ class Presenter:
             "vat_minor": sum(line.vat_minor for line in act.lines),
             "status": "confirmed",
         }
+        if act.key in self.esf:
+            document["vat_invoice"] = {"type": "ЭСФ", "number": self.esf[act.key],
+                                       "date": act.issued_at.astimezone(self.world.tz).date().isoformat(),
+                                       "vat_minor": document["vat_minor"]}
+        return document
 
     def payment_document(self, payment):
         row = self.payment_row(payment)
@@ -244,7 +266,7 @@ def build_provenance(view, world, clean_rows, rows, overrides, specs, issues, se
     for spec, issue in zip(specs, issues):
         group = groups.setdefault(spec.group, {"issue_ids": [], "scenario": spec.scenario, "causes": [],
                                                "targets": set(), "before": [], "after": [],
-                                               "documents_added": []})
+                                               "documents_added": [], "documents_changed": []})
         group["issue_ids"].append(issue.issue_id)
         group["causes"].append(spec.cause)
         group["targets"] |= set(spec.acts) | set(spec.payments)
@@ -261,6 +283,10 @@ def build_provenance(view, world, clean_rows, rows, overrides, specs, issues, se
     for act in overrides.extra_acts.values():
         owners = [group for group in groups.values() if act.key in group["targets"]]
         owners[0]["documents_added"].append({"doc_id": view.doc(act.key), "invoice_id": view.invoice(act.key)})
+    for act_key, act in overrides.replace_acts.items():
+        owners = [group for group in groups.values() if act_key in group["targets"]]
+        owners[0]["documents_changed"].append({"before": view.invoice_row(world.acts[act_key]),
+                                               "after": view.invoice_row(act)})
     changes = []
     for number in sorted(groups):
         group = groups[number]
@@ -269,6 +295,7 @@ def build_provenance(view, world, clean_rows, rows, overrides, specs, issues, se
             "scenario": group["scenario"],
             "causes": group["causes"],
             "documents_added": group["documents_added"],
+            "documents_changed": group["documents_changed"],
             "before": sorted(group["before"], key=lambda item: item["row_id"]),
             "after": sorted(group["after"], key=lambda item: item["row_id"]),
         })

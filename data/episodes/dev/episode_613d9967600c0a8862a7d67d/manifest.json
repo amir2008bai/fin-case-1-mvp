@@ -1,0 +1,35 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_613d9967600c0a8862a7d67d",
+  "company": {
+    "name": "ТОО «Достык Групп»",
+    "country": "KZ"
+  },
+  "base_currency": "KZT",
+  "period_start": "2026-07-01T00:00:00+06:00",
+  "period_end": "2026-08-01T00:00:00+06:00",
+  "timezone": "+06:00",
+  "counts": {
+    "ledger": 271,
+    "invoices": 30,
+    "payments": 29,
+    "fx": 83
+  },
+  "document_count": 59,
+  "minor_units": {
+    "KZT": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "ROUND_HALF_UP",
+    "fx": "per converted amount",
+    "vat": "per line, included in price"
+  },
+  "id_fields": {
+    "ledger": "row_id",
+    "invoices": "invoice_id",
+    "payments": "payment_id",
+    "fx": "fx_id",
+    "documents": "doc_id"
+  }
+}

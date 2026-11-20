@@ -9,7 +9,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
-from .contracts import ALLOCATION, CUTOFF, DUPLICATE, FX_BOUNDARY, FX_PARTIAL, FX_RATE
+from .contracts import ALLOCATION, CUTOFF, DUPLICATE, FX_BOUNDARY, FX_PARTIAL, FX_RATE, UNCOLLECTED, VAT_ON_TOP
 from .domain import BASE_CURRENCY, FOREIGN_CURRENCIES
 from .fx import build_rates, convert
 
@@ -26,6 +26,16 @@ CATALOG = (
     ("TRN", "Обучение пользователей", True, False, (15_000, 20_000, 36_000)),
     ("DEV", "Доработка конфигурации", True, False, (40_000, 80_000, 120_000)),
 )
+GOODS = (
+    # code, description, unit prices in KZT, cost share of the net price
+    ("G-KKM", "Онлайн-ККМ (кассовый аппарат)", (85_000, 98_000, 120_000), 70),
+    ("G-POS", "POS-терминал", (110_000, 135_000), 75),
+    ("G-SCN", "Сканер штрихкода", (18_000, 25_000, 32_000), 62),
+    ("G-PRN", "Принтер чеков", (39_000, 45_000, 52_000), 66),
+    ("G-LBL", "Принтер этикеток", (55_000, 68_000), 68),
+    ("G-TAP", "Термолента для ККМ (рулон)", (350, 420, 500), 55),
+    ("G-DRW", "Денежный ящик", (21_000, 26_000), 60),
+)
 FOREIGN_SERVICE = ("EXP", "Сопровождение ПО (экспорт услуг)")
 FOREIGN_PRICES = {"USD": (150, 300, 450, 600, 900, 1_200), "RUB": (15_000, 30_000, 45_000, 90_000, 120_000)}
 COUNTRY_OF = {"USD": "KG", "RUB": "RU"}
@@ -36,7 +46,8 @@ NAME_B = ("Сервис", "Строй", "Трейд", "Учёт", "Групп", 
           "Систем", "Консалт", "Медиа", "Агро", "Техно", "Сауда", "Курылыс")
 FORMS = {"KZ": ("ТОО", "ТОО", "ИП", "ОСИ", "АО"), "KG": ("ОсОО",), "RU": ("ООО",)}
 MANAGERS = ("Ахметова Д.", "Сейткали А.", "Иванова О.", "Нурланов Е.", "Ким С.")
-SUPPLIERS = ("ТОО «Облачный хостинг»", "ТОО «Связь Плюс»", "ИП «Офис Сервис»", "ТОО «Рекрутинг Онлайн»")
+SUPPLIERS = ("ТОО «Облачный хостинг»", "ТОО «Связь Плюс»", "ИП «Офис Сервис»", "ТОО «Рекрутинг Онлайн»",
+             "ТОО «Кассовое Оборудование»")
 SHOWN_OFFSETS = ("-05:00", "+00:00", "+03:00", "+05:00", "+06:00", "+09:00")
 
 
@@ -55,10 +66,16 @@ class Line:
     vat_rate: str | None
     period_start: date
     period_end: date
+    cost_minor: int = 0          # goods only: cost of the shipped quantity
+    vat_on_top: bool = False     # an error: VAT added on top of the agreed price
+
+    @property
+    def base_minor(self):
+        return self.quantity * self.unit_price_minor
 
     @property
     def total_minor(self):
-        return self.quantity * self.unit_price_minor
+        return self.base_minor + (self.vat_minor if self.vat_on_top else 0)
 
     @property
     def vat_minor(self):
@@ -66,7 +83,9 @@ class Line:
         if self.vat_rate is None:
             return 0
         rate = Decimal(self.vat_rate)
-        return int((Decimal(self.total_minor) * rate / (1 + rate)).quantize(Decimal(1), ROUND_HALF_UP))
+        if self.vat_on_top:
+            return int((Decimal(self.base_minor) * rate).quantize(Decimal(1), ROUND_HALF_UP))
+        return int((Decimal(self.base_minor) * rate / (1 + rate)).quantize(Decimal(1), ROUND_HALF_UP))
 
     @property
     def net_minor(self):
@@ -84,6 +103,7 @@ class Act:
     manager: str
     contract: str
     origin: str
+    kind: str = "service"  # "service" (act of completed works) or "goods" (waybill)
 
     @property
     def service_start(self):
@@ -153,6 +173,7 @@ class World:
     fx_last: date
     candidates: dict = field(default_factory=dict)
     summary: Counter = field(default_factory=Counter)
+    opening_inventory_minor: int = 0
 
     def local_date(self, instant):
         return instant.astimezone(self.tz).date()
@@ -185,8 +206,11 @@ class Builder:
         self.fillers, self.opening_advances = [], {}
         self.names, self.busy, self.reserved = set(), set(), set()
         self.paid = Counter()
+        self.settled = set()
+        self.starts, self.nexts = set(), set()
         self.summary = Counter()
-        self.candidates = {"dup": [], "alloc": [], "fx": [], "cut": [], FX_BOUNDARY: [], FX_PARTIAL: []}
+        self.candidates = {"dup": [], "alloc": [], "fx": [], "cut": [], FX_BOUNDARY: [], FX_PARTIAL: [],
+                           "vat": [], "uncollected": []}
         self.rates = build_rates(rng, FOREIGN_CURRENCIES, self.first - timedelta(days=FX_LEAD_DAYS),
                                  self.last + timedelta(days=FX_TAIL_DAYS))
         self.opening_bank = 0
@@ -218,8 +242,29 @@ class Builder:
         self.customers[key] = Customer(key, self.name(country), country, currency)
         return key
 
-    def lines_for(self, customer, service_end, count):
+    def goods_lines(self, service_end, count):
+        lines, codes = [], set()
+        for _ in range(count):
+            code, text, prices, share = self.rng.choice(GOODS)
+            if code in codes:
+                continue
+            codes.add(code)
+            quantity = self.rng.randrange(10, 101, 10) if code == "G-TAP" else self.rng.choice((1, 1, 1, 2, 3, 5))
+            price = self.rng.choice(prices) * 100
+            vat = "0.16" if self.config.vat else None
+            probe = Line(0, code, text, quantity, price, vat, service_end, service_end)
+            cost = probe.net_minor * share // 100
+            lines.append((code, text, quantity, price, vat, service_end, service_end, cost))
+        return lines
+
+    def lines_for(self, customer, service_end, count, kind="service", code=None):
         currency = self.customers[customer].currency
+        if kind == "goods":
+            return self.goods_lines(service_end, count)
+        if code is not None:
+            item = next(entry for entry in CATALOG if entry[0] == code)
+            vat = "0.16" if item[2] and self.config.vat else None
+            return [(code, item[1], 1, self.rng.choice(item[4]) * 100, vat, service_end - timedelta(days=29), service_end)]
         if currency != BASE_CURRENCY:
             price = self.rng.choice(FOREIGN_PRICES[currency]) * 100
             begin = service_end - timedelta(days=self.rng.choice((0, 6, 13, 29)))
@@ -235,12 +280,18 @@ class Builder:
             lines.append((code, text, 1, self.rng.choice(prices) * 100, vat, begin, service_end))
         return lines
 
-    def new_act(self, customer, origin, service_end, issued_at=None, lines=1, max_lag=7):
+    def new_act(self, customer, origin, service_end, issued_at=None, lines=1, max_lag=7, kind="service",
+                code=None, due_days=None):
         for _ in range(60):
-            items = tuple(Line(index, *values)
-                          for index, values in enumerate(self.lines_for(customer, service_end, lines), 1))
+            items = tuple(Line(index, *values) for index, values in
+                          enumerate(self.lines_for(customer, service_end, lines, kind, code), 1))
             marks = {(customer, line.service_code, line.period_start, line.period_end) for line in items}
-            if not marks & self.busy:
+            starts = {(customer, line.service_code, line.period_start) for line in items}
+            nexts = {(customer, line.service_code, line.period_end + timedelta(days=1)) for line in items}
+            # never a back-to-back renewal by accident: those are reserved for the uncollected scenario
+            if not marks & self.busy and not starts & self.nexts and not nexts & self.starts:
+                self.starts |= starts
+                self.nexts |= nexts
                 break
             service_end += timedelta(days=-1 if self.rng.randrange(2) else 1)
         else:
@@ -255,10 +306,11 @@ class Builder:
             contract = f"Договор № {self.rng.randrange(1, 400)} от {signed.isoformat()}"
         else:
             contract = "Публичная оферта"
-        act = Act(key, customer, self.customers[customer].currency, issued_at, self.rng.choice((10, 14, 30)),
-                  items, self.rng.choice(MANAGERS), contract, origin)
+        act = Act(key, customer, self.customers[customer].currency, issued_at,
+                  due_days or self.rng.choice((10, 14, 30)), items, self.rng.choice(MANAGERS), contract, origin, kind)
         self.acts[key] = act
         self.summary[f"acts.{origin}"] += 1
+        self.summary[f"documents.{kind}"] += 1
         return act
 
     def shown(self, customer):
@@ -278,8 +330,12 @@ class Builder:
         self.payments[key] = payment
         for ref in refs or ():
             self.paid[ref] += 1
+            if instant < self.end:
+                self.settled.add(ref)
         if match_act:
             self.paid[match_act] += 1
+            if match_at < self.end:
+                self.settled.add(match_act)
         self.summary[f"payments.{kind}"] += 1
         return payment
 
@@ -309,9 +365,14 @@ class Builder:
         upcoming = max(1, round(config.acts * 0.05)) if self.on["prepayments"] else 0
         regular = max(6, config.acts - dedicated - prior - late - upcoming)
         foreign_regular = round(regular * config.foreign_percent / 100) if self.foreign else 0
+        # goods_percent is the share of ALL invoices of the episode that are waybills for goods
+        planned = dedicated + regular + prior + late + upcoming
+        dedicated_goods = sum(act.kind == "goods" for act in self.acts.values())
+        goods = min(regular - foreign_regular, max(0, round(planned * config.goods_percent / 100) - dedicated_goods))
         for index in range(regular):
             pool = self.foreign if index < foreign_regular else self.domestic
-            self.regular_act(self.rng.choice(pool))
+            kind = "goods" if foreign_regular <= index < foreign_regular + goods else "service"
+            self.regular_act(self.rng.choice(pool), kind=kind)
         for _ in range(prior):
             self.prior_act(self.rng.choice(self.domestic))
         for _ in range(late):
@@ -328,22 +389,44 @@ class Builder:
         self.multi_act_payments()
         self.opening()
         self.boundaries()
+        self.collect_overdue_renewed()
         self.filler()
-        return World(self.start, self.end, self.tz, self.tz_text, self.name("KZ"), self.customers,
-                     self.acts, self.payments, self.opening_advances, self.opening_bank,
-                     self.fillers, {f"S{index}": name for index, name in enumerate(SUPPLIERS)},
-                     self.rates, self.first - timedelta(days=FX_LEAD_DAYS),
-                     self.last + timedelta(days=FX_TAIL_DAYS), self.candidates, self.summary)
+        goods_cost = sum(line.cost_minor for act in self.acts.values() for line in act.lines)
+        world = World(self.start, self.end, self.tz, self.tz_text, self.name("KZ"), self.customers,
+                      self.acts, self.payments, self.opening_advances, self.opening_bank,
+                      self.fillers, {f"S{index}": name for index, name in enumerate(SUPPLIERS)},
+                      self.rates, self.first - timedelta(days=FX_LEAD_DAYS),
+                      self.last + timedelta(days=FX_TAIL_DAYS), self.candidates, self.summary)
+        world.opening_inventory_minor = 2 * goods_cost if goods_cost else 0
+        return world
 
-    def regular_act(self, customer, *, lines=None, target=False):
+    def collect_overdue_renewed(self):
+        """Clean books never renew a service for a customer whose earlier invoice is overdue and unpaid."""
+        by_customer = {}
+        for act in self.acts.values():
+            by_customer.setdefault(act.customer, []).append(act)
+        for act in list(self.acts.values()):
+            if (act.key in self.reserved or act.key in self.settled or act.currency != BASE_CURRENCY
+                    or act.due_at >= self.end or self.recognized(act) >= self.end):
+                continue
+            follows = {(line.service_code, line.period_end + timedelta(days=1)) for line in act.lines}
+            renewed = any(other.key != act.key and other.issued_at > act.due_at
+                          and follows & {(line.service_code, line.period_start) for line in other.lines}
+                          for other in by_customer[act.customer])
+            if renewed:
+                base = max(self.recognized(act), act.issued_at, self.start) + timedelta(hours=2)
+                if base < self.end:
+                    self.pay(act.customer, act.total_minor, base, [act.key], "full")
+
+    def regular_act(self, customer, *, lines=None, target=False, kind="service"):
         currency = self.customers[customer].currency
         count = lines or (2 if currency == BASE_CURRENCY and self.chance(18) else 1)
         if target:
             service_end = self.day_between(self.first, self.last - timedelta(days=7))
-            act = self.new_act(customer, "regular", service_end, lines=count, max_lag=2)
+            act = self.new_act(customer, "regular", service_end, lines=count, max_lag=2, kind=kind)
             self.reserved.add(act.key)
             return act
-        act = self.new_act(customer, "regular", self.day_between(self.first, self.last), lines=count)
+        act = self.new_act(customer, "regular", self.day_between(self.first, self.last), lines=count, kind=kind)
         self.receipts_for(act)
         return act
 
@@ -453,6 +536,18 @@ class Builder:
             act = self.regular_act(self.rng.choice(foreign), target=True)
             payment = self.full_in_period(act, distinct_rate=True)
             self.candidates[FX_PARTIAL].append((act.key, payment.key))
+        for _ in range(errors[VAT_ON_TOP]):
+            kind = "goods" if self.config.goods_percent and self.chance(50) else "service"
+            act = self.regular_act(self.rng.choice(domestic), target=True, kind=kind)
+            payment = self.full_in_period(act)  # the customer pays the agreed price
+            self.candidates["vat"].append((act.key, payment.key))
+        for _ in range(errors[UNCOLLECTED]):
+            customer = self.new_customer(BASE_CURRENCY)  # dedicated: no other documents of this customer
+            service_end = self.day_between(self.first, self.first + timedelta(days=6))
+            act = self.new_act(customer, "regular", service_end, lines=1, max_lag=1,
+                               code=self.rng.choice(("SUB", "SUP")), due_days=10)
+            self.reserved.add(act.key)
+            self.candidates["uncollected"].append(act.key)
 
     def gap(self, amount, currency, first_day, second_day):
         return abs(convert(amount, currency, self.rates[(first_day, currency)])
@@ -564,6 +659,15 @@ class Builder:
                 item = Filler(f"F{index:03d}", at, "3310", "1030", self.rng.randrange(5_000, 300_000) * 100, supplier)
             self.fillers.append(item)
         self.summary["filler"] = self.config.filler
+        goods_acts = sum(act.kind == "goods" for act in self.acts.values())
+        for index in range(max(2, goods_acts // 4) if goods_acts else 0):  # supplier deliveries of goods
+            at = self.moment(self.day_between(self.first, self.last), 9, 17)
+            net = self.rng.randrange(200_000, 2_000_000) * 100
+            supplier = f"S{len(SUPPLIERS) - 1}"
+            self.fillers.append(Filler(f"G{index:03d}", at, "1330", "3310", net, supplier))
+            if self.config.vat:
+                self.fillers.append(Filler(f"G{index:03d}V", at, "1420", "3310", net * 16 // 100, supplier))
+        self.summary["goods_deliveries"] = max(2, goods_acts // 4) if goods_acts else 0
 
 
 def build(rng, config, extra_filler=0):

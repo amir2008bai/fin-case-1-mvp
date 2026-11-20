@@ -4,7 +4,7 @@
     "case_id": "train-01",
     "category": "clean",
     "seed": 2026001,
-    "episode_id": "episode_269a2ea4b8e1c792cebc1906",
+    "episode_id": "episode_91af9ac5d37d95ffbdbf261e",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -13,13 +13,16 @@
       "acts": 30,
       "customers": 14,
       "foreign_percent": 15,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -45,7 +48,7 @@
     "case_id": "train-02",
     "category": "clean",
     "seed": 2026002,
-    "episode_id": "episode_cde7d373e3fced01f816a21e",
+    "episode_id": "episode_45ad72b49268cd41bd245014",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -54,13 +57,16 @@
       "acts": 55,
       "customers": 25,
       "foreign_percent": 25,
+      "goods_percent": 50,
       "vat": false,
       "filler": 40,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -86,7 +92,7 @@
     "case_id": "train-03",
     "category": "clean",
     "seed": 2026003,
-    "episode_id": "episode_6b80288caf9514dffdbb4c20",
+    "episode_id": "episode_b8eff533d8baf13868ea4130",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -95,13 +101,16 @@
       "acts": 20,
       "customers": 8,
       "foreign_percent": 10,
+      "goods_percent": 50,
       "vat": true,
       "filler": 20,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -127,7 +136,7 @@
     "case_id": "train-04",
     "category": "single:duplicate_invoice",
     "seed": 2026004,
-    "episode_id": "episode_b4525cfcb31a4fd324ae0ac8",
+    "episode_id": "episode_3f11588d60ce3c2ec6dcde90",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -136,13 +145,16 @@
       "acts": 40,
       "customers": 18,
       "foreign_percent": 20,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 2,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -168,7 +180,7 @@
     "case_id": "train-05",
     "category": "single:payment_allocation",
     "seed": 2026005,
-    "episode_id": "episode_89d37635b8eedefdb6e035c5",
+    "episode_id": "episode_34f734234be625670829b619",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -177,13 +189,16 @@
       "acts": 45,
       "customers": 20,
       "foreign_percent": 15,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 2,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -209,7 +224,7 @@
     "case_id": "train-06",
     "category": "single:fx_rate",
     "seed": 2026006,
-    "episode_id": "episode_9060da2d6348d6ea1b91102f",
+    "episode_id": "episode_a64cecf376296d96cf8aae4a",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -218,13 +233,16 @@
       "acts": 35,
       "customers": 16,
       "foreign_percent": 35,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 2,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -250,7 +268,7 @@
     "case_id": "train-07",
     "category": "single:period_cutoff",
     "seed": 2026007,
-    "episode_id": "episode_d8383ab895d6e2585170e89d",
+    "episode_id": "episode_93a862f119b8a7e11ac207dd",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -259,13 +277,16 @@
       "acts": 50,
       "customers": 22,
       "foreign_percent": 20,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 2
+        "period_cutoff": 2,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -291,7 +312,7 @@
     "case_id": "train-08",
     "category": "multi",
     "seed": 2026008,
-    "episode_id": "episode_803889ff221585b0de007eb9",
+    "episode_id": "episode_7485ac2855fc509cfa35096b",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -300,13 +321,16 @@
       "acts": 60,
       "customers": 28,
       "foreign_percent": 25,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 1,
         "payment_allocation": 1,
         "fx_rate": 1,
-        "period_cutoff": 1
+        "period_cutoff": 1,
+        "vat_on_top": 1,
+        "uncollected_service": 1
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -325,14 +349,14 @@
         "refunds": true
       }
     },
-    "issues": 4
+    "issues": 6
   },
   {
     "split": "train",
     "case_id": "train-09",
     "category": "interacting",
     "seed": 2026009,
-    "episode_id": "episode_2a61ba849941b49f16858356",
+    "episode_id": "episode_b3194cca8043452deb3c6ce6",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -341,13 +365,16 @@
       "acts": 40,
       "customers": 18,
       "foreign_percent": 30,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 1,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 1,
@@ -373,7 +400,7 @@
     "case_id": "train-10",
     "category": "interacting",
     "seed": 2026010,
-    "episode_id": "episode_a42c926cdb632a18960b6764",
+    "episode_id": "episode_7f4d24b7e64ea937ab4c8993",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -382,13 +409,16 @@
       "acts": 50,
       "customers": 24,
       "foreign_percent": 30,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 1
+        "period_cutoff": 1,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -414,7 +444,7 @@
     "case_id": "dev-01",
     "category": "clean",
     "seed": 2026101,
-    "episode_id": "episode_51e4d889982bc69d85bf2c05",
+    "episode_id": "episode_613d9967600c0a8862a7d67d",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -423,13 +453,16 @@
       "acts": 30,
       "customers": 14,
       "foreign_percent": 15,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -455,7 +488,7 @@
     "case_id": "dev-02",
     "category": "clean",
     "seed": 2026102,
-    "episode_id": "episode_87370eb311396dd558d7a287",
+    "episode_id": "episode_6c3c4a56caf575ef925d8978",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -464,13 +497,16 @@
       "acts": 55,
       "customers": 25,
       "foreign_percent": 25,
+      "goods_percent": 50,
       "vat": false,
       "filler": 40,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -496,7 +532,7 @@
     "case_id": "dev-03",
     "category": "clean",
     "seed": 2026103,
-    "episode_id": "episode_c82de097aef4ff1e54a90926",
+    "episode_id": "episode_89f18f1164e8a809b0551497",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -505,13 +541,16 @@
       "acts": 20,
       "customers": 8,
       "foreign_percent": 10,
+      "goods_percent": 50,
       "vat": true,
       "filler": 20,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -537,7 +576,7 @@
     "case_id": "dev-04",
     "category": "single:duplicate_invoice",
     "seed": 2026104,
-    "episode_id": "episode_dfaf5e6b2ca9622b38c20c70",
+    "episode_id": "episode_b8308eb1503d011e1a0342e8",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -546,13 +585,16 @@
       "acts": 40,
       "customers": 18,
       "foreign_percent": 20,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 2,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -578,7 +620,7 @@
     "case_id": "dev-05",
     "category": "single:payment_allocation",
     "seed": 2026105,
-    "episode_id": "episode_26df6a13991b456aeb4672df",
+    "episode_id": "episode_efca5ddb526baa3b5d9762d4",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -587,13 +629,16 @@
       "acts": 45,
       "customers": 20,
       "foreign_percent": 15,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 2,
         "fx_rate": 0,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -619,7 +664,7 @@
     "case_id": "dev-06",
     "category": "single:fx_rate",
     "seed": 2026106,
-    "episode_id": "episode_097783abf32cd518ac065027",
+    "episode_id": "episode_3849afe91d20c6f628e624fe",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -628,13 +673,16 @@
       "acts": 35,
       "customers": 16,
       "foreign_percent": 35,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 2,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -660,7 +708,7 @@
     "case_id": "dev-07",
     "category": "single:period_cutoff",
     "seed": 2026107,
-    "episode_id": "episode_b630867fd2f44e423a36df3b",
+    "episode_id": "episode_568b4aa4700ffe8d79d7768b",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -669,13 +717,16 @@
       "acts": 50,
       "customers": 22,
       "foreign_percent": 20,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 2
+        "period_cutoff": 2,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -701,7 +752,7 @@
     "case_id": "dev-08",
     "category": "multi",
     "seed": 2026108,
-    "episode_id": "episode_68a236893d42e730f85f28b9",
+    "episode_id": "episode_7d1d96bc18a702c8d88f5ef4",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -710,13 +761,16 @@
       "acts": 60,
       "customers": 28,
       "foreign_percent": 25,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 1,
         "payment_allocation": 1,
         "fx_rate": 1,
-        "period_cutoff": 1
+        "period_cutoff": 1,
+        "vat_on_top": 1,
+        "uncollected_service": 1
       },
       "interactions": {
         "fx_boundary_payment": 0,
@@ -735,14 +789,14 @@
         "refunds": true
       }
     },
-    "issues": 4
+    "issues": 6
   },
   {
     "split": "dev",
     "case_id": "dev-09",
     "category": "interacting",
     "seed": 2026109,
-    "episode_id": "episode_06111061d4411b35eab813a1",
+    "episode_id": "episode_4463d574f78e7ca4cae03f2b",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -751,13 +805,16 @@
       "acts": 40,
       "customers": 18,
       "foreign_percent": 30,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 1,
-        "period_cutoff": 0
+        "period_cutoff": 0,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 1,
@@ -783,7 +840,7 @@
     "case_id": "dev-10",
     "category": "interacting",
     "seed": 2026110,
-    "episode_id": "episode_e7fbe427acf4a3cece26fdbf",
+    "episode_id": "episode_976fada7d66815e8ba960fab",
     "config": {
       "keyspace": "open",
       "presentation_seed": 0,
@@ -792,13 +849,16 @@
       "acts": 50,
       "customers": 24,
       "foreign_percent": 30,
+      "goods_percent": 50,
       "vat": true,
       "filler": 30,
       "errors": {
         "duplicate_invoice": 0,
         "payment_allocation": 0,
         "fx_rate": 0,
-        "period_cutoff": 1
+        "period_cutoff": 1,
+        "vat_on_top": 0,
+        "uncollected_service": 0
       },
       "interactions": {
         "fx_boundary_payment": 0,

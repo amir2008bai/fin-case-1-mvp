@@ -44,6 +44,12 @@
       "minimum": 0,
       "maximum": 50
     },
+    "goods_percent": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 80,
+      "description": "share of all invoices that are waybills for goods"
+    },
     "vat": {
       "type": "boolean"
     },
@@ -71,6 +77,16 @@
           "maximum": 6
         },
         "period_cutoff": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "vat_on_top": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "uncollected_service": {
           "type": "integer",
           "minimum": 0,
           "maximum": 6

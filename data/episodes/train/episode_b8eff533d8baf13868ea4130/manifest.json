@@ -1,0 +1,35 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_b8eff533d8baf13868ea4130",
+  "company": {
+    "name": "ИП «Дала Групп»",
+    "country": "KZ"
+  },
+  "base_currency": "KZT",
+  "period_start": "2026-11-01T00:00:00+03:00",
+  "period_end": "2026-12-01T00:00:00+03:00",
+  "timezone": "+03:00",
+  "counts": {
+    "ledger": 220,
+    "invoices": 20,
+    "payments": 18,
+    "fx": 82
+  },
+  "document_count": 38,
+  "minor_units": {
+    "KZT": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "ROUND_HALF_UP",
+    "fx": "per converted amount",
+    "vat": "per line, included in price"
+  },
+  "id_fields": {
+    "ledger": "row_id",
+    "invoices": "invoice_id",
+    "payments": "payment_id",
+    "fx": "fx_id",
+    "documents": "doc_id"
+  }
+}

@@ -6,11 +6,12 @@ It is written from policy.json, not from the generator or scenario code:
 - on user-supplied documents (no truth) it is a deterministic auditor.
 """
 from collections import defaultdict
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-TYPES = ("duplicate_invoice", "payment_allocation", "fx_rate", "period_cutoff")
-TOLERANCE = {"duplicate_invoice": 0, "payment_allocation": 0, "fx_rate": 2, "period_cutoff": 0}
+TYPES = ("duplicate_invoice", "payment_allocation", "fx_rate", "period_cutoff", "vat_on_top", "uncollected_service")
+TOLERANCE = {"duplicate_invoice": 0, "payment_allocation": 0, "fx_rate": 2, "period_cutoff": 0,
+             "vat_on_top": 0, "uncollected_service": 0}
 BANK, RECEIVABLE, ADVANCES, REVENUE = "1030", "1210", "3510", "6010"
 
 
@@ -78,6 +79,49 @@ class Auditor:
         found += self.duplicate_checks()
         found += self.payment_checks()
         found += self.allocation_checks()
+        found += self.vat_checks()
+        found += self.uncollected_checks()
+        return found
+
+    def vat_checks(self):
+        """Prices include VAT: a line total above quantity × unit price means VAT was added on top."""
+        found = []
+        for invoice_id in sorted(self.invoices):
+            invoice = self.invoices[invoice_id]
+            extra = sum(line["total_minor"] - line["quantity"] * line["unit_price_minor"]
+                        for line in invoice["line_items"])
+            if extra <= 0:
+                continue
+            vat_rows = [row["row_id"] for row in self.by_invoice[invoice_id] if row["account"] == "3130" and row["credit_minor"]]
+            found.append(finding("vat_on_top", [invoice_id], extra, invoice["currency"],
+                                 [invoice["doc_id"], *vat_rows],
+                                 "НДС начислен сверху цены, а по условиям цена включает НДС."))
+        return found
+
+    def uncollected_checks(self):
+        """An overdue invoice with no payment at all, and the same service renewed for the customer after the due date."""
+        found = []
+        for invoice_id in sorted(self.invoices):
+            invoice = self.invoices[invoice_id]
+            rows = self.by_invoice[invoice_id]
+            debit = sum(row["debit_minor"] for row in rows if row["account"] == RECEIVABLE)
+            credit = sum(row["credit_minor"] for row in rows if row["account"] == RECEIVABLE)
+            due = datetime.fromisoformat(invoice["due_at"])
+            if invoice["currency"] != self.base or debit != invoice["total_minor"] or credit or debit == 0 or due >= self.end:
+                continue
+            follows = {(line["service_code"], (date.fromisoformat(line["service_period_end"]) + timedelta(days=1)).isoformat())
+                       for line in invoice["line_items"]}
+            renewals = sorted((other for other in self.invoices.values()
+                               if other["invoice_id"] != invoice_id and other["entity_id"] == invoice["entity_id"]
+                               and datetime.fromisoformat(other["issued_at"]) > due
+                               and follows & {(line["service_code"], line["service_period_start"])
+                                              for line in other["line_items"]}),
+                              key=lambda item: (item["issued_at"], item["invoice_id"]))
+            if renewals:
+                evidence = [invoice["doc_id"], renewals[0]["doc_id"],
+                            *(row["row_id"] for row in rows if row["account"] == RECEIVABLE and row["debit_minor"])]
+                found.append(finding("uncollected_service", [invoice_id], invoice["total_minor"], invoice["currency"],
+                                     evidence, "Счёт просрочен и не оплачен, а услугу клиенту уже продлили новым счётом."))
         return found
 
     def invoice_checks(self):

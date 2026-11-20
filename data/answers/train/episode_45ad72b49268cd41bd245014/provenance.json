@@ -1,0 +1,71 @@
+{
+  "schema_version": "2.0",
+  "generator_version": "2.0.0",
+  "episode_id": "episode_45ad72b49268cd41bd245014",
+  "seed": 2026002,
+  "config": {
+    "keyspace": "open",
+    "presentation_seed": 0,
+    "month": 6,
+    "timezone": "+06:00",
+    "acts": 55,
+    "customers": 25,
+    "foreign_percent": 25,
+    "goods_percent": 50,
+    "vat": false,
+    "filler": 40,
+    "errors": {
+      "duplicate_invoice": 0,
+      "payment_allocation": 0,
+      "fx_rate": 0,
+      "period_cutoff": 0,
+      "vat_on_top": 0,
+      "uncollected_service": 0
+    },
+    "interactions": {
+      "fx_boundary_payment": 0,
+      "fx_partial_allocation": 0
+    },
+    "distractors": {
+      "split_payments": true,
+      "multi_act_payments": true,
+      "overpayments": true,
+      "prepayments": true,
+      "unreferenced_payments": true,
+      "opening_balances": true,
+      "late_acts": true,
+      "boundary_timestamps": true,
+      "repeated_amounts": true,
+      "refunds": true
+    }
+  },
+  "keyspace": "open",
+  "key_fingerprint": "4c251e205e774643",
+  "world": {
+    "summary": {
+      "acts.late": 3,
+      "acts.next_period": 3,
+      "acts.prior_open": 6,
+      "acts.regular": 43,
+      "documents.goods": 28,
+      "documents.service": 27,
+      "filler": 40,
+      "goods_deliveries": 7,
+      "opening_advances": 2,
+      "payments.after_period": 1,
+      "payments.boundary_inside": 2,
+      "payments.boundary_start": 1,
+      "payments.full": 29,
+      "payments.multi_act": 1,
+      "payments.prepayment_next": 3,
+      "payments.refund": 1,
+      "payments.split": 4,
+      "payments.unreferenced": 1
+    },
+    "customers": 25,
+    "invoices": 55,
+    "payments": 43
+  },
+  "clean_ledger_sha256": "391e83183f13d6f2b5b9223b18ba9f4e8982cea7a44336b04fd0970d88fc5f03",
+  "changes": []
+}

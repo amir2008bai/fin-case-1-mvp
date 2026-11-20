@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 from datetime import datetime
 
 from audit_env.checks import audit_episode
-from audit_env.contracts import ERROR_TYPES, Config
+from audit_env.contracts import ALL_TYPES, ERROR_TYPES, EXTRA_TYPES, Config
 from audit_env.generator import generate
 from audit_env.provenance import restore_clean
 from audit_env.scoring import score
@@ -26,7 +26,49 @@ class WorldTests(unittest.TestCase):
     def test_random_configs_prove_truth_independently(self):
         failures, kinds = data_invariants(120, seed_base=2026)
         self.assertEqual(failures, [])
-        self.assertEqual(kinds, sorted(ERROR_TYPES))
+        self.assertEqual(kinds, sorted(ALL_TYPES))
+
+    def test_real_practice_types_are_independently_configurable(self):
+        for kind in EXTRA_TYPES:
+            for count in (1, 3):
+                episode = generate(13, Config(keyspace="open", errors=ZERO | {kind: count}))
+                self.assertEqual([issue.type for issue in episode.issues], [kind] * count)
+                self.assertEqual(audit_episode(restore_clean(episode)), [])
+                result = score({"episode_id": episode.manifest["episode_id"], "findings": audit_episode(episode)},
+                               episode.manifest["episode_id"], episode.issues, seen_all(episode), 0)
+                self.assertEqual(result.f1, 1.0)
+
+    def test_vat_on_top_leaves_exactly_the_added_vat_unpaid(self):
+        episode = generate(17, Config(keyspace="open", errors=ZERO | {"vat_on_top": 1}))
+        issue = episode.issues[0]
+        invoice = next(row for row in episode.tables["invoices"] if row["invoice_id"] == issue.affected_ids[0])
+        base = sum(line["quantity"] * line["unit_price_minor"] for line in invoice["line_items"])
+        self.assertEqual(invoice["total_minor"] - base, issue.expected_amount_minor)
+        receivable = sum(row["debit_minor"] - row["credit_minor"] for row in episode.tables["ledger"]
+                         if row["invoice_id"] == invoice["invoice_id"] and row["account"] == "1210")
+        self.assertEqual(receivable, issue.expected_amount_minor)
+
+    def test_goods_are_sold_with_waybills_cost_and_vat(self):
+        episode = generate(21, Config(keyspace="open", acts=60, foreign_percent=0, errors=ZERO))
+        kinds = Counter(doc["document_kind"] for doc in episode.documents.values() if doc["doc_type"] == "invoice")
+        self.assertLessEqual(abs(kinds["waybill"] - kinds["act"]), 3)
+        accounts = Counter(row["account"] for row in episode.tables["ledger"])
+        for code in ("1330", "7010", "1420"):
+            self.assertIn(code, accounts)
+        waybills = {doc["invoice_id"] for doc in episode.documents.values() if doc.get("document_kind") == "waybill"}
+        cogs = {row["invoice_id"] for row in episode.tables["ledger"] if row["account"] == "7010"}
+        revenue = {row["invoice_id"] for row in episode.tables["ledger"] if row["account"] == "6010"}
+        self.assertEqual(cogs, waybills & revenue)
+        for doc in episode.documents.values():
+            if doc.get("document_kind") == "waybill":
+                self.assertIn("З-2", doc["title"])
+                if doc["vat_minor"]:
+                    self.assertEqual(doc["vat_invoice"]["vat_minor"], doc["vat_minor"])
+                for line in doc["line_items"]:
+                    self.assertEqual(line["total_minor"], line["quantity"] * line["unit_price_minor"])
+                    self.assertEqual(line["service_period_start"], line["service_period_end"])
+        no_goods = generate(21, Config(keyspace="open", acts=60, goods_percent=0, errors=ZERO))
+        self.assertFalse(any(row["account"] in ("1330", "7010") for row in no_goods.tables["ledger"]))
 
     def test_books_balance_before_and_after_errors(self):
         for seed in range(12):

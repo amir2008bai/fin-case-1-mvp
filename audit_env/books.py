@@ -10,13 +10,15 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
-from .domain import ADVANCES, BANK, BASE_CURRENCY, FX_GAIN, FX_LOSS, OPENING, RECEIVABLE, REVENUE, VAT
+from .domain import (ADVANCES, BANK, BASE_CURRENCY, COGS, FX_GAIN, FX_LOSS, INVENTORY, OPENING, RECEIVABLE,
+                     REVENUE, VAT)
 from .fx import convert
 
 
 @dataclass
 class Overrides:
     extra_acts: dict = field(default_factory=dict)         # act key -> Act added to the books
+    replace_acts: dict = field(default_factory=dict)       # act key -> Act as wrongly issued (same key)
     act_rate_date: dict = field(default_factory=dict)      # act key -> date whose rate was used
     act_rate: dict = field(default_factory=dict)           # act key -> Decimal rate actually used
     payment_rate_date: dict = field(default_factory=dict)  # payment key -> date whose rate was used
@@ -53,7 +55,7 @@ class Books:
     def __init__(self, world, overrides):
         self.world = world
         self.ov = overrides
-        self.acts = {**world.acts, **overrides.extra_acts}
+        self.acts = {**world.acts, **overrides.extra_acts, **overrides.replace_acts}
         self.rows = []
         self.outstanding = {}  # act key -> open amount in the act currency
         self.carrying = {}     # act key -> open receivable in KZT
@@ -143,6 +145,11 @@ class Books:
             ("dr", BANK, world.opening_bank_minor, 0, None, None),
             ("cr", OPENING, 0, world.opening_bank_minor, None, None),
         ])
+        if world.opening_inventory_minor:
+            self.entry("OPEN:inventory", at, None, [
+                ("dr", INVENTORY, world.opening_inventory_minor, 0, None, None),
+                ("cr", OPENING, 0, world.opening_inventory_minor, None, None),
+            ])
         for key in sorted(self.acts):
             act = self.acts[key]
             if self.booked_at(act) < world.period_start:
@@ -173,6 +180,12 @@ class Books:
                     ("cr", VAT, 0, vat, act.key, None),
                 ])
             carrying += net + vat
+        cost = sum(line.cost_minor for line in act.lines)
+        if cost:
+            self.entry(f"COGS:{act.key}", at, act.customer, [
+                ("dr", COGS, cost, 0, act.key, None),
+                ("cr", INVENTORY, 0, cost, act.key, None),
+            ])
         self.outstanding[act.key] = act.total_minor
         self.carrying[act.key] = carrying
         for payment_key, held in self.prepaid.pop(act.key, []):

@@ -1,0 +1,36 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_7d1d96bc18a702c8d88f5ef4",
+  "company": {
+    "name": "ТОО «Арна Курылыс»",
+    "country": "KZ"
+  },
+  "base_currency": "KZT",
+  "period_start": "2026-04-01T00:00:00+03:00",
+  "period_end": "2026-05-01T00:00:00+03:00",
+  "timezone": "+03:00",
+  "counts": {
+    "ledger": 467,
+    "invoices": 62,
+    "payments": 49,
+    "fx": 164
+  },
+  "document_count": 111,
+  "minor_units": {
+    "KZT": 2,
+    "RUB": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "ROUND_HALF_UP",
+    "fx": "per converted amount",
+    "vat": "per line, included in price"
+  },
+  "id_fields": {
+    "ledger": "row_id",
+    "invoices": "invoice_id",
+    "payments": "payment_id",
+    "fx": "fx_id",
+    "documents": "doc_id"
+  }
+}

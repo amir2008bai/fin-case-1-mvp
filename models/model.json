@@ -1,6 +1,20 @@
 {
-  "version": 2,
+  "version": 3,
   "features": {
+    "vat_on_top": [
+      "bias",
+      "extra_share",
+      "has_extra",
+      "vat_line_share",
+      "paid_base_share"
+    ],
+    "uncollected_service": [
+      "bias",
+      "overdue",
+      "renewed_after_due",
+      "same_code_later",
+      "overdue_months"
+    ],
     "duplicate_invoice": [
       "bias",
       "same_lines",
@@ -22,7 +36,8 @@
       "log_gap_correct",
       "log_gap_issue_or_wall",
       "is_payment",
-      "booked_outside"
+      "booked_outside",
+      "over_tolerance"
     ],
     "period_cutoff": [
       "bias",
@@ -35,60 +50,79 @@
   },
   "weights": {
     "duplicate_invoice": [
-      -1.913589,
-      -0.218052,
-      5.990569,
-      -2.165875,
-      -0.060668,
-      -0.34586
+      -1.907268,
+      -0.714522,
+      5.940228,
+      -2.167679,
+      0.409347,
+      -0.24016
     ],
     "payment_allocation": [
-      -1.467313,
-      -0.562763,
-      4.109471,
-      -5.354337,
-      -0.733656,
-      1.518148
+      -1.727003,
+      -0.46733,
+      4.288499,
+      -4.975378,
+      -0.863502,
+      1.550856
     ],
     "fx_rate": [
-      -3.328387,
-      5.629373,
-      0.740442,
-      0.732337,
-      1.394414
+      -3.479178,
+      3.503812,
+      0.290313,
+      0.163146,
+      0.612529,
+      3.533893
     ],
     "period_cutoff": [
-      1.175155,
-      -3.857446,
-      1.276373,
-      -3.857446,
-      1.276373,
-      0.043223
+      1.127474,
+      -3.861652,
+      1.235826,
+      -3.861652,
+      1.235826,
+      0.310681
+    ],
+    "vat_on_top": [
+      -1.743019,
+      0.865902,
+      6.277789,
+      -1.694766,
+      0.418331
+    ],
+    "uncollected_service": [
+      -3.836614,
+      0.755344,
+      4.205361,
+      2.338888,
+      0.314646
     ]
   },
   "threshold": 0.8,
   "meta": {
     "train_episodes": 120,
     "candidates": {
-      "duplicate_invoice": 509,
-      "payment_allocation": 345,
-      "fx_rate": 1552,
-      "period_cutoff": 7974
+      "duplicate_invoice": 312,
+      "payment_allocation": 302,
+      "fx_rate": 1442,
+      "period_cutoff": 7915,
+      "vat_on_top": 3394,
+      "uncollected_service": 1058
     },
     "positives": {
       "duplicate_invoice": 36,
       "payment_allocation": 48,
       "fx_rate": 72,
-      "period_cutoff": 60
+      "period_cutoff": 60,
+      "vat_on_top": 66,
+      "uncollected_service": 66
     },
     "threshold_rewards": {
-      "0.3": 0.720211,
-      "0.4": 0.777872,
-      "0.5": 0.888134,
-      "0.6": 0.898505,
-      "0.7": 0.942967,
-      "0.8": 0.971171,
-      "0.9": 0.658157
+      "0.3": 0.561355,
+      "0.4": 0.763112,
+      "0.5": 0.77901,
+      "0.6": 0.851543,
+      "0.7": 0.867733,
+      "0.8": 0.973267,
+      "0.9": 0.757852
     },
     "suite": "suite.v2.json",
     "seed": 20261120

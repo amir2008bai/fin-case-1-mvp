@@ -1,6 +1,8 @@
 """The published accounting policy: every rule an agent needs to recompute the books."""
-from .contracts import ALLOCATION, CUTOFF, DUPLICATE, FX_RATE, MAX_EVIDENCE, SCHEMA_VERSION, TOLERANCE_MINOR
-from .domain import ACCOUNTS, ADVANCES, BANK, FX_GAIN, FX_LOSS, OPENING, RECEIVABLE, REVENUE, VAT
+from .contracts import (ALLOCATION, CUTOFF, DUPLICATE, FX_RATE, MAX_EVIDENCE, SCHEMA_VERSION, TOLERANCE_MINOR,
+                        UNCOLLECTED, VAT_ON_TOP)
+from .domain import (ACCOUNTS, ADVANCES, BANK, COGS, FX_GAIN, FX_LOSS, INVENTORY, OPENING, RECEIVABLE, REVENUE,
+                     VAT)
 from .world import STATEMENT_TAIL_DAYS
 
 FINDING_RULES = {
@@ -36,6 +38,20 @@ FINDING_RULES = {
         "tolerance_minor": TOLERANCE_MINOR[CUTOFF],
         "evidence": "doc_id и строки Кт 6010 счёта либо строка Дт 1030 поступления",
     },
+    VAT_ON_TOP: {
+        "affected_ids": "invoice_id счёта, где НДС начислен сверху цены",
+        "claimed_amount_minor": "сумма начисленного сверху НДС: Σ(total_minor − quantity × unit_price_minor) по строкам",
+        "currency": "валюта счёта",
+        "tolerance_minor": TOLERANCE_MINOR[VAT_ON_TOP],
+        "evidence": "doc_id счёта и его строки Кт 3130 (можно добавить doc_id оплаты)",
+    },
+    UNCOLLECTED: {
+        "affected_ids": "invoice_id просроченного неоплаченного счёта",
+        "claimed_amount_minor": "total_minor этого счёта",
+        "currency": "валюта счёта",
+        "tolerance_minor": TOLERANCE_MINOR[UNCOLLECTED],
+        "evidence": "doc_id просроченного счёта, doc_id нового счёта на ту же услугу и строки Дт 1210 просроченного счёта",
+    },
 }
 
 
@@ -67,9 +83,19 @@ def policy_document(world, currencies):
             "rate": "0.16",
             "included_in_price": True,
             "rounding": "ROUND_HALF_UP",
-            "rule": "НДС включён в цену и считается по каждой строке: vat = round_half_up(total × 0.16 / 1.16). "
-                    "Строка с vat_rate = null без НДС. Валютные счета (экспорт услуг) без НДС.",
+            "rule": "НДС включён в цену и считается по каждой строке: total = quantity × unit_price, "
+                    "vat = round_half_up(total × 0.16 / 1.16). Строка с vat_rate = null без НДС. "
+                    "Валютные счета (экспорт услуг) без НДС.",
         },
+        "goods": {
+            "documents": "Товары отгружаются по накладной (document_kind = waybill); период строки — дата отгрузки.",
+            "rule": f"Выручка по накладной признаётся в дату отгрузки так же, как по акту (Дт {RECEIVABLE} "
+                    f"Кт {REVENUE} и Кт {VAT}), себестоимость списывается проводкой Дт {COGS} Кт {INVENTORY} "
+                    f"с invoice_id накладной. Остаток товаров на начало периода — Дт {INVENTORY} Кт {OPENING}.",
+        },
+        "collections": "Счёт, не оплаченный ни на тенге к сроку (due_at), нельзя продлевать: счёт тому же покупателю "
+                       "на ту же услугу (service_code) с периодом, начинающимся на следующий день после окончания "
+                       "неоплаченного, выписанный после его срока, — нарушение.",
         "fx": {
             "source": "fx.csv",
             "quote": "rate = KZT за 1 единицу source_currency",

@@ -5,7 +5,7 @@ from dataclasses import replace
 
 from .agents import create_policy, oracle, submission
 from .checks import audit_episode
-from .contracts import Config
+from .contracts import EXTRA_TYPES, Config
 from .environment import AuditEnv
 from .generator import collect_ids, generate, transform
 from .provenance import restore_clean
@@ -245,8 +245,9 @@ def data_invariants(count, key=None, seed_base=0):
             keyspace="open" if key is None else "secret",
             month=rng.randint(1, 12), timezone=rng.choice(("+03:00", "+05:00", "+06:00")),
             acts=rng.randint(15, 80), customers=rng.randint(5, 45), foreign_percent=rng.randint(0, 50),
-            vat=rng.random() < 0.7, filler=rng.randint(0, 80),
-            errors={name: rng.choice((0, 0, 1, 2)) for name in ERRORS},
+            goods_percent=rng.choice((0, 30, 50, 80)), vat=rng.random() < 0.7, filler=rng.randint(0, 80),
+            errors={name: rng.choice((0, 0, 1, 2)) for name in ERRORS}
+                   | {name: rng.choice((0, 0, 1)) for name in EXTRA_TYPES},
             interactions={"fx_boundary_payment": rng.choice((0, 0, 1)), "fx_partial_allocation": rng.choice((0, 0, 1))},
             distractors={name: rng.random() < 0.85 for name in Config().distractors},
         )

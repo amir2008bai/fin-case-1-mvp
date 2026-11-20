@@ -7,11 +7,12 @@ and evidence always describe rows the agent can actually read.
 from dataclasses import dataclass, field
 from datetime import timedelta
 
-from ..contracts import ALLOCATION, CUTOFF, DUPLICATE, FX_BOUNDARY, FX_PARTIAL, FX_RATE, TOLERANCE_MINOR
+from ..contracts import (ALLOCATION, CUTOFF, DUPLICATE, FX_BOUNDARY, FX_PARTIAL, FX_RATE, TOLERANCE_MINOR,
+                         UNCOLLECTED, VAT_ON_TOP)
 from ..books import Overrides
 from ..domain import BASE_CURRENCY
 from ..fx import convert
-from . import duplicate_invoice, fx_rate, interactions, payment_allocation, period_cutoff
+from . import duplicate_invoice, fx_rate, interactions, payment_allocation, period_cutoff, real_practice
 
 FX_EVIDENCE_WINDOW = timedelta(days=7)
 
@@ -56,6 +57,10 @@ def inject(rng, world, config):
         add(interactions.boundary(rng, world, overrides, act_key, payment_key, Spec))
     for act_key, payment_key in candidates[FX_PARTIAL]:
         add(interactions.partial(rng, world, overrides, act_key, payment_key, Spec))
+    for act_key, payment_key in candidates["vat"]:
+        add(real_practice.vat_on_top(rng, world, overrides, act_key, payment_key, Spec))
+    for act_key in candidates["uncollected"]:
+        add(real_practice.uncollected(rng, world, overrides, act_key, Spec))
     return overrides, specs
 
 
@@ -76,7 +81,7 @@ def _fx_refs(world, currency, days):
 
 
 def resolve(spec, world, overrides, rows):
-    acts = {**world.acts, **overrides.extra_acts}
+    acts = {**world.acts, **overrides.extra_acts, **overrides.replace_acts}
     by_key = {row.key: row for row in rows}
     related = tuple(("row", row.key) for row in rows
                     if row.act in spec.acts or row.payment in spec.payments)
@@ -136,6 +141,20 @@ def resolve(spec, world, overrides, rows):
         spec.amount, spec.currency = sum(row.credit for row in revenue), BASE_CURRENCY
         spec.affected = (("invoice", act_key),)
         spec.evidence_sets = ((("doc", act_key), *(("row", row.key) for row in revenue)),)
+    elif spec.type == VAT_ON_TOP:
+        act = acts[spec.acts[0]]
+        vat_rows = [row for row in rows if row.act == act.key and row.account == "3130" and row.credit]
+        spec.amount = sum(line.total_minor - line.base_minor for line in act.lines)
+        spec.currency = act.currency
+        spec.affected = (("invoice", act.key),)
+        vat = tuple(("row", row.key) for row in vat_rows)
+        spec.evidence_sets = ((("doc", act.key), *vat), (("doc", act.key), ("doc", spec.payments[0]), *vat))
+    elif spec.type == UNCOLLECTED:
+        unpaid, renewal = (acts[key] for key in spec.acts)
+        spec.amount, spec.currency = unpaid.total_minor, unpaid.currency
+        spec.affected = (("invoice", unpaid.key),)
+        receivable = tuple(("row", row.key) for row in _receivable_rows(rows, unpaid.key))
+        spec.evidence_sets = ((("doc", unpaid.key), ("doc", renewal.key), *receivable),)
     else:
         raise ValueError(f"unknown spec {spec.type}")
     spec.tolerance = TOLERANCE_MINOR[spec.type]

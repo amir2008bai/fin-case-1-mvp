@@ -4,7 +4,7 @@ import re
 import unittest
 from pathlib import Path
 
-from audit_env.contracts import ERROR_TYPES, TABLE_FIELDS, Config
+from audit_env.contracts import ALL_TYPES, TABLE_FIELDS, Config
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "schemas"
@@ -27,7 +27,8 @@ class SchemaTests(unittest.TestCase):
         config = load("config")
         self.assertEqual(set(config["properties"]), set(Config.__dataclass_fields__))
         truth = load("truth")
-        self.assertEqual(truth["properties"]["issues"]["items"]["properties"]["type"]["enum"], list(ERROR_TYPES))
+        self.assertEqual(truth["properties"]["issues"]["items"]["properties"]["type"]["enum"], list(ALL_TYPES))
+        self.assertEqual(set(config["properties"]["errors"]["properties"]), set(ALL_TYPES))
 
     def test_committed_rows_follow_the_patterns(self):
         data = ROOT / "data" / "episodes"

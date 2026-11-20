@@ -20,7 +20,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -44,7 +46,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -68,7 +72,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -92,7 +98,9 @@
             "duplicate_invoice": 2,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -116,7 +124,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 2,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -140,7 +150,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 2,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -164,7 +176,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 2
+            "period_cutoff": 2,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -188,7 +202,9 @@
             "duplicate_invoice": 1,
             "payment_allocation": 1,
             "fx_rate": 1,
-            "period_cutoff": 1
+            "period_cutoff": 1,
+            "vat_on_top": 1,
+            "uncollected_service": 1
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -212,7 +228,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 1,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 1,
@@ -236,7 +254,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 1
+            "period_cutoff": 1,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -262,7 +282,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -286,7 +308,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -310,7 +334,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -334,7 +360,9 @@
             "duplicate_invoice": 2,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -358,7 +386,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 2,
             "fx_rate": 0,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -382,7 +412,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 2,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -406,7 +438,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 2
+            "period_cutoff": 2,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -430,7 +464,9 @@
             "duplicate_invoice": 1,
             "payment_allocation": 1,
             "fx_rate": 1,
-            "period_cutoff": 1
+            "period_cutoff": 1,
+            "vat_on_top": 1,
+            "uncollected_service": 1
           },
           "interactions": {
             "fx_boundary_payment": 0,
@@ -454,7 +490,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 1,
-            "period_cutoff": 0
+            "period_cutoff": 0,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 1,
@@ -478,7 +516,9 @@
             "duplicate_invoice": 0,
             "payment_allocation": 0,
             "fx_rate": 0,
-            "period_cutoff": 1
+            "period_cutoff": 1,
+            "vat_on_top": 0,
+            "uncollected_service": 0
           },
           "interactions": {
             "fx_boundary_payment": 0,
