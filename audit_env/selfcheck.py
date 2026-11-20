@@ -5,7 +5,7 @@ from dataclasses import replace
 
 from .agents import create_policy, oracle, submission
 from .checks import audit_episode
-from .contracts import EXTRA_TYPES, Config
+from .contracts import EXTRA_TYPES, MAX_ISSUES, Config
 from .environment import AuditEnv
 from .generator import collect_ids, generate, transform
 from .provenance import restore_clean
@@ -234,6 +234,27 @@ def contract_checks():
     return checks
 
 
+def random_config(rng, keyspace="open"):
+    """A random valid config. The error mix is drawn again until it fits the per-episode cap
+    (MAX_ISSUES): without that, about one draw in 2 300 exceeded it and crashed the check."""
+    fields = dict(
+        keyspace=keyspace,
+        month=rng.randint(1, 12), timezone=rng.choice(("+03:00", "+05:00", "+06:00")),
+        acts=rng.randint(15, 80), customers=rng.randint(5, 45), foreign_percent=rng.randint(0, 50),
+        goods_percent=rng.choice((0, 30, 50, 80)), vat=rng.random() < 0.7,
+        filler=rng.choice((rng.randint(0, 80), rng.randint(200, 700))),
+        difficulty=rng.choice(("easy", "medium", "hard")),
+    )
+    while True:
+        errors = ({name: rng.choice((0, 0, 1, 2)) for name in ERRORS}
+                  | {name: rng.choice((0, 0, 1)) for name in EXTRA_TYPES})
+        interactions = {"fx_boundary_payment": rng.choice((0, 0, 1)), "fx_partial_allocation": rng.choice((0, 0, 1))}
+        if sum(errors.values()) + 2 * sum(interactions.values()) <= MAX_ISSUES:
+            break
+    return Config(**fields, errors=errors, interactions=interactions,
+                  distractors={name: rng.random() < 0.85 for name in Config().distractors})
+
+
 def data_invariants(count, key=None, seed_base=0):
     """Generate `count` varied episodes and prove truth correctness independently."""
     import random
@@ -241,18 +262,7 @@ def data_invariants(count, key=None, seed_base=0):
     rng = random.Random(seed_base)
     failures, kinds = [], set()
     for index in range(count):
-        config = Config(
-            keyspace="open" if key is None else "secret",
-            month=rng.randint(1, 12), timezone=rng.choice(("+03:00", "+05:00", "+06:00")),
-            acts=rng.randint(15, 80), customers=rng.randint(5, 45), foreign_percent=rng.randint(0, 50),
-            goods_percent=rng.choice((0, 30, 50, 80)), vat=rng.random() < 0.7,
-            filler=rng.choice((rng.randint(0, 80), rng.randint(200, 700))),
-            difficulty=rng.choice(("easy", "medium", "hard")),
-            errors={name: rng.choice((0, 0, 1, 2)) for name in ERRORS}
-                   | {name: rng.choice((0, 0, 1)) for name in EXTRA_TYPES},
-            interactions={"fx_boundary_payment": rng.choice((0, 0, 1)), "fx_partial_allocation": rng.choice((0, 0, 1))},
-            distractors={name: rng.random() < 0.85 for name in Config().distractors},
-        )
+        config = random_config(rng, "open" if key is None else "secret")
         seed = rng.randrange(2**31)
         try:
             episode = generate(seed, config, key=key)

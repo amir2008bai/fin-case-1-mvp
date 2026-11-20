@@ -1,14 +1,15 @@
 """Data and truth: balanced books, declared discrepancies, independent sufficiency of evidence."""
+import random
 import unittest
 from collections import Counter, defaultdict
 from datetime import datetime
 
 from audit_env.checks import audit_episode
-from audit_env.contracts import ALL_TYPES, ERROR_TYPES, EXTRA_TYPES, Config
+from audit_env.contracts import ALL_TYPES, ERROR_TYPES, EXTRA_TYPES, MAX_ISSUES, Config
 from audit_env.generator import generate
 from audit_env.provenance import restore_clean
 from audit_env.scoring import score
-from audit_env.selfcheck import data_invariants
+from audit_env.selfcheck import data_invariants, random_config
 
 ZERO = {key: 0 for key in ERROR_TYPES}
 
@@ -27,6 +28,13 @@ class WorldTests(unittest.TestCase):
         failures, kinds = data_invariants(120, seed_base=2026)
         self.assertEqual(failures, [])
         self.assertEqual(kinds, sorted(ALL_TYPES))
+
+    def test_random_configs_respect_the_issue_cap(self):
+        # Regression: verify draws fresh random configs; about one in 2 300 used to exceed the cap and crash it.
+        rng = random.Random(7)
+        counts = [random_config(rng).issue_count for _ in range(6000)]
+        self.assertLessEqual(max(counts), MAX_ISSUES)
+        self.assertEqual(max(counts), MAX_ISSUES, "the cap itself stays reachable")
 
     def test_real_practice_types_are_independently_configurable(self):
         for kind in EXTRA_TYPES:
