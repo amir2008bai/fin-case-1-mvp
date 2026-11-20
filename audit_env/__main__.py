@@ -12,6 +12,8 @@ from pathlib import Path
 DEFAULT_SUITE = "configs/suite.v2.json"
 HOLDOUT = "configs/holdout-template.v2.json"
 EXTENDED = "configs/holdout-extended.v2.json"
+CURRICULUM = "configs/curriculum.v2.json"
+LEVELS = ("easy", "medium", "hard")
 DATA = Path("data")
 POLICIES = ("oracle", "expert", "reconcile", "random", "flag-all")
 
@@ -21,20 +23,24 @@ def out(text=""):
     sys.stdout.flush()
 
 
-def table(rows):
+def table(rows, order=None):
     lines = [f"{'policy':10s} {'category':12s} {'n':>3s} {'P':>6s} {'R':>6s} {'F1':>6s} {'return':>7s} {'steps':>6s} {'ms':>7s}"]
-    for (policy, category), items in sorted(rows.items()):
+    rank = {name: index for index, name in enumerate(order or ())}
+    for (policy, category), items in sorted(rows.items(), key=lambda item: (item[0][0], rank.get(item[0][1], 99),
+                                                                              item[0][1])):
         mean = lambda key: statistics.mean(item[key] for item in items)  # noqa: E731
         lines.append(f"{policy:10s} {category:12s} {len(items):3d} {mean('precision'):6.3f} {mean('recall'):6.3f} "
                      f"{mean('f1'):6.3f} {mean('reward'):+7.3f} {mean('steps'):6.1f} {1000 * mean('seconds'):7.1f}")
     return "\n".join(lines)
 
 
-def holdout_cases(path, seed_source):
+def holdout_cases(path, seed_source, by_split=False):
+    """Cases of a template; seeds are drawn here. by_split groups results by split (the difficulty level)."""
     from .dataset import suite
 
     for split, case_id, category, seed, config in suite(path):
-        yield split, case_id, category, seed if seed is not None else seed_source.randrange(2**31), config
+        yield (split, case_id, split if by_split else category,
+               seed if seed is not None else seed_source.randrange(2**31), config)
 
 
 def command_verify(args):
@@ -115,6 +121,20 @@ def command_verify(args):
     if problems:
         failed.append("extended hold-out oracle/paired checks")
 
+    out("\n== 7. Difficulty levels: easy → medium → hard (more look-alikes, longer books up to ~2000 rows)")
+    rows, problems = benchmark_cases(holdout_cases(CURRICULUM, random.Random(os.urandom(8)), by_split=True),
+                                     POLICIES, key=fresh_key())
+    out(table(rows, order=LEVELS))
+    for line in problems:
+        out(f"  FAIL {line}")
+    report["sections"]["curriculum"] = {
+        f"{policy}/{level}": {key: round(statistics.mean(item[key] for item in items), 6)
+                              for key in ("precision", "recall", "f1", "reward", "steps", "seconds")}
+        for (policy, level), items in sorted(rows.items())
+    }
+    if problems:
+        failed.append("curriculum oracle/paired checks")
+
     report["seconds"] = round(time.time() - started, 1)
     report["ok"] = not failed
     target = Path(args.report)
@@ -135,6 +155,13 @@ def command_benchmark(args):
     from .dataset import benchmark_cases, suite
     from .selfcheck import fresh_key
 
+    if args.curriculum:
+        rows, problems = benchmark_cases(holdout_cases(CURRICULUM, random.Random(args.seed), by_split=True),
+                                         POLICIES, key=fresh_key())
+        out(table(rows, order=LEVELS))
+        for line in problems:
+            out(f"FAIL {line}")
+        return 1 if problems else 0
     if args.extended:
         cases = holdout_cases(EXTENDED, random.Random(args.seed))
         key = fresh_key()
@@ -158,7 +185,8 @@ def command_failures(args):
 
     rng = random.Random(args.seed)
     cases = [(split, case_id, category, rng.randrange(2**31), replace(config, keyspace="secret"))
-             for split, case_id, category, _, config in suite(EXTENDED if args.extended else HOLDOUT)
+             for split, case_id, category, _, config in suite(
+                 CURRICULUM if args.curriculum else EXTENDED if args.extended else HOLDOUT)
              for _ in range(args.repeats)]
     counts = failure_breakdown(cases, ("reconcile", "micro", "expert", "random", "flag-all"),
                                key=b"failure-analysis-key", model_path=args.model)
@@ -228,7 +256,7 @@ def command_train(args):
     model = train(args.suite, args.output, seeds_per_config=args.seeds)
     out(f"trained on {model.meta['train_episodes']} episodes in {time.time() - started:.1f} s; "
         f"threshold {model.threshold} (chosen by mean terminal reward on train)")
-    summary = compare(model, args.suite, HOLDOUT, EXTENDED)
+    summary = compare(model, args.suite, HOLDOUT, EXTENDED, CURRICULUM)
     write_json(Path(args.output) / "report.json", {"model": model.meta | {"threshold": model.threshold},
                                                    "held_out": summary})
     out(f"{'split':8s} {'policy':10s} {'category':12s} {'n':>3s} {'P':>6s} {'R':>6s} {'F1':>6s} {'return':>7s}")
@@ -303,12 +331,14 @@ def main():
     bench.add_argument("--suite", default=DEFAULT_SUITE)
     bench.add_argument("--holdout", action="store_true")
     bench.add_argument("--extended", action="store_true", help="real-practice error types and goods")
+    bench.add_argument("--curriculum", action="store_true", help="easy / medium / hard difficulty levels")
     bench.add_argument("--seed", type=int, default=7)
     failures = commands.add_parser("failures", help="measured failure breakdown per policy on hold-out configs")
     failures.add_argument("--repeats", type=int, default=5)
     failures.add_argument("--seed", type=int, default=5)
     failures.add_argument("--model", default="models/model.json")
     failures.add_argument("--extended", action="store_true", help="use the extended hold-out (real-practice types)")
+    failures.add_argument("--curriculum", action="store_true", help="use the easy/medium/hard curriculum")
     data = commands.add_parser("dataset", help="export open episodes, answers, trajectories, checksums")
     data.add_argument("output", type=Path)
     data.add_argument("--suite", default=DEFAULT_SUITE)

@@ -9,7 +9,8 @@ from dataclasses import dataclass, field, replace
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import ROUND_HALF_UP, Decimal
 
-from .contracts import ALLOCATION, CUTOFF, DUPLICATE, FX_BOUNDARY, FX_PARTIAL, FX_RATE, UNCOLLECTED, VAT_ON_TOP
+from .contracts import (ALLOCATION, CUTOFF, DUPLICATE, FX_BOUNDARY, FX_PARTIAL, FX_RATE, INTENSITY, UNCOLLECTED,
+                        VAT_ON_TOP)
 from .domain import BASE_CURRENCY, FOREIGN_CURRENCIES
 from .fx import build_rates, convert
 
@@ -214,6 +215,16 @@ class Builder:
         self.rates = build_rates(rng, FOREIGN_CURRENCIES, self.first - timedelta(days=FX_LEAD_DAYS),
                                  self.last + timedelta(days=FX_TAIL_DAYS))
         self.opening_bank = 0
+        self.level = config.difficulty
+        self.k = INTENSITY[config.difficulty]
+        self.hard = config.difficulty == "hard"
+
+    def scaled(self, value):
+        """A distractor count at this difficulty (easy halves, hard doubles)."""
+        return int(value * self.k + 0.5)
+
+    def hard_on(self, name):
+        return self.hard and self.on[name]
 
     # ---- helpers -------------------------------------------------------
     def chance(self, percent):
@@ -314,9 +325,14 @@ class Builder:
         return act
 
     def shown(self, customer):
+        """The offset in which the payer's bank exported the timestamp."""
         country = self.customers[customer].country
         if COUNTRY_OFFSET[country]:
             return COUNTRY_OFFSET[country]
+        if self.level == "easy":
+            return self.tz_text
+        if self.hard and self.chance(50):
+            return self.rng.choice(SHOWN_OFFSETS)
         return "+00:00" if self.chance(30) else self.tz_text
 
     def pay(self, customer, amount, instant, refs, kind, shown=None, match=None):
@@ -360,9 +376,10 @@ class Builder:
 
         self.reserve_targets()
         dedicated = len(self.acts)
-        prior = round(config.acts * 0.10) if self.on["opening_balances"] else 0
-        late = max(1, round(config.acts * 0.05)) if self.on["late_acts"] else 0
-        upcoming = max(1, round(config.acts * 0.05)) if self.on["prepayments"] else 0
+        floor = 0 if self.level == "easy" else 1
+        prior = self.scaled(config.acts * 0.10) if self.on["opening_balances"] else 0
+        late = max(floor, self.scaled(config.acts * 0.05)) if self.on["late_acts"] else 0
+        upcoming = max(floor, self.scaled(config.acts * 0.05)) if self.on["prepayments"] else 0
         regular = max(6, config.acts - dedicated - prior - late - upcoming)
         foreign_regular = round(regular * config.foreign_percent / 100) if self.foreign else 0
         # goods_percent is the share of ALL invoices of the episode that are waybills for goods
@@ -386,6 +403,9 @@ class Builder:
                 instant = max(self.moment(day), act.issued_at + timedelta(minutes=30))
                 if instant < self.end:
                     self.pay(act.customer, act.total_minor, instant, [act.key], "prepayment_next")
+        if self.hard_on("paid_renewals"):
+            for _ in range(self.scaled(1.5)):
+                self.paid_renewal(self.rng.choice(self.domestic))
         self.multi_act_payments()
         self.opening()
         self.boundaries()
@@ -431,30 +451,92 @@ class Builder:
         return act
 
     def receipts_for(self, act):
-        on, roll = self.on, self.rng.randrange(100)
+        """Pick how the customer pays; difficulty scales the weight of every look-alike outcome."""
+        on = self.on
         domestic = act.currency == BASE_CURRENCY
-        if roll < 50:
+        taxed = any(line.vat_minor for line in act.lines)
+        weights = [
+            ("full", 50),
+            ("split", self.scaled(12) if on["split_payments"] else 0),
+            ("overpayment", self.scaled(8) if on["overpayments"] and domestic and act.total_minor <= 2_000_000 else 0),
+            ("unreferenced", self.scaled(8) if on["unreferenced_payments"] and domestic else 0),
+            ("prepayment", self.scaled(8) if on["prepayments"] and domestic else 0),
+            ("double", 6 if self.hard_on("double_payments") and domestic else 0),
+            ("underpaid_vat", 6 if self.hard_on("underpaid_vat") and domestic and taxed else 0),
+            ("open", 14),
+        ]
+        roll = self.rng.randrange(sum(weight for _, weight in weights))
+        for outcome, weight in weights:
+            if roll < weight:
+                break
+            roll -= weight
+        if outcome == "full":
             self.pay(act.customer, act.total_minor, self.after(act), [act.key], "full")
-        elif roll < 62 and on["split_payments"]:
+        elif outcome == "split":
             first = act.total_minor * self.rng.randrange(30, 71) // 100
             one = self.pay(act.customer, first, self.after(act, 0, 8), [act.key], "split")
             if one:
                 second = one.instant + timedelta(days=self.rng.randrange(0, 10), hours=self.rng.randrange(1, 9))
                 self.pay(act.customer, act.total_minor - first, second, [act.key], "split")
-        elif roll < 70 and on["overpayments"] and domestic and act.total_minor <= 2_000_000:
+        elif outcome == "overpayment":
             payment = self.pay(act.customer, act.total_minor * 10, self.after(act, 0, 10), [act.key], "overpayment")
             if payment and on["refunds"] and self.chance(60):
                 when = payment.instant + timedelta(days=self.rng.randrange(1, 8))
                 if when < self.end:
                     self.pay(act.customer, -act.total_minor * 9, when, None, "refund")
-        elif roll < 78 and on["unreferenced_payments"] and domestic:
+        elif outcome == "unreferenced":
             instant = self.after(act, 0, 10)
             when = instant + timedelta(days=self.rng.randrange(1, 6))
             match = (act.key, when) if self.chance(65) and when < self.end else None
             self.pay(act.customer, act.total_minor, instant, None, "unreferenced", match=match)
-        elif roll < 86 and on["prepayments"] and domestic:
+        elif outcome == "prepayment":
             self.prepaid_act_receipt(act)
-        # otherwise the act stays open at period end
+        elif outcome == "double":
+            # the customer pays the same invoice twice; the second payment is an advance, often refunded
+            first = self.pay(act.customer, act.total_minor, self.after(act, 0, 8), [act.key], "full")
+            if first:
+                again = first.instant + timedelta(days=self.rng.randrange(1, 10), hours=self.rng.randrange(1, 6))
+                second = self.pay(act.customer, act.total_minor, again, [act.key], "double_payment")
+                if second and on["refunds"] and self.chance(50):
+                    when = second.instant + timedelta(days=self.rng.randrange(1, 6))
+                    if when < self.end:
+                        self.pay(act.customer, -act.total_minor, when, None, "refund")
+        elif outcome == "underpaid_vat":
+            # the customer pays the price without VAT: the VAT part stays open (looks like vat_on_top)
+            net = sum(line.net_minor for line in act.lines)
+            self.pay(act.customer, net, self.after(act), [act.key], "underpaid_vat")
+        # "open": the act stays unpaid at period end
+
+    def paid_renewal(self, customer):
+        """A subscription renewed back-to-back after the due date — legit because it was paid in time."""
+        service_end = self.day_between(self.first, self.first + timedelta(days=6))
+        try:
+            first = self.new_act(customer, "regular", service_end, lines=1, max_lag=1,
+                                 code=self.rng.choice(("SUB", "SUP")), due_days=10)
+        except RuntimeError:
+            return None
+        paid = self.pay(customer, first.total_minor, self.after(first, 1, 8), [first.key], "full")
+        if paid is None or paid.instant >= self.end:
+            return None
+        day = first.due_at.astimezone(self.tz).date() + timedelta(days=self.rng.randrange(1, 5))
+        issued = self.moment(day, 10, 17)
+        if issued >= self.end:
+            return None
+        start = first.service_end + timedelta(days=1)
+        lines = tuple(replace(line, period_start=start, period_end=start + timedelta(days=29)) for line in first.lines)
+        marks = {(customer, line.service_code, line.period_start, line.period_end) for line in lines}
+        nexts = {(customer, line.service_code, line.period_end + timedelta(days=1)) for line in lines}
+        if marks & self.busy or nexts & self.starts:
+            return None
+        self.busy |= marks
+        self.starts |= {(customer, line.service_code, line.period_start) for line in lines}
+        self.nexts |= nexts
+        key = f"A{len(self.acts) + 1:03d}"
+        renewal = replace(first, key=key, issued_at=issued, lines=lines, manager=self.rng.choice(MANAGERS))
+        self.acts[key] = renewal
+        self.summary["acts.paid_renewal"] += 1
+        self.summary["documents.service"] += 1
+        return renewal
 
     def prepaid_act_receipt(self, act):
         """Receipt cites the invoice before the service ends: an advance, offset at recognition."""
@@ -583,16 +665,23 @@ class Builder:
             if (act.origin == "regular" and act.currency == BASE_CURRENCY and self.paid[act.key] == 0
                     and act.key not in self.reserved and act.service_end <= self.last - timedelta(days=2)):
                 by_customer.setdefault(act.customer, []).append(act)
-        made = 0
+        made, partial, limit = 0, 0, self.scaled(3)
+        partial_limit = self.scaled(1.5) if self.hard_on("partial_refs") else 0
         for customer in sorted(by_customer):
             acts = by_customer[customer]
-            if len(acts) < 2 or made >= 3:
+            if len(acts) < 2 or (made >= limit and partial >= partial_limit):
                 continue
             first, second = acts[0], acts[1]
             base = max(self.recognized(first), self.recognized(second), first.issued_at, second.issued_at)
             instant = base + timedelta(days=self.rng.randrange(0, 4), hours=self.rng.randrange(1, 10))
-            if instant < self.end and self.pay(customer, first.total_minor + second.total_minor, instant,
-                                               [first.key, second.key], "multi_act"):
+            if instant >= self.end:
+                continue
+            if partial < partial_limit and (made >= limit or self.chance(50)):
+                # one payment for two invoices citing only the first: the rest stays an advance
+                if self.pay(customer, first.total_minor + second.total_minor, instant, [first.key], "partial_refs"):
+                    partial += 1
+            elif made < limit and self.pay(customer, first.total_minor + second.total_minor, instant,
+                                           [first.key, second.key], "multi_act"):
                 made += 1
 
     def opening(self):
@@ -605,7 +694,7 @@ class Builder:
         eligible = [key for key in self.domestic
                     if len(acts_of.get(key, ())) == 1 and acts_of[key][0].origin == "regular"
                     and acts_of[key][0].key not in self.reserved]
-        for customer in eligible[: max(1, len(eligible) // 5)]:
+        for customer in eligible[: max(1, self.scaled(len(eligible) / 5))]:
             act = acts_of[customer][0]
             self.opening_advances[customer] = act.total_minor * self.rng.randrange(20, 101) // 100
             self.summary["opening_advances"] += 1
@@ -626,7 +715,8 @@ class Builder:
                      and act.key not in self.reserved and act.service_end <= self.last - timedelta(days=1)
                      and act.issued_at < self.end - timedelta(days=1)]
         self.rng.shuffle(open_acts)
-        for act in open_acts[:2]:  # inside the period, but the shown wall date is the next day
+        inside, after = self.scaled(2), self.scaled(1)
+        for act in open_acts[:inside]:  # inside the period, but the shown wall date is the next day
             minutes = self.rng.randrange(5, 90)
             instant = self.end - timedelta(minutes=minutes)
             options = [text for text in SHOWN_OFFSETS
@@ -634,11 +724,11 @@ class Builder:
             if options:
                 self.pay(act.customer, act.total_minor, instant, [act.key], "boundary_inside",
                          shown=self.rng.choice(options))
-        for act in open_acts[2:3]:  # after the period end, shown in the company offset
+        for act in open_acts[inside:inside + after]:  # after the period end, shown in the company offset
             instant = self.end + timedelta(hours=self.rng.randrange(1, 40))
             self.pay(act.customer, act.total_minor, instant, [act.key], "after_period", shown=self.tz_text)
         prior = [act for act in self.acts.values() if act.origin == "prior_open" and self.paid[act.key] == 0]
-        for act in prior[:1]:  # inside the period, but the shown wall date is in the previous month
+        for act in prior[:after]:  # inside the period, but the shown wall date is in the previous month
             minutes = self.rng.randrange(5, 120)
             instant = self.start + timedelta(minutes=minutes)
             options = [text for text in SHOWN_OFFSETS
@@ -671,6 +761,7 @@ class Builder:
 
 
 def build(rng, config, extra_filler=0):
+    """extra_filler tops the books up to the minimum size (positive) or trims them under the maximum (negative)."""
     if extra_filler:
-        config = replace(config, filler=min(400, config.filler + extra_filler))
+        config = replace(config, filler=max(0, min(800, config.filler + extra_filler)))
     return Builder(rng, config).build()

@@ -66,8 +66,9 @@ class TellTests(unittest.TestCase):
 
     def test_naive_detectors_fail(self):
         totals = defaultdict(lambda: [0, 0, 0])
-        for seed in range(40):
-            episode = generate(seed, Config(keyspace="open", acts=45, customers=20, foreign_percent=30,
+        for seed in range(60):
+            level = ("easy", "medium", "hard")[seed % 3]
+            episode = generate(seed, Config(keyspace="open", acts=45, customers=20, foreign_percent=30, difficulty=level,
                                             errors={key: seed % 2 for key in ERRORS},
                                             interactions={"fx_boundary_payment": int(seed % 3 == 0),
                                                           "fx_partial_allocation": int(seed % 3 == 1)}))

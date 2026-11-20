@@ -36,7 +36,8 @@ def run(episode, policy, closed=False):
 
 
 def augmented(config, index):
-    """Every other training episode also carries the real-practice error types."""
+    """Training mixes difficulty levels, and every other episode carries the real-practice error types."""
+    config = replace(config, difficulty=("medium", "hard", "easy")[index % 3])
     if index % 2 == 0:
         return config
     errors = dict(config.errors) | {kind: 1 for kind in EXTRA_TYPES}
@@ -70,11 +71,12 @@ def train(suite_path, output, *, seeds_per_config=12, seed=20261120):
     return model
 
 
-def compare(model, suite_path, holdout_path, extended_path=None, *, holdout_seed=99, key=b"micro-holdout-key"):
+def compare(model, suite_path, holdout_path, extended_path=None, curriculum_path=None, *, holdout_seed=99,
+            key=b"micro-holdout-key"):
     cases = [(split, case_id, category, seed, config) for split, case_id, category, seed, config in suite(suite_path)
              if split == "dev"]
     rng = random.Random(holdout_seed)
-    for path in (holdout_path, extended_path):
+    for path in (holdout_path, extended_path, curriculum_path):
         if path is None:
             continue
         for split, case_id, category, _, config in suite(path):

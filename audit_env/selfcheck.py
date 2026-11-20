@@ -245,7 +245,9 @@ def data_invariants(count, key=None, seed_base=0):
             keyspace="open" if key is None else "secret",
             month=rng.randint(1, 12), timezone=rng.choice(("+03:00", "+05:00", "+06:00")),
             acts=rng.randint(15, 80), customers=rng.randint(5, 45), foreign_percent=rng.randint(0, 50),
-            goods_percent=rng.choice((0, 30, 50, 80)), vat=rng.random() < 0.7, filler=rng.randint(0, 80),
+            goods_percent=rng.choice((0, 30, 50, 80)), vat=rng.random() < 0.7,
+            filler=rng.choice((rng.randint(0, 80), rng.randint(200, 700))),
+            difficulty=rng.choice(("easy", "medium", "hard")),
             errors={name: rng.choice((0, 0, 1, 2)) for name in ERRORS}
                    | {name: rng.choice((0, 0, 1)) for name in EXTRA_TYPES},
             interactions={"fx_boundary_payment": rng.choice((0, 0, 1)), "fx_partial_allocation": rng.choice((0, 0, 1))},

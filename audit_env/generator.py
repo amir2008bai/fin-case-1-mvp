@@ -20,12 +20,16 @@ def generate(seed, config, key=None):
     key = keys.resolve(config.keyspace) if key is None else key
     semantic = config.semantic_json()
     extra = 0
-    for _ in range(6):
+    ceiling = MAX_ROWS - 80  # room for rows that injected errors add
+    for _ in range(8):
         world = world_module.build(keys.stream(key, "world", seed, semantic), config, extra_filler=extra)
         clean = books.post(world)
-        if len(clean) >= MIN_ROWS + 12:
+        if len(clean) < MIN_ROWS + 12:
+            extra += (MIN_ROWS + 12 - len(clean)) // 2 + 4
+        elif len(clean) > ceiling and config.filler + extra > 0:
+            extra -= (len(clean) - ceiling) // 2 + 4
+        else:
             break
-        extra += (MIN_ROWS + 12 - len(clean)) // 2 + 4
     overrides, specs = scenarios.inject(keys.stream(key, "errors", seed, semantic), world, config)
     rows = books.post(world, overrides)
     resolved = [scenarios.resolve(spec, world, overrides, rows) for spec in specs]

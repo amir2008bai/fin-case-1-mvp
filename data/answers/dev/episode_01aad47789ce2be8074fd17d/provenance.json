@@ -1,0 +1,180 @@
+{
+  "schema_version": "2.0",
+  "generator_version": "2.0.0",
+  "episode_id": "episode_01aad47789ce2be8074fd17d",
+  "seed": 2026104,
+  "config": {
+    "keyspace": "open",
+    "presentation_seed": 0,
+    "difficulty": "medium",
+    "month": 9,
+    "timezone": "+06:00",
+    "acts": 40,
+    "customers": 18,
+    "foreign_percent": 20,
+    "goods_percent": 50,
+    "vat": true,
+    "filler": 30,
+    "errors": {
+      "duplicate_invoice": 2,
+      "payment_allocation": 0,
+      "fx_rate": 0,
+      "period_cutoff": 0,
+      "vat_on_top": 0,
+      "uncollected_service": 0
+    },
+    "interactions": {
+      "fx_boundary_payment": 0,
+      "fx_partial_allocation": 0
+    },
+    "distractors": {
+      "split_payments": true,
+      "multi_act_payments": true,
+      "overpayments": true,
+      "prepayments": true,
+      "unreferenced_payments": true,
+      "opening_balances": true,
+      "late_acts": true,
+      "boundary_timestamps": true,
+      "repeated_amounts": true,
+      "refunds": true,
+      "double_payments": true,
+      "paid_renewals": true,
+      "underpaid_vat": true,
+      "partial_refs": true
+    }
+  },
+  "keyspace": "open",
+  "key_fingerprint": "4c251e205e774643",
+  "world": {
+    "summary": {
+      "acts.late": 2,
+      "acts.next_period": 2,
+      "acts.prior_open": 4,
+      "acts.regular": 32,
+      "documents.goods": 20,
+      "documents.service": 20,
+      "filler": 30,
+      "goods_deliveries": 5,
+      "opening_advances": 1,
+      "payments.after_period": 1,
+      "payments.boundary_inside": 2,
+      "payments.boundary_start": 1,
+      "payments.full": 19,
+      "payments.multi_act": 1,
+      "payments.prepayment_next": 1,
+      "payments.split": 6,
+      "payments.unreferenced": 2
+    },
+    "customers": 18,
+    "invoices": 42,
+    "payments": 33
+  },
+  "clean_ledger_sha256": "9e3737fc29b08cc7a6957b4d85ee5118d8eaa8a6ec1c0c441d32792a1300643a",
+  "changes": [
+    {
+      "issue_ids": [
+        "issue_4f3dc449d29c9c442763fc1b"
+      ],
+      "scenario": "duplicate_invoice",
+      "causes": [
+        "Второй менеджер выставил повторный счёт на ту же услугу и период; оба проведены в выручку."
+      ],
+      "documents_added": [
+        {
+          "doc_id": "doc_2c3e42e735517524b3b9b4c0",
+          "invoice_id": "invoice_529e2d2d8baa08e4b57d7862"
+        }
+      ],
+      "documents_changed": [],
+      "before": [],
+      "after": [
+        {
+          "row_id": "row_1819f76ed5457b728434d9d3",
+          "timestamp": "2026-09-01T00:00:00+06:00",
+          "account": "1210",
+          "debit_minor": 827586,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_83fbdced66a948eda5e8f91c",
+          "invoice_id": "invoice_529e2d2d8baa08e4b57d7862",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_2afee7973e1bfde5414cb5fb",
+          "timestamp": "2026-09-01T00:00:00+06:00",
+          "account": "3130",
+          "debit_minor": 0,
+          "credit_minor": 827586,
+          "currency": "KZT",
+          "entity_id": "entity_83fbdced66a948eda5e8f91c",
+          "invoice_id": "invoice_529e2d2d8baa08e4b57d7862",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_72443f581ac7688e71ffb976",
+          "timestamp": "2026-09-01T00:00:00+06:00",
+          "account": "6010",
+          "debit_minor": 0,
+          "credit_minor": 5172414,
+          "currency": "KZT",
+          "entity_id": "entity_83fbdced66a948eda5e8f91c",
+          "invoice_id": "invoice_529e2d2d8baa08e4b57d7862",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_92fdc227718d6ddfb2c3a4b3",
+          "timestamp": "2026-09-01T00:00:00+06:00",
+          "account": "1210",
+          "debit_minor": 5172414,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_83fbdced66a948eda5e8f91c",
+          "invoice_id": "invoice_529e2d2d8baa08e4b57d7862",
+          "payment_id": null
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "issue_075f2dbe4b3af6e29283c835"
+      ],
+      "scenario": "duplicate_invoice",
+      "causes": [
+        "Второй менеджер выставил повторный счёт на ту же услугу и период; оба проведены в выручку."
+      ],
+      "documents_added": [
+        {
+          "doc_id": "doc_3690c93baa867acf442c9f18",
+          "invoice_id": "invoice_52bad984fe6f514b3ad4efca"
+        }
+      ],
+      "documents_changed": [],
+      "before": [],
+      "after": [
+        {
+          "row_id": "row_489fb2f007ea9efc5352a702",
+          "timestamp": "2026-09-15T00:00:00+06:00",
+          "account": "6010",
+          "debit_minor": 0,
+          "credit_minor": 500000,
+          "currency": "KZT",
+          "entity_id": "entity_74c796ad4dc4bd555455ce1d",
+          "invoice_id": "invoice_52bad984fe6f514b3ad4efca",
+          "payment_id": null
+        },
+        {
+          "row_id": "row_775f20ca5683c13d3e932389",
+          "timestamp": "2026-09-15T00:00:00+06:00",
+          "account": "1210",
+          "debit_minor": 500000,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_74c796ad4dc4bd555455ce1d",
+          "invoice_id": "invoice_52bad984fe6f514b3ad4efca",
+          "payment_id": null
+        }
+      ]
+    }
+  ]
+}

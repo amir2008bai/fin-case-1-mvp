@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "features": {
     "vat_on_top": [
       "bias",
@@ -17,8 +17,7 @@
     ],
     "duplicate_invoice": [
       "bias",
-      "same_lines",
-      "same_period",
+      "identical_supply",
       "issue_gap_days",
       "both_recognized",
       "line_count"
@@ -29,7 +28,9 @@
       "recognized_before",
       "expected_excess_share",
       "refs_count",
-      "foreign"
+      "foreign",
+      "unexplained_share",
+      "fully_explained"
     ],
     "fx_rate": [
       "bias",
@@ -50,62 +51,63 @@
   },
   "weights": {
     "duplicate_invoice": [
-      -1.907268,
-      -0.714522,
-      5.940228,
-      -2.167679,
-      0.409347,
-      -0.24016
+      -2.468906,
+      5.53947,
+      -2.298333,
+      0.882892,
+      -0.528586
     ],
     "payment_allocation": [
-      -1.727003,
-      -0.46733,
-      4.288499,
-      -4.975378,
-      -0.863502,
-      1.550856
+      -1.223687,
+      -1.692873,
+      5.076704,
+      -2.228834,
+      -0.611844,
+      1.163311,
+      0.535961,
+      -3.801026
     ],
     "fx_rate": [
-      -3.479178,
-      3.503812,
-      0.290313,
-      0.163146,
-      0.612529,
-      3.533893
+      -3.365432,
+      3.477078,
+      0.24025,
+      -0.029095,
+      0.687552,
+      3.683428
     ],
     "period_cutoff": [
-      1.127474,
-      -3.861652,
-      1.235826,
-      -3.861652,
-      1.235826,
-      0.310681
+      1.169649,
+      -3.860647,
+      1.268546,
+      -3.860647,
+      1.268546,
+      0.093123
     ],
     "vat_on_top": [
-      -1.743019,
-      0.865902,
-      6.277789,
-      -1.694766,
-      0.418331
+      -1.773815,
+      0.861811,
+      6.248127,
+      -1.719805,
+      0.506956
     ],
     "uncollected_service": [
-      -3.836614,
-      0.755344,
-      4.205361,
-      2.338888,
-      0.314646
+      -3.818421,
+      0.594508,
+      4.521134,
+      2.111253,
+      0.265653
     ]
   },
-  "threshold": 0.8,
+  "threshold": 0.5,
   "meta": {
     "train_episodes": 120,
     "candidates": {
-      "duplicate_invoice": 312,
-      "payment_allocation": 302,
-      "fx_rate": 1442,
-      "period_cutoff": 7915,
-      "vat_on_top": 3394,
-      "uncollected_service": 1058
+      "duplicate_invoice": 458,
+      "payment_allocation": 353,
+      "fx_rate": 1547,
+      "period_cutoff": 8034,
+      "vat_on_top": 3507,
+      "uncollected_service": 1076
     },
     "positives": {
       "duplicate_invoice": 36,
@@ -116,13 +118,13 @@
       "uncollected_service": 66
     },
     "threshold_rewards": {
-      "0.3": 0.561355,
-      "0.4": 0.763112,
-      "0.5": 0.77901,
-      "0.6": 0.851543,
-      "0.7": 0.867733,
-      "0.8": 0.973267,
-      "0.9": 0.757852
+      "0.3": 0.922005,
+      "0.4": 0.973467,
+      "0.5": 0.973467,
+      "0.6": 0.973467,
+      "0.7": 0.973467,
+      "0.8": 0.973467,
+      "0.9": 0.973467
     },
     "suite": "suite.v2.json",
     "seed": 20261120

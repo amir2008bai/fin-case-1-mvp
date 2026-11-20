@@ -6,8 +6,8 @@
     "precision": 0.0,
     "recall": 0.0,
     "f1": 1.0,
-    "reward": 0.977333,
-    "steps": 12.333333,
+    "reward": 0.975333,
+    "steps": 13.333333,
     "episodes": 3
   },
   {
@@ -28,8 +28,8 @@
     "precision": 1.0,
     "recall": 1.0,
     "f1": 1.0,
-    "reward": 0.966,
-    "steps": 18,
+    "reward": 0.964,
+    "steps": 19,
     "episodes": 1
   },
   {
@@ -50,8 +50,8 @@
     "precision": 0.0,
     "recall": 0.0,
     "f1": 1.0,
-    "reward": 0.976,
-    "steps": 13,
+    "reward": 0.977333,
+    "steps": 12.333333,
     "episodes": 3
   },
   {
@@ -61,8 +61,8 @@
     "precision": 1.0,
     "recall": 1.0,
     "f1": 1.0,
-    "reward": 0.972,
-    "steps": 15,
+    "reward": 0.973,
+    "steps": 14.5,
     "episodes": 2
   },
   {
@@ -95,7 +95,7 @@
     "recall": 0.0,
     "f1": 0.0,
     "reward": -1.0,
-    "steps": 12.333333,
+    "steps": 13.333333,
     "episodes": 3
   },
   {
@@ -117,7 +117,7 @@
     "recall": 0.0,
     "f1": 0.0,
     "reward": -1.0,
-    "steps": 18,
+    "steps": 19,
     "episodes": 1
   },
   {
@@ -139,7 +139,7 @@
     "recall": 0.0,
     "f1": 0.0,
     "reward": -1.0,
-    "steps": 13,
+    "steps": 12.333333,
     "episodes": 3
   },
   {
@@ -150,7 +150,7 @@
     "recall": 0.0,
     "f1": 0.0,
     "reward": -1.0,
-    "steps": 15,
+    "steps": 14.5,
     "episodes": 2
   },
   {
@@ -215,8 +215,8 @@
     "precision": 1.0,
     "recall": 1.0,
     "f1": 1.0,
-    "reward": 0.986,
-    "steps": 8,
+    "reward": 0.987,
+    "steps": 7.5,
     "episodes": 4
   },
   {
@@ -359,17 +359,17 @@
     "recall": 0.0,
     "f1": 0.0,
     "reward": -1.0,
-    "steps": 12.333333,
+    "steps": 13.333333,
     "episodes": 3
   },
   {
     "policy": "reconcile",
     "split": "dev",
     "category": "interacting",
-    "precision": 0.076923,
-    "recall": 0.333333,
-    "f1": 0.125,
-    "reward": -0.764,
+    "precision": 0.105128,
+    "recall": 0.5,
+    "f1": 0.173611,
+    "reward": -0.679778,
     "steps": 14.5,
     "episodes": 2
   },
@@ -377,21 +377,21 @@
     "policy": "reconcile",
     "split": "dev",
     "category": "multi",
-    "precision": 0.117647,
-    "recall": 0.333333,
-    "f1": 0.173913,
-    "reward": -0.686174,
-    "steps": 18,
+    "precision": 0.1875,
+    "recall": 0.5,
+    "f1": 0.272727,
+    "reward": -0.490545,
+    "steps": 19,
     "episodes": 1
   },
   {
     "policy": "reconcile",
     "split": "dev",
     "category": "single",
-    "precision": 0.133333,
+    "precision": 0.133916,
     "recall": 0.75,
-    "f1": 0.22619,
-    "reward": -0.566619,
+    "f1": 0.226923,
+    "reward": -0.565654,
     "steps": 14.25,
     "episodes": 4
   },
@@ -403,28 +403,28 @@
     "recall": 0.0,
     "f1": 0.0,
     "reward": -1.0,
-    "steps": 13,
+    "steps": 12.333333,
     "episodes": 3
   },
   {
     "policy": "reconcile",
     "split": "train",
     "category": "interacting",
-    "precision": 0.112637,
+    "precision": 0.10049,
     "recall": 0.5,
-    "f1": 0.183824,
-    "reward": -0.660353,
-    "steps": 15,
+    "f1": 0.166667,
+    "reward": -0.693667,
+    "steps": 14.5,
     "episodes": 2
   },
   {
     "policy": "reconcile",
     "split": "train",
     "category": "multi",
-    "precision": 0.1875,
+    "precision": 0.15,
     "recall": 0.5,
-    "f1": 0.272727,
-    "reward": -0.488545,
+    "f1": 0.230769,
+    "reward": -0.572462,
     "steps": 18,
     "episodes": 1
   },
@@ -432,10 +432,10 @@
     "policy": "reconcile",
     "split": "train",
     "category": "single",
-    "precision": 0.165446,
-    "recall": 0.75,
-    "f1": 0.268687,
-    "reward": -0.482126,
+    "precision": 0.080128,
+    "recall": 0.5,
+    "f1": 0.138095,
+    "reward": -0.73781,
     "steps": 14.5,
     "episodes": 4
   }

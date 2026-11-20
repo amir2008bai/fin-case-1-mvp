@@ -17,15 +17,15 @@ from pathlib import Path
 from .agents import ScanPolicy, report
 from .checks import Auditor, kzt
 
-MODEL_VERSION = 3
+MODEL_VERSION = 4
 FX_TOLERANCE = 2  # the published matcher tolerance for fx_rate, in minor units
 TYPES = ("duplicate_invoice", "payment_allocation", "fx_rate", "period_cutoff", "vat_on_top", "uncollected_service")
 FEATURES = {
     "vat_on_top": ("bias", "extra_share", "has_extra", "vat_line_share", "paid_base_share"),
     "uncollected_service": ("bias", "overdue", "renewed_after_due", "same_code_later", "overdue_months"),
-    "duplicate_invoice": ("bias", "same_lines", "same_period", "issue_gap_days", "both_recognized", "line_count"),
+    "duplicate_invoice": ("bias", "identical_supply", "issue_gap_days", "both_recognized", "line_count"),
     "payment_allocation": ("bias", "advance_share", "recognized_before", "expected_excess_share", "refs_count",
-                           "foreign"),
+                           "foreign", "unexplained_share", "fully_explained"),
     "fx_rate": ("bias", "log_gap_correct", "log_gap_issue_or_wall", "is_payment", "booked_outside", "over_tolerance"),
     "period_cutoff": ("bias", "service_in_period", "issue_in_period", "instant_in_period", "wall_in_period",
                       "is_payment"),
@@ -70,10 +70,12 @@ def candidates(tables, manifest, policy):
                 recognized = all(view.revenue_rows(item["invoice_id"]) for item in (first, second))
                 evidence = (first["doc_id"], second["doc_id"],
                             *(row["row_id"] for item in (first, second) for row in view.revenue_rows(item["invoice_id"])))
+                same_lines = lines(first) == lines(second)
+                same_period = periods(first) == periods(second)
                 found.append(Candidate("duplicate_invoice", (first["invoice_id"], second["invoice_id"]),
                                        second["total_minor"], second["currency"], evidence[:10],
-                                       (1.0, float(lines(first) == lines(second)), float(periods(first) == periods(second)),
-                                        min(gap, 60) / 30, float(recognized), len(first["line_items"]) / 2)))
+                                       (1.0, float(same_lines and same_period), min(gap, 60) / 30,
+                                        float(recognized), len(first["line_items"]) / 2)))
     for invoice in invoices:
         revenue = view.revenue_rows(invoice["invoice_id"])
         if not revenue:
@@ -170,11 +172,13 @@ def candidates(tables, manifest, policy):
             open_part = max(0, sum(view.invoices[ref]["total_minor"] for ref in refs) - others)
             excess = max(0, payment["amount_minor"] - open_part) if payment["currency"] == base else 0
             chosen = min(advances, key=lambda row: abs(row["credit_minor"] - (parked - excess)))
+            unexplained = max(0, parked - excess)
             found.append(Candidate("payment_allocation", (payment["payment_id"],), parked - excess if excess < parked else parked,
                                    base, (payment["doc_id"], first["doc_id"], *(row["row_id"] for row in bank),
                                           chosen["row_id"])[:10],
                                    (1.0, parked / amount_kzt, float(recognized), excess / max(1, payment["amount_minor"]),
-                                    len(refs) / 2, float(payment["currency"] != base))))
+                                    len(refs) / 2, float(payment["currency"] != base), unexplained / amount_kzt,
+                                    float(unexplained == 0))))
     return found
 
 

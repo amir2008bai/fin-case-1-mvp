@@ -16,7 +16,18 @@ python -m audit_env serve            # http://127.0.0.1:8765, только local
 | POST | `/api/sessions/{id}/run` | `{"policy": "expert" \| "micro" \| "reconcile" \| "random" \| "flag-all"}` | `{"findings", "steps", "seconds", "trajectory", "score"?}` |
 | POST | `/api/audit` | `{"folder": "..."}` или `{"manifest", "policy", "tables"}`; можно добавить `"auditor": "rules" \| "micro"` | `{"findings": [...]}` |
 
-`config` устроен так же, как в `audit_env.contracts.Config`: `month`, `timezone`, `acts`, `customers`, `foreign_percent`, `goods_percent` (доля накладных на товары среди всех счетов), `vat`, `filler`, `errors` (включая `vat_on_top` и `uncollected_service`), `interactions`, `distractors`, `presentation_seed`, `keyspace`. Неизвестные ключи отклоняются.
+`config` устроен так же, как в `audit_env.contracts.Config`:
+- `difficulty` — `easy`, `medium` или `hard`;
+- `month`, `timezone`;
+- `acts`, `customers`, `foreign_percent`;
+- `goods_percent` — доля накладных на товары среди всех счетов;
+- `vat`;
+- `filler` — от 0 до 800 фоновых операций;
+- `errors` — включая `vat_on_top` и `uncollected_service`;
+- `interactions`, `distractors`;
+- `presentation_seed`, `keyspace`.
+
+Неизвестные ключи отклоняются.
 
 Документы счетов в `files.documents` различаются полем `document_kind`: `act` — акт выполненных работ (форма Р-1), `waybill` — накладная на отпуск запасов (форма З-2). В поле `title` лежит готовое название для отображения. Если в документе есть НДС, к нему приложен ЭСФ в поле `vat_invoice`.
 

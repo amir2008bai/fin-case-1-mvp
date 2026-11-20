@@ -33,7 +33,12 @@ DISTRACTORS = (
     "split_payments", "multi_act_payments", "overpayments", "prepayments",
     "unreferenced_payments", "opening_balances", "late_acts", "boundary_timestamps",
     "repeated_amounts", "refunds",
+    # look-alikes that only the hard level adds
+    "double_payments", "paid_renewals", "underpaid_vat", "partial_refs",
 )
+DIFFICULTIES = ("easy", "medium", "hard")
+# How densely distractors appear: easy halves, hard doubles and adds the hard-only look-alikes.
+INTENSITY = {"easy": 0.5, "medium": 1.0, "hard": 2.0}
 TIMEZONES = ("+03:00", "+05:00", "+06:00")
 KEYSPACES = ("open", "secret")
 
@@ -64,6 +69,7 @@ class Config:
 
     keyspace: str = "secret"
     presentation_seed: int = 0
+    difficulty: str = "medium"
     month: int | None = None
     timezone: str = "+05:00"
     acts: int = 40
@@ -80,6 +86,8 @@ class Config:
         if self.keyspace not in KEYSPACES:
             raise ValueError(f"keyspace: expected one of {KEYSPACES}")
         _int_in("presentation_seed", self.presentation_seed, 0, 2**63 - 1)
+        if self.difficulty not in DIFFICULTIES:
+            raise ValueError(f"difficulty: expected one of {DIFFICULTIES}")
         if self.month is not None:
             _int_in("month", self.month, 1, 12)
         if self.timezone not in TIMEZONES:
@@ -90,7 +98,7 @@ class Config:
         _int_in("goods_percent", self.goods_percent, 0, 80)
         if type(self.vat) is not bool:
             raise ValueError("vat: expected boolean")
-        _int_in("filler", self.filler, 0, 400)
+        _int_in("filler", self.filler, 0, 800)
         object.__setattr__(self, "errors", self._merge("errors", self.errors, ALL_TYPES, 0))
         object.__setattr__(self, "interactions",
                            self._merge("interactions", self.interactions, INTERACTIONS, 0))

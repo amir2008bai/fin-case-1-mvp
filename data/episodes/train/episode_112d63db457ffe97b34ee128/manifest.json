@@ -1,0 +1,36 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_112d63db457ffe97b34ee128",
+  "company": {
+    "name": "ОСИ «Береке Финанс»",
+    "country": "KZ"
+  },
+  "base_currency": "KZT",
+  "period_start": "2026-04-01T00:00:00+05:00",
+  "period_end": "2026-05-01T00:00:00+05:00",
+  "timezone": "+05:00",
+  "counts": {
+    "ledger": 381,
+    "invoices": 50,
+    "payments": 40,
+    "fx": 164
+  },
+  "document_count": 90,
+  "minor_units": {
+    "KZT": 2,
+    "RUB": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "ROUND_HALF_UP",
+    "fx": "per converted amount",
+    "vat": "per line, included in price"
+  },
+  "id_fields": {
+    "ledger": "row_id",
+    "invoices": "invoice_id",
+    "payments": "payment_id",
+    "fx": "fx_id",
+    "documents": "doc_id"
+  }
+}

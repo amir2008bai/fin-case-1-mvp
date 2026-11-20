@@ -39,6 +39,10 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Config(errors={"made_up": 1})
         with self.assertRaises(ValueError):
+            Config(difficulty="nightmare")
+        with self.assertRaises(ValueError):
+            Config(distractors={"made_up": True})
+        with self.assertRaises(ValueError):
             generate(-1, MIXED)
 
     def test_step_shape_and_detached_results(self):

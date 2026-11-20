@@ -1,0 +1,73 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_3cf89d233740217deda268c6",
+  "issues": [
+    {
+      "issue_id": "issue_93d0e7ec478fd808158ab376",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "invoice_6f68fd3930c3f923ae0cb408",
+        "invoice_a31c1ac2b4e1b3303ad80189"
+      ],
+      "expected_amount_minor": 90000,
+      "currency": "USD",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_9a5aa1259e162963bbb598a9",
+          "doc_fda7e28858f71dd3cd562e99",
+          "row_9adaa9c380cb2d75a194a28b",
+          "row_38b036dc2bc4bd6440aabee9"
+        ],
+        [
+          "doc_9a5aa1259e162963bbb598a9",
+          "doc_fda7e28858f71dd3cd562e99",
+          "row_b58b0f5e98d82f2f44356eb5",
+          "row_e718e403e73daa7ae21c43ed"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_9a5aa1259e162963bbb598a9",
+        "doc_fda7e28858f71dd3cd562e99",
+        "row_38b036dc2bc4bd6440aabee9",
+        "row_9adaa9c380cb2d75a194a28b",
+        "row_b58b0f5e98d82f2f44356eb5",
+        "row_e718e403e73daa7ae21c43ed"
+      ]
+    },
+    {
+      "issue_id": "issue_323207a9fcfe7bbd14ab8046",
+      "type": "duplicate_invoice",
+      "affected_ids": [
+        "invoice_c0908aa5f499754d08b3c20c",
+        "invoice_c553a5ba21aadebfa8aec953"
+      ],
+      "expected_amount_minor": 1500000,
+      "currency": "RUB",
+      "tolerance_minor": 0,
+      "evidence_sets": [
+        [
+          "doc_a9952e314fee1ee123b97e25",
+          "doc_cca64a04a2978c78cd25952e",
+          "row_6a6074d7e2d7c41b8e19eff3",
+          "row_5fd89166330186e9c859a5c5"
+        ],
+        [
+          "doc_a9952e314fee1ee123b97e25",
+          "doc_cca64a04a2978c78cd25952e",
+          "row_aa30ee0a3f2a51c7d100abbb",
+          "row_8386af9707de99ca675c65ec"
+        ]
+      ],
+      "relevant_ids": [
+        "doc_a9952e314fee1ee123b97e25",
+        "doc_cca64a04a2978c78cd25952e",
+        "row_4c50c5d6628287032897211f",
+        "row_5fd89166330186e9c859a5c5",
+        "row_6a6074d7e2d7c41b8e19eff3",
+        "row_8386af9707de99ca675c65ec",
+        "row_aa30ee0a3f2a51c7d100abbb"
+      ]
+    }
+  ]
+}

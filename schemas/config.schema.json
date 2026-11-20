@@ -14,6 +14,14 @@
       "type": "integer",
       "minimum": 0
     },
+    "difficulty": {
+      "enum": [
+        "easy",
+        "medium",
+        "hard"
+      ],
+      "description": "density of look-alikes: easy halves, hard doubles and adds hard-only kinds"
+    },
     "month": {
       "type": [
         "integer",
@@ -56,7 +64,7 @@
     "filler": {
       "type": "integer",
       "minimum": 0,
-      "maximum": 400
+      "maximum": 800
     },
     "errors": {
       "type": "object",
@@ -151,6 +159,18 @@
           "type": "boolean"
         },
         "refunds": {
+          "type": "boolean"
+        },
+        "double_payments": {
+          "type": "boolean"
+        },
+        "paid_renewals": {
+          "type": "boolean"
+        },
+        "underpaid_vat": {
+          "type": "boolean"
+        },
+        "partial_refs": {
           "type": "boolean"
         }
       },

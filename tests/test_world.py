@@ -38,6 +38,34 @@ class WorldTests(unittest.TestCase):
                                episode.manifest["episode_id"], episode.issues, seen_all(episode), 0)
                 self.assertEqual(result.f1, 1.0)
 
+    def test_difficulty_scales_look_alikes_and_keeps_truth(self):
+        totals = {}
+        for level in ("easy", "medium", "hard"):
+            summary = Counter()
+            for seed in range(12):
+                episode = generate(seed, Config(keyspace="open", difficulty=level, acts=60, customers=28,
+                                                errors={key: 1 for key in ERROR_TYPES} | {key: 1 for key in EXTRA_TYPES}))
+                summary.update(episode.provenance["world"]["summary"])
+                self.assertEqual(audit_episode(restore_clean(episode)), [])
+                result = score({"episode_id": episode.manifest["episode_id"], "findings": audit_episode(episode)},
+                               episode.manifest["episode_id"], episode.issues, seen_all(episode), 0)
+                self.assertEqual(result.f1, 1.0)
+            totals[level] = summary
+        look_alikes = ("acts.late", "acts.prior_open", "acts.next_period", "payments.boundary_inside")
+        for name in look_alikes:
+            self.assertLess(totals["easy"][name], totals["medium"][name], name)
+            self.assertLess(totals["medium"][name], totals["hard"][name], name)
+        for name in ("payments.double_payment", "payments.underpaid_vat", "acts.paid_renewal", "payments.partial_refs"):
+            self.assertEqual(totals["medium"][name], 0, name)
+            self.assertGreater(totals["hard"][name], 0, name)
+
+    def test_long_hard_books_stay_within_the_case_limits(self):
+        for seed in range(4):
+            episode = generate(seed, Config(keyspace="open", difficulty="hard", acts=80, customers=35, filler=800,
+                                            errors={key: 2 for key in ERROR_TYPES}))
+            self.assertTrue(1500 <= episode.manifest["counts"]["ledger"] <= 2000)
+            self.assertLessEqual(episode.manifest["document_count"], 200)
+
     def test_vat_on_top_leaves_exactly_the_added_vat_unpaid(self):
         episode = generate(17, Config(keyspace="open", errors=ZERO | {"vat_on_top": 1}))
         issue = episode.issues[0]
