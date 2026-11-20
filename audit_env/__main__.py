@@ -34,6 +34,64 @@ def table(rows, order=None):
     return "\n".join(lines)
 
 
+def red_team(seed_source, key, repeats=1):
+    """Every attack on the jury template, the extended template and the hard level, in closed mode."""
+    from dataclasses import replace
+
+    from .attacks import bruteforce_demo, run_suite
+    from .contracts import Config
+    from .dataset import suite
+    from .generator import generate
+
+    episodes = []
+    for path in (HOLDOUT, EXTENDED, CURRICULUM):
+        for split, *_, config in suite(path):
+            if path == CURRICULUM and split != "hard":
+                continue
+            for _ in range(repeats):
+                episodes.append(generate(seed_source.randrange(2**31), replace(config, keyspace="secret"), key=key))
+    rows, violations = run_suite(episodes)
+    bruteforce = bruteforce_demo(Config(errors={"duplicate_invoice": 1}), secret_key=key)
+    if not bruteforce["ok"]:
+        violations.append("seed brute force: the open-key control failed or the secret key leaked")
+    return {"episodes": len(episodes), "clean_episodes": sum(not episode.issues for episode in episodes),
+            "errors": sum(len(episode.issues) for episode in episodes),
+            "attacks": rows, "violations": violations, "seed_bruteforce": bruteforce}
+
+
+def red_team_lines(result):
+    lines = [f"  {result['episodes']} episodes ({result['clean_episodes']} clean, {result['errors']} errors): "
+             "jury template + extended template + hard level"]
+    lines.append(f"  {'agent':18s} {'clean':>8s} {'errors':>8s} {'TP':>5s} {'FP':>6s} {'steps':>6s}  what it tries")
+    for row in result["attacks"]:
+        clean = "—" if row["clean_reward"] is None else f"{row['clean_reward']:+.3f}"
+        errors = "—" if row["error_reward"] is None else f"{row['error_reward']:+.3f}"
+        lines.append(f"  {row['name']:18s} {clean:>8s} {errors:>8s} {row['tp']:5d} {row['fp']:6d} {row['steps']:6.1f}"
+                     f"  {row['description']}")
+    bruteforce = result["seed_bruteforce"]
+    lines.append(f"  seed brute force: open key -> seed {bruteforce['open_key_recovered_seed']}, "
+                 f"secret key -> {bruteforce['secret_key_recovered_seed']} after {bruteforce['tried_seeds']} seeds")
+    lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
+    lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
+    return "\n".join(lines)
+
+
+def command_attacks(args):
+    """Red team. By default the secret key is derived from --seed, so the printed table is reproducible."""
+    import hashlib
+    import random
+
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else hashlib.sha256(f"red-team:{args.seed}".encode()).digest()
+    result = red_team(random.Random(args.seed), key, repeats=args.repeats)
+    out(red_team_lines(result))
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 1 if result["violations"] else 0
+
+
 def holdout_cases(path, seed_source, by_split=False):
     """Cases of a template; seeds are drawn here. by_split groups results by split (the difficulty level)."""
     from .dataset import suite
@@ -134,6 +192,13 @@ def command_verify(args):
     }
     if problems:
         failed.append("curriculum oracle/paired checks")
+
+    out("\n== 8. Red team: adversarial answers against the grader (closed mode, fresh secret key)")
+    result = red_team(random.Random(os.urandom(8)), fresh_key(), repeats=1)
+    out(red_team_lines(result))
+    report["sections"]["red_team"] = result
+    if result["violations"]:
+        failed.append("red team")
 
     report["seconds"] = round(time.time() - started, 1)
     report["ok"] = not failed
@@ -339,6 +404,11 @@ def main():
     failures.add_argument("--model", default="models/model.json")
     failures.add_argument("--extended", action="store_true", help="use the extended hold-out (real-practice types)")
     failures.add_argument("--curriculum", action="store_true", help="use the easy/medium/hard curriculum")
+    attacks = commands.add_parser("attacks", help="red team: adversarial agents against the grader")
+    attacks.add_argument("--repeats", type=int, default=3, help="seeds per configuration")
+    attacks.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
+    attacks.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
+    attacks.add_argument("--report", help="write the full result as JSON")
     data = commands.add_parser("dataset", help="export open episodes, answers, trajectories, checksums")
     data.add_argument("output", type=Path)
     data.add_argument("--suite", default=DEFAULT_SUITE)
@@ -370,7 +440,7 @@ def main():
     handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
                 "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
-                "failures": command_failures}
+                "failures": command_failures, "attacks": command_attacks}
     raise SystemExit(handlers[args.command](args))
 
 
