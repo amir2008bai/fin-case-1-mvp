@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "trajectory_record.schema.json",
+  "title": "trajectory_record",
+  "type": "object",
+  "properties": {
+    "episode_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "step": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "action": {},
+    "observation": {
+      "$ref": "observation.schema.json"
+    },
+    "reward": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "terminated": {
+      "type": "boolean"
+    },
+    "truncated": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "episode_id",
+    "step",
+    "action",
+    "observation",
+    "reward",
+    "terminated",
+    "truncated"
+  ],
+  "additionalProperties": false
+}

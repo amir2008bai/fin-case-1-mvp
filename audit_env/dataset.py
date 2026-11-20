@@ -120,5 +120,49 @@ def benchmark_cases(cases, policies=POLICIES, *, paired=True, key=None):
     return rows, failures
 
 
+def failure_breakdown(cases, policies, *, key, model_path=None):
+    """Per policy: TP/FN per type and FP split by reason (no such error, wrong amount, currency, evidence)."""
+    from collections import Counter
+
+    from .environment import AuditEnv
+
+    counts = {name: Counter() for name in policies}
+    for _, case_id, category, seed, config in cases:
+        episode = generate(seed, config, key=key)
+        truth = {(issue.type, tuple(sorted(issue.affected_ids))): issue for issue in episode.issues}
+        for name in policies:
+            if name == "micro":
+                from .micro import MicroModel
+
+                policy = MicroModel.load(model_path or "models/model.json").policy()
+            else:
+                policy = oracle(episode) if name == "oracle" else create_policy(name)
+            env = AuditEnv(training=False)
+            observation, _ = env.load_episode(episode)
+            outcome, trace, _ = run_policy(env, observation, policy)
+            action = trace[-1]["action"] if isinstance(trace[-1]["action"], dict) else {}
+            findings = (action.get("findings") or {}).get("findings", []) if action else []
+            matched = {issue_id for _, issue_id in outcome.matches}
+            for finding in findings:
+                subject = (finding["type"], tuple(sorted(finding["affected_ids"])))
+                issue = truth.get(subject)
+                if issue is not None and issue.issue_id in matched:
+                    counts[name][f"TP {finding['type']}"] += 1
+                elif issue is not None:
+                    if abs(finding["claimed_amount_minor"] - issue.expected_amount_minor) > issue.tolerance_minor:
+                        reason = "wrong amount"
+                    elif finding["currency"] != issue.currency:
+                        reason = "wrong currency"
+                    else:
+                        reason = "evidence"
+                    counts[name][f"FP {finding['type']} ({reason})"] += 1
+                else:
+                    counts[name][f"FP {finding['type']} (no such error)"] += 1
+            for issue in episode.issues:
+                if issue.issue_id not in matched:
+                    counts[name][f"FN {issue.type}"] += 1
+    return counts
+
+
 def json_bytes(value):
     return (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode("utf-8")

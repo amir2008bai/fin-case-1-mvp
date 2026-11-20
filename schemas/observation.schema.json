@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "observation.schema.json",
+  "title": "observation",
+  "type": "object",
+  "properties": {
+    "task": {
+      "type": "string"
+    },
+    "manifest": {
+      "$ref": "manifest.schema.json"
+    },
+    "policy": {
+      "type": "object"
+    },
+    "tools": {
+      "type": "object"
+    },
+    "result": {},
+    "error": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "submitted",
+        "truncated"
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 0
+    },
+    "remaining_steps": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    }
+  },
+  "required": [
+    "remaining_steps"
+  ],
+  "additionalProperties": false
+}

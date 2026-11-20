@@ -133,6 +133,25 @@ def command_benchmark(args):
     return 1 if problems else 0
 
 
+def command_failures(args):
+    import random
+    from dataclasses import replace
+
+    from .dataset import failure_breakdown, suite
+
+    rng = random.Random(args.seed)
+    cases = [(split, case_id, category, rng.randrange(2**31), replace(config, keyspace="secret"))
+             for split, case_id, category, _, config in suite(HOLDOUT) for _ in range(args.repeats)]
+    counts = failure_breakdown(cases, ("reconcile", "micro", "expert", "random", "flag-all"),
+                               key=b"failure-analysis-key", model_path=args.model)
+    out(f"{len(cases)} hold-out episodes (seed {args.seed}, {args.repeats} per config)")
+    for name, counter in counts.items():
+        out(f"\n== {name}")
+        for label, value in sorted(counter.items()):
+            out(f"  {label:45s} {value}")
+    return 0
+
+
 def command_dataset(args):
     from .dataset import export
 
@@ -170,6 +189,39 @@ def command_demo(args):
     return 0
 
 
+def command_train(args):
+    from .episode_io import write_json
+    from .training import compare, train
+
+    started = time.time()
+    model = train(args.suite, args.output, seeds_per_config=args.seeds)
+    out(f"trained on {model.meta['train_episodes']} episodes in {time.time() - started:.1f} s; "
+        f"threshold {model.threshold} (chosen by mean terminal reward on train)")
+    summary = compare(model, args.suite, HOLDOUT)
+    write_json(Path(args.output) / "report.json", {"model": model.meta | {"threshold": model.threshold},
+                                                   "held_out": summary})
+    out(f"{'split':8s} {'policy':10s} {'category':12s} {'n':>3s} {'P':>6s} {'R':>6s} {'F1':>6s} {'return':>7s}")
+    for row in summary:
+        out(f"{row['split']:8s} {row['policy']:10s} {row['category']:12s} {row['episodes']:3d} {row['precision']:6.3f} "
+            f"{row['recall']:6.3f} {row['f1']:6.3f} {row['reward']:+7.3f}")
+    out(f"model: {Path(args.output) / 'model.json'}, report: {Path(args.output) / 'report.json'}")
+    return 0
+
+
+def command_serve(args):
+    from .api import serve
+
+    server = serve(args.host, args.port, args.model)
+    out(f"audit_env API on http://{args.host}:{server.server_address[1]}/api/health (Ctrl+C to stop)")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
+    return 0
+
+
 def command_audit(args):
     from .checks import audit
     from .episode_io import FormatError, load_episode
@@ -179,7 +231,12 @@ def command_audit(args):
     except FormatError as exc:
         out(json.dumps({"ok": False, "problems": exc.problems}, ensure_ascii=False, indent=2))
         return 2
-    findings = audit(episode.manifest, episode.policy, episode.tables)
+    if args.model:
+        from .micro import MicroModel
+
+        findings = MicroModel.load(args.model).findings(episode.tables, episode.manifest, episode.policy)
+    else:
+        findings = audit(episode.manifest, episode.policy, episode.tables)
     out(json.dumps({"ok": True, "episode_id": episode.manifest.get("episode_id"), "findings": findings},
                    ensure_ascii=False, indent=2))
     return 0
@@ -215,6 +272,10 @@ def main():
     bench.add_argument("--suite", default=DEFAULT_SUITE)
     bench.add_argument("--holdout", action="store_true")
     bench.add_argument("--seed", type=int, default=7)
+    failures = commands.add_parser("failures", help="measured failure breakdown per policy on hold-out configs")
+    failures.add_argument("--repeats", type=int, default=5)
+    failures.add_argument("--seed", type=int, default=5)
+    failures.add_argument("--model", default="models/model.json")
     data = commands.add_parser("dataset", help="export open episodes, answers, trajectories, checksums")
     data.add_argument("output", type=Path)
     data.add_argument("--suite", default=DEFAULT_SUITE)
@@ -227,15 +288,25 @@ def main():
     demo.add_argument("--policy", choices=POLICIES, default="expert")
     demo.add_argument("--closed", action="store_true")
     demo.add_argument("--trajectory", type=Path)
+    training = commands.add_parser("train", help="fit the micro model on train, compare on held-out data")
+    training.add_argument("--suite", default=DEFAULT_SUITE)
+    training.add_argument("--output", default="models")
+    training.add_argument("--seeds", type=int, default=12)
     audit = commands.add_parser("audit", help="audit a folder with the six episode files (no truth needed)")
     audit.add_argument("folder", type=Path)
+    audit.add_argument("--model", type=Path, help="use the trained micro model instead of the rule-based auditor")
+    serve = commands.add_parser("serve", help="local HTTP/JSON API for a UI (localhost only)")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8765)
+    serve.add_argument("--model", default="models/model.json")
     truth = commands.add_parser("audit-truth", help="independently re-derive a folder's truth")
     truth.add_argument("public", type=Path)
     truth.add_argument("answers", type=Path)
     args = parser.parse_args()
     handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
-                "audit-truth": command_audit_truth}
+                "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
+                "failures": command_failures}
     raise SystemExit(handlers[args.command](args))
 
 

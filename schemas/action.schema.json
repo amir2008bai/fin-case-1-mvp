@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "action.schema.json",
+  "title": "action",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "list_records"
+        },
+        "table": {
+          "enum": [
+            "fx",
+            "invoices",
+            "ledger",
+            "payments"
+          ]
+        },
+        "cursor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 32
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": [
+        "type",
+        "table"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "get_record"
+        },
+        "table": {
+          "enum": [
+            "fx",
+            "invoices",
+            "ledger",
+            "payments"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "type",
+        "table",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "get_document"
+        },
+        "doc_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "type",
+        "doc_id"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "calculator"
+        },
+        "expression": {
+          "type": "string",
+          "pattern": "^[ 0-9.+*/()-]{1,256}$"
+        }
+      },
+      "required": [
+        "type",
+        "expression"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "submit"
+        },
+        "findings": {
+          "$ref": "submission.schema.json"
+        }
+      },
+      "required": [
+        "type",
+        "findings"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

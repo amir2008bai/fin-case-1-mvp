@@ -1,132 +1,96 @@
-"""CPU training on open train episodes and evaluation on a disjoint dev split."""
-from collections import Counter
+"""Train the micro model on generated train episodes; compare on held-out dev and hold-out configs.
+
+1. Generate train episodes (open key): the train split configs with many seeds.
+2. Supervised fit: per-type logistic weights on candidate features, labels from truth.
+3. Reward tuning: choose the submit threshold that maximizes the mean terminal reward
+   of the full policy on train episodes (the environment's reward is the signal).
+4. Held-out comparison: dev split and hold-out template configs with fresh seeds and a
+   secret key, against reconcile, expert and oracle. Nothing from dev is used for fitting.
+"""
+import random
+import statistics
+from collections import defaultdict
+from dataclasses import replace
 from pathlib import Path
 
-from .agents import ScanPolicy, reconcile
-from .contracts import TABLE_IDS
-from .dataset import suite, write_json, write_lines
+from .agents import create_policy, oracle
+from .contracts import Config
+from .dataset import suite
 from .environment import AuditEnv
 from .generator import generate
-from .micro import FEATURES, MODEL_VERSION, MicroModel, candidates
+from .micro import FEATURES, MicroModel, TYPES, fit_logistic, labelled
 from .runner import run_policy
 
-LEARNING_RATE = 0.45
-L2 = 0.001
-DEFAULT_EPOCHS = 600
+THRESHOLDS = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+
+
+def train_configs(suite_path):
+    return [(case_id, config) for split, case_id, _, _, config in suite(suite_path) if split == "train"]
+
+
+def run(episode, policy, closed=False):
+    env = AuditEnv(training=not closed)
+    observation, _ = env.load_episode(episode)
+    outcome, trace, seconds = run_policy(env, observation, policy)
+    return outcome, len(trace) - 1, seconds
+
+
+def train(suite_path, output, *, seeds_per_config=12, seed=20261120):
+    rng = random.Random(seed)
+    configs = train_configs(suite_path)
+    episodes = [generate(rng.randrange(2**31), config) for _, config in configs for _ in range(seeds_per_config)]
+    rows = defaultdict(list)
+    for episode in episodes:
+        for candidate, label in labelled(episode):
+            rows[candidate.type].append((candidate.features, label))
+    weights = {kind: fit_logistic(rows[kind], len(FEATURES[kind])) if rows[kind] else [0.0] * len(FEATURES[kind])
+               for kind in TYPES}
+    tuning = {}
+    sample = episodes[::2]
+    for threshold in THRESHOLDS:
+        model = MicroModel(weights, threshold)
+        tuning[threshold] = statistics.mean(run(episode, model.policy())[0].reward for episode in sample)
+    best = max(THRESHOLDS, key=lambda value: (round(tuning[value], 9), -abs(value - 0.5)))
+    model = MicroModel(weights, best, {
+        "train_episodes": len(episodes), "candidates": {kind: len(rows[kind]) for kind in TYPES},
+        "positives": {kind: sum(label for _, label in rows[kind]) for kind in TYPES},
+        "threshold_rewards": {str(key): round(value, 6) for key, value in tuning.items()},
+        "suite": Path(suite_path).name, "seed": seed,
+    })
+    model.save(Path(output) / "model.json")
+    return model
+
+
+def compare(model, suite_path, holdout_path, *, holdout_seed=99, key=b"micro-holdout-key"):
+    cases = [(split, case_id, category, seed, config) for split, case_id, category, seed, config in suite(suite_path)
+             if split == "dev"]
+    rng = random.Random(holdout_seed)
+    for split, case_id, category, _, config in suite(holdout_path):
+        cases.append((split, case_id, category, rng.randrange(2**31), config))
+    results = defaultdict(list)
+    for split, case_id, category, seed, config in cases:
+        if split == "holdout":
+            episode = generate(seed, replace(config, keyspace="secret"), key=key)
+        else:
+            episode = generate(seed, config)
+        policies = {"micro": model.policy(), "expert": create_policy("expert"),
+                    "reconcile": create_policy("reconcile"), "oracle": oracle(episode)}
+        for name, policy in policies.items():
+            outcome, steps, seconds = run(episode, policy, closed=True)
+            results[(split, name, category.split(":")[0])].append(
+                {"precision": outcome.precision, "recall": outcome.recall, "f1": outcome.f1,
+                 "reward": outcome.reward, "steps": steps, "seconds": seconds, "fp": outcome.fp, "fn": outcome.fn})
+    summary = []
+    for (split, name, category), rows in sorted(results.items()):
+        summary.append({"split": split, "policy": name, "category": category, "episodes": len(rows)} | {
+            key: round(statistics.mean(row[key] for row in rows), 4)
+            for key in ("precision", "recall", "f1", "reward", "steps", "fp", "fn")})
+    return summary
 
 
 def collect_public(episode):
-    observed = {}
-
-    def capture(tables):
-        observed.update(tables)
-        return []
-
-    env = AuditEnv(training=False)
-    observation, _ = env.load_episode(episode)
-    outcome, _, _ = run_policy(env, observation, ScanPolicy(capture, tables=TABLE_IDS))
-    if outcome.error:
-        raise ValueError(f"could not collect observations: {outcome.error}")
-    return observed
+    """Compatibility helper for the RAG tools: the tables an agent can read."""
+    return episode.tables
 
 
-def extract(episode):
-    observed = candidates(collect_public(episode))
-    # Join with the answer key only after public-only feature extraction.
-    positives = {(issue.type, issue.affected_ids[0]) for issue in episode.issues}
-    return [
-        (candidate.features, int((candidate.kind, candidate.affected_id) in positives))
-        for candidate in observed
-    ]
-
-
-def fit(examples, epochs=DEFAULT_EPOCHS):
-    if not 1 <= epochs <= 10_000:
-        raise ValueError("epochs must be in [1, 10000]")
-    frequencies = Counter(examples)
-    classes = Counter(label for _, label in examples)
-    if not classes[0] or not classes[1]:
-        raise ValueError("training requires both positive and negative examples")
-    points = sorted(frequencies.items())
-    weights = (0.0,) * len(FEATURES)
-    bias = 0.0
-    for _ in range(epochs):
-        model = MicroModel(weights, bias)
-        gradient = [0.0] * len(weights)
-        delta_bias = 0.0
-        for (features, label), count in points:
-            # Balance rare positive examples against the clean majority.
-            error = (model.probability(features) - label) * count / (2 * classes[label])
-            delta_bias += error
-            for index, value in enumerate(features):
-                gradient[index] += error * value
-        weights = tuple(
-            weight - LEARNING_RATE * (delta + L2 * weight)
-            for weight, delta in zip(weights, gradient)
-        )
-        bias -= LEARNING_RATE * delta_bias
-    return MicroModel(weights, bias)
-
-
-def candidate_metrics(model, examples):
-    tp = fp = fn = 0
-    for features, label in examples:
-        predicted = model.probability(features) >= model.threshold
-        tp += int(predicted and label)
-        fp += int(predicted and not label)
-        fn += int(not predicted and label)
-    return {
-        "tp": tp, "fp": fp, "fn": fn,
-        "precision": tp / max(1, tp + fp), "recall": tp / max(1, tp + fn),
-        "f1": 2 * tp / max(1, 2 * tp + fp + fn),
-    }
-
-
-def episode_metrics(episodes, findings):
-    results = []
-    for episode in episodes:
-        env = AuditEnv(training=False)
-        observation, _ = env.load_episode(episode)
-        outcome, trace, _ = run_policy(env, observation, ScanPolicy(findings, tables=TABLE_IDS))
-        if outcome.error:
-            raise ValueError(f"dev evaluation failed: {outcome.error}")
-        results.append((outcome.f1, outcome.reward, len(trace) - 1))
-    return {name: round(sum(item[i] for item in results) / len(results), 6)
-            for i, name in enumerate(("mean_f1", "mean_reward", "mean_steps"))}
-
-
-def train(suite_path, output, epochs=DEFAULT_EPOCHS):
-    splits = {"train": [], "dev": []}
-    for split, seed, config in suite(suite_path):
-        splits[split].append(generate(seed, config))
-    if not all(splits.values()):
-        raise ValueError("train and dev must both be present")
-    train_examples = [example for episode in splits["train"] for example in extract(episode)]
-    model = fit(train_examples, epochs)
-    dev_examples = [example for episode in splits["dev"] for example in extract(episode)]
-    zero = MicroModel()
-
-    metrics = {
-        "version": MODEL_VERSION, "method": "class_weighted_logistic_regression",
-        "epochs": epochs, "learning_rate": LEARNING_RATE, "l2": L2, "threshold": model.threshold,
-        "train_episodes": len(splits["train"]), "dev_episodes": len(splits["dev"]),
-        "train_examples": len(train_examples), "dev_examples": len(dev_examples),
-        "train_positives": sum(label for _, label in train_examples),
-        "dev_positives": sum(label for _, label in dev_examples),
-        "dev_candidates": {
-            "untrained": candidate_metrics(zero, dev_examples),
-            "trained": candidate_metrics(model, dev_examples),
-        },
-        "dev_episodes_metrics": {
-            "untrained": episode_metrics(splits["dev"], zero.findings),
-            "trained": episode_metrics(splits["dev"], model.findings),
-            "rule_based": episode_metrics(splits["dev"], reconcile),
-        },
-    }
-    output = Path(output)
-    output.mkdir(parents=True, exist_ok=True)
-    write_json(output / "model.json", model.to_dict())
-    write_json(output / "report.json", metrics)
-    write_lines(output / "train_examples.jsonl",
-                ({"features": features, "label": label} for features, label in train_examples))
-    return metrics
+DEFAULT_EPOCHS = 300
