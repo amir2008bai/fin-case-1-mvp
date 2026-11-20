@@ -1,0 +1,822 @@
+[
+  {
+    "split": "train",
+    "case_id": "train-01",
+    "category": "clean",
+    "seed": 2026001,
+    "episode_id": "episode_269a2ea4b8e1c792cebc1906",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 1,
+      "timezone": "+05:00",
+      "acts": 30,
+      "customers": 14,
+      "foreign_percent": 15,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 0
+  },
+  {
+    "split": "train",
+    "case_id": "train-02",
+    "category": "clean",
+    "seed": 2026002,
+    "episode_id": "episode_cde7d373e3fced01f816a21e",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 6,
+      "timezone": "+06:00",
+      "acts": 55,
+      "customers": 25,
+      "foreign_percent": 25,
+      "vat": false,
+      "filler": 40,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 0
+  },
+  {
+    "split": "train",
+    "case_id": "train-03",
+    "category": "clean",
+    "seed": 2026003,
+    "episode_id": "episode_6b80288caf9514dffdbb4c20",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 11,
+      "timezone": "+03:00",
+      "acts": 20,
+      "customers": 8,
+      "foreign_percent": 10,
+      "vat": true,
+      "filler": 20,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 0
+  },
+  {
+    "split": "train",
+    "case_id": "train-04",
+    "category": "single:duplicate_invoice",
+    "seed": 2026004,
+    "episode_id": "episode_b4525cfcb31a4fd324ae0ac8",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 3,
+      "timezone": "+05:00",
+      "acts": 40,
+      "customers": 18,
+      "foreign_percent": 20,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 2,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "train",
+    "case_id": "train-05",
+    "category": "single:payment_allocation",
+    "seed": 2026005,
+    "episode_id": "episode_89d37635b8eedefdb6e035c5",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 8,
+      "timezone": "+06:00",
+      "acts": 45,
+      "customers": 20,
+      "foreign_percent": 15,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 2,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "train",
+    "case_id": "train-06",
+    "category": "single:fx_rate",
+    "seed": 2026006,
+    "episode_id": "episode_9060da2d6348d6ea1b91102f",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 2,
+      "timezone": "+03:00",
+      "acts": 35,
+      "customers": 16,
+      "foreign_percent": 35,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 2,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "train",
+    "case_id": "train-07",
+    "category": "single:period_cutoff",
+    "seed": 2026007,
+    "episode_id": "episode_d8383ab895d6e2585170e89d",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 12,
+      "timezone": "+05:00",
+      "acts": 50,
+      "customers": 22,
+      "foreign_percent": 20,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 2
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "train",
+    "case_id": "train-08",
+    "category": "multi",
+    "seed": 2026008,
+    "episode_id": "episode_803889ff221585b0de007eb9",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 5,
+      "timezone": "+06:00",
+      "acts": 60,
+      "customers": 28,
+      "foreign_percent": 25,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 1,
+        "payment_allocation": 1,
+        "fx_rate": 1,
+        "period_cutoff": 1
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 4
+  },
+  {
+    "split": "train",
+    "case_id": "train-09",
+    "category": "interacting",
+    "seed": 2026009,
+    "episode_id": "episode_2a61ba849941b49f16858356",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 9,
+      "timezone": "+03:00",
+      "acts": 40,
+      "customers": 18,
+      "foreign_percent": 30,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 1,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 1,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 3
+  },
+  {
+    "split": "train",
+    "case_id": "train-10",
+    "category": "interacting",
+    "seed": 2026010,
+    "episode_id": "episode_a42c926cdb632a18960b6764",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 4,
+      "timezone": "+05:00",
+      "acts": 50,
+      "customers": 24,
+      "foreign_percent": 30,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 1
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 1
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 3
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-01",
+    "category": "clean",
+    "seed": 2026101,
+    "episode_id": "episode_51e4d889982bc69d85bf2c05",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 7,
+      "timezone": "+06:00",
+      "acts": 30,
+      "customers": 14,
+      "foreign_percent": 15,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 0
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-02",
+    "category": "clean",
+    "seed": 2026102,
+    "episode_id": "episode_87370eb311396dd558d7a287",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 10,
+      "timezone": "+03:00",
+      "acts": 55,
+      "customers": 25,
+      "foreign_percent": 25,
+      "vat": false,
+      "filler": 40,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 0
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-03",
+    "category": "clean",
+    "seed": 2026103,
+    "episode_id": "episode_c82de097aef4ff1e54a90926",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 2,
+      "timezone": "+05:00",
+      "acts": 20,
+      "customers": 8,
+      "foreign_percent": 10,
+      "vat": true,
+      "filler": 20,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 0
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-04",
+    "category": "single:duplicate_invoice",
+    "seed": 2026104,
+    "episode_id": "episode_dfaf5e6b2ca9622b38c20c70",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 9,
+      "timezone": "+06:00",
+      "acts": 40,
+      "customers": 18,
+      "foreign_percent": 20,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 2,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-05",
+    "category": "single:payment_allocation",
+    "seed": 2026105,
+    "episode_id": "episode_26df6a13991b456aeb4672df",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 1,
+      "timezone": "+03:00",
+      "acts": 45,
+      "customers": 20,
+      "foreign_percent": 15,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 2,
+        "fx_rate": 0,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-06",
+    "category": "single:fx_rate",
+    "seed": 2026106,
+    "episode_id": "episode_097783abf32cd518ac065027",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 12,
+      "timezone": "+05:00",
+      "acts": 35,
+      "customers": 16,
+      "foreign_percent": 35,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 2,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-07",
+    "category": "single:period_cutoff",
+    "seed": 2026107,
+    "episode_id": "episode_b630867fd2f44e423a36df3b",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 6,
+      "timezone": "+06:00",
+      "acts": 50,
+      "customers": 22,
+      "foreign_percent": 20,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 2
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 2
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-08",
+    "category": "multi",
+    "seed": 2026108,
+    "episode_id": "episode_68a236893d42e730f85f28b9",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 4,
+      "timezone": "+03:00",
+      "acts": 60,
+      "customers": 28,
+      "foreign_percent": 25,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 1,
+        "payment_allocation": 1,
+        "fx_rate": 1,
+        "period_cutoff": 1
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 4
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-09",
+    "category": "interacting",
+    "seed": 2026109,
+    "episode_id": "episode_06111061d4411b35eab813a1",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 3,
+      "timezone": "+05:00",
+      "acts": 40,
+      "customers": 18,
+      "foreign_percent": 30,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 1,
+        "period_cutoff": 0
+      },
+      "interactions": {
+        "fx_boundary_payment": 1,
+        "fx_partial_allocation": 0
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 3
+  },
+  {
+    "split": "dev",
+    "case_id": "dev-10",
+    "category": "interacting",
+    "seed": 2026110,
+    "episode_id": "episode_e7fbe427acf4a3cece26fdbf",
+    "config": {
+      "keyspace": "open",
+      "presentation_seed": 0,
+      "month": 11,
+      "timezone": "+06:00",
+      "acts": 50,
+      "customers": 24,
+      "foreign_percent": 30,
+      "vat": true,
+      "filler": 30,
+      "errors": {
+        "duplicate_invoice": 0,
+        "payment_allocation": 0,
+        "fx_rate": 0,
+        "period_cutoff": 1
+      },
+      "interactions": {
+        "fx_boundary_payment": 0,
+        "fx_partial_allocation": 1
+      },
+      "distractors": {
+        "split_payments": true,
+        "multi_act_payments": true,
+        "overpayments": true,
+        "prepayments": true,
+        "unreferenced_payments": true,
+        "opening_balances": true,
+        "late_acts": true,
+        "boundary_timestamps": true,
+        "repeated_amounts": true,
+        "refunds": true
+      }
+    },
+    "issues": 3
+  }
+]

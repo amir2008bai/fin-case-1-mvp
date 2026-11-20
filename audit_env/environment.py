@@ -1,4 +1,4 @@
-"""Trusted JSON-compatible reset/step API. External agents use the runner."""
+"""Trusted JSON-compatible reset/step API (Gymnasium-style). External agents use the runner."""
 import ast
 import hashlib
 import re
@@ -9,11 +9,21 @@ from operator import add, mul, neg, pos, sub, truediv
 
 from .contracts import MAX_PAGE, MAX_STEPS, TABLE_IDS, Config, Episode
 from .generator import generate
-from .scoring import reject, score
+from .scoring import score, score_empty
 
 NUMBER = re.compile(r"(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)")
 BINARY = {ast.Add: add, ast.Sub: sub, ast.Mult: mul, ast.Div: truediv}
 UNARY = {ast.UAdd: pos, ast.USub: neg}
+TASK = ("Проверьте записи компании за период и отправьте выводы об ошибках с доказательствами. "
+        "Типы: duplicate_invoice, payment_allocation, fx_rate, period_cutoff. Правила — в policy.")
+TOOLS = {
+    "list_records": {"table": sorted(TABLE_IDS), "cursor": "string|null", "limit": f"1..{MAX_PAGE}"},
+    "get_record": {"table": sorted(TABLE_IDS), "id": "row_id | invoice_id | payment_id | fx_id"},
+    "get_document": {"doc_id": "doc_id счёта или платежа"},
+    "calculator": {"expression": "арифметика: + - * / ( ) и десятичные числа"},
+    "submit": {"findings": "{episode_id, findings:[{type, affected_ids, claimed_amount_minor, currency, "
+                           "evidence_ids, explanation}]}"},
+}
 
 
 def calculate(expression):
@@ -39,19 +49,21 @@ def calculate(expression):
 
 
 class AuditEnv:
-    def __init__(self, *, training=True, timeout_seconds=60, clock=time.monotonic):
+    def __init__(self, *, training=True, timeout_seconds=60, clock=time.monotonic, key=None):
         if not 0 < timeout_seconds <= 60:
             raise ValueError("timeout_seconds must be in (0, 60]")
         self.training = training
         self.timeout_seconds = timeout_seconds
         self.clock = clock
+        self.key = key
         self.episode = None
         self.outcome = None
+        self.final = (False, False)
+        self.steps = 0
 
-    def reset(self, seed: int, config: Config | dict) -> tuple[dict, dict]:
-        if isinstance(config, dict):
-            config = Config(**config)
-        return self.load_episode(generate(seed, config))
+    def reset(self, seed: int, config: Config | dict | None = None) -> tuple[dict, dict]:
+        return self.load_episode(generate(seed, Config() if config is None else Config.from_dict(config),
+                                          key=self.key))
 
     def load_episode(self, episode: Episode) -> tuple[dict, dict]:
         self.episode = episode
@@ -59,10 +71,10 @@ class AuditEnv:
             table: {row[TABLE_IDS[table]]: row for row in rows}
             for table, rows in episode.tables.items()
         }
-        self.documents = {
-            row["doc_id"]: row for table in ("invoices", "payments")
-            for row in episode.tables[table]
-        }
+        self.documents = {}
+        for table in ("invoices", "payments"):
+            for row in episode.tables[table]:
+                self.documents[row["doc_id"]] = (table, episode.documents.get(row["doc_id"], row))
         self.cursor_scope = {
             table: hashlib.sha256(
                 (episode.manifest["episode_id"] + ":" + table).encode("ascii")
@@ -71,17 +83,22 @@ class AuditEnv:
         self.seen = set()
         self.steps = 0
         self.outcome = None
+        self.final = (False, False)
         self.deadline = self.clock() + self.timeout_seconds
         return deepcopy({
-            "task": "Проверьте записи и отправьте выводы с доказательствами.",
+            "task": TASK,
             "manifest": episode.manifest,
             "policy": episode.policy,
+            "tools": TOOLS,
             "remaining_steps": MAX_STEPS,
         }), {}
 
     def step(self, action) -> tuple[dict, float | None, bool, bool, dict]:
-        if self.episode is None or self.outcome is not None:
-            raise RuntimeError("reset required")
+        if self.episode is None:
+            return {"error": "reset_required", "remaining_steps": 0}, 0.0, False, True, {}
+        if self.outcome is not None:
+            return ({"error": "episode_finished", "remaining_steps": MAX_STEPS - self.steps},
+                    0.0, *self.final, {})
         if self.clock() >= self.deadline:
             return self.expire("timeout")
         self.steps += 1
@@ -93,20 +110,22 @@ class AuditEnv:
         if self.steps == MAX_STEPS:
             return self.expire("step_limit")
         try:
-            result = self.inspect(action)
-            observation = {"result": result}
-        except (ValueError, SyntaxError, DecimalException) as exc:
-            error = exc.args[0] if type(exc) is ValueError else "invalid_expression"
+            observation = {"result": self.inspect(action)}
+        except (ValueError, SyntaxError, DecimalException, RecursionError) as exc:
+            error = exc.args[0] if type(exc) is ValueError and exc.args else "invalid_expression"
             observation = {"error": error}
         if self.clock() >= self.deadline:
             return self.expire("timeout")
         return deepcopy(observation | {"remaining_steps": MAX_STEPS - self.steps}), 0.0, False, False, {}
 
     def expire(self, reason="timeout"):
-        self.outcome = reject(self.episode.issues, self.steps, reason)
+        if self.episode is None or self.outcome is not None:
+            return {"error": "episode_finished", "remaining_steps": 0}, 0.0, *self.final, {}
+        self.outcome = score_empty(self.episode.issues, self.steps, reason)
         return self.finish(terminated=False, status="truncated")
 
     def finish(self, *, terminated, status):
+        self.final = (terminated, not terminated)
         reward = self.outcome.reward if self.training else None
         observation = {"status": status, "remaining_steps": MAX_STEPS - self.steps}
         if not terminated:
@@ -129,9 +148,9 @@ class AuditEnv:
             doc_id = action["doc_id"]
             if not isinstance(doc_id, str) or doc_id not in self.documents:
                 raise ValueError("unknown_id")
-            row = self.documents[doc_id]
-            table = "invoices" if "invoice_id" in row else "payments"
-            return self.expose(table, row)
+            table, document = self.documents[doc_id]
+            self.expose(table, document)
+            return document
         if kind == "get_record" and action.keys() == {"type", "table", "id"}:
             table = self.table(action["table"])
             record_id = action["id"]

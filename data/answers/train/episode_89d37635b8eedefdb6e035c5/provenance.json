@@ -1,0 +1,149 @@
+{
+  "schema_version": "2.0",
+  "generator_version": "2.0.0",
+  "episode_id": "episode_89d37635b8eedefdb6e035c5",
+  "seed": 2026005,
+  "config": {
+    "keyspace": "open",
+    "presentation_seed": 0,
+    "month": 8,
+    "timezone": "+06:00",
+    "acts": 45,
+    "customers": 20,
+    "foreign_percent": 15,
+    "vat": true,
+    "filler": 30,
+    "errors": {
+      "duplicate_invoice": 0,
+      "payment_allocation": 2,
+      "fx_rate": 0,
+      "period_cutoff": 0
+    },
+    "interactions": {
+      "fx_boundary_payment": 0,
+      "fx_partial_allocation": 0
+    },
+    "distractors": {
+      "split_payments": true,
+      "multi_act_payments": true,
+      "overpayments": true,
+      "prepayments": true,
+      "unreferenced_payments": true,
+      "opening_balances": true,
+      "late_acts": true,
+      "boundary_timestamps": true,
+      "repeated_amounts": true,
+      "refunds": true
+    }
+  },
+  "keyspace": "open",
+  "key_fingerprint": "4c251e205e774643",
+  "world": {
+    "summary": {
+      "acts.late": 2,
+      "acts.next_period": 2,
+      "acts.prior_open": 4,
+      "acts.regular": 37,
+      "filler": 30,
+      "opening_advances": 2,
+      "payments.after_period": 1,
+      "payments.boundary_inside": 2,
+      "payments.boundary_start": 1,
+      "payments.full": 21,
+      "payments.multi_act": 2,
+      "payments.overpayment": 1,
+      "payments.refund": 2,
+      "payments.split": 2,
+      "payments.unreferenced": 3
+    },
+    "customers": 20,
+    "invoices": 45,
+    "payments": 35
+  },
+  "clean_ledger_sha256": "9d78a4ab29ea136580f4599f6eec41020ee19d48cf744099c466eeacdea43200",
+  "changes": [
+    {
+      "issue_ids": [
+        "issue_d373c158c7ee200365000997"
+      ],
+      "scenario": "payment_allocation.missing",
+      "causes": [
+        "Поступление со ссылкой на открытый счёт отнесено в авансы полученные вместо погашения дебиторки."
+      ],
+      "documents_added": [],
+      "before": [
+        {
+          "row_id": "row_b0e0690a563e5a7b6882cf09",
+          "timestamp": "2026-08-28T18:04:27+06:00",
+          "account": "1210",
+          "debit_minor": 0,
+          "credit_minor": 1000000,
+          "currency": "KZT",
+          "entity_id": "entity_306531ecf75e1d8924d01566",
+          "invoice_id": "invoice_dcfa506544d2164147c39ece",
+          "payment_id": "payment_c30e313cd77309d1a795b43c"
+        }
+      ],
+      "after": [
+        {
+          "row_id": "row_ef41a42ea9883ede36936ce8",
+          "timestamp": "2026-08-28T18:04:27+06:00",
+          "account": "3510",
+          "debit_minor": 0,
+          "credit_minor": 1000000,
+          "currency": "KZT",
+          "entity_id": "entity_306531ecf75e1d8924d01566",
+          "invoice_id": "invoice_dcfa506544d2164147c39ece",
+          "payment_id": "payment_c30e313cd77309d1a795b43c"
+        }
+      ]
+    },
+    {
+      "issue_ids": [
+        "issue_78665f455dc7ac056f11cedc"
+      ],
+      "scenario": "payment_allocation.partial",
+      "causes": [
+        "Поступление со ссылкой на открытый счёт отнесено в авансы полученные вместо погашения дебиторки."
+      ],
+      "documents_added": [],
+      "before": [
+        {
+          "row_id": "row_b9e4eee1166dda8046f019b4",
+          "timestamp": "2026-08-19T17:41:56+06:00",
+          "account": "1210",
+          "debit_minor": 0,
+          "credit_minor": 8000000,
+          "currency": "KZT",
+          "entity_id": "entity_350a0250adba425783e8d730",
+          "invoice_id": "invoice_9667e600e438e3defb2e9adb",
+          "payment_id": "payment_6beec26dc317b5fb61974501"
+        }
+      ],
+      "after": [
+        {
+          "row_id": "row_b9e4eee1166dda8046f019b4",
+          "timestamp": "2026-08-19T17:41:56+06:00",
+          "account": "1210",
+          "debit_minor": 0,
+          "credit_minor": 3920000,
+          "currency": "KZT",
+          "entity_id": "entity_350a0250adba425783e8d730",
+          "invoice_id": "invoice_9667e600e438e3defb2e9adb",
+          "payment_id": "payment_6beec26dc317b5fb61974501"
+        },
+        {
+          "row_id": "row_d957863e5c1124b1d82f1cac",
+          "timestamp": "2026-08-19T17:41:56+06:00",
+          "account": "3510",
+          "debit_minor": 0,
+          "credit_minor": 4080000,
+          "currency": "KZT",
+          "entity_id": "entity_350a0250adba425783e8d730",
+          "invoice_id": null,
+          "payment_id": "payment_6beec26dc317b5fb61974501"
+        }
+      ]
+    }
+  ]
+}

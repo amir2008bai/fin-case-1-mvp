@@ -1,9 +1,14 @@
-"""The evaluator owns the deadline, records and answer key."""
+"""The evaluator owns the deadline, records and answer key; agents speak JSONL over pipes.
+
+Portable: a reader thread and a queue replace select() on pipes (which Windows lacks),
+a writer thread keeps a stuck agent from blocking the evaluator past its deadline.
+"""
 import json
 import math
 import os
-import select
+import queue
 import subprocess
+import threading
 import uuid
 from contextlib import suppress
 from time import perf_counter
@@ -81,64 +86,89 @@ class JsonAgent:
         self.command = command
         self.clock = clock
         self.deadline = deadline
-        self.buffer = bytearray()
 
     def __enter__(self):
         self.process = subprocess.Popen(
-            self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
         )
-        self.reader = self.process.stdout.fileno()
-        self.writer = self.process.stdin.fileno()
-        os.set_blocking(self.reader, False)
-        os.set_blocking(self.writer, False)
+        self.lines = queue.Queue()
+        self.reader = threading.Thread(target=self.read_loop, daemon=True)
+        self.reader.start()
         return self
 
     def __exit__(self, *_):
-        if self.process.poll() is None:
-            self.process.kill()
+        with suppress(OSError):
+            if self.process.poll() is None:
+                self.process.kill()
         self.process.wait()
-        self.process.stdin.close()
-        self.process.stdout.close()
+        for stream in (self.process.stdin, self.process.stdout):
+            with suppress(OSError):
+                stream.close()
 
-    def wait(self, *, read=False, write=False):
-        left = self.deadline - self.clock()
-        if left <= 0:
+    def read_loop(self):
+        buffer = bytearray()
+        handle = self.process.stdout.fileno()
+        try:
+            while True:
+                chunk = os.read(handle, 65536)
+                if not chunk:
+                    self.lines.put(("eof", None))
+                    return
+                buffer.extend(chunk)
+                while True:
+                    delimiter = buffer.find(b"\n")
+                    if delimiter < 0:
+                        if len(buffer) > MAX_FRAME_BYTES:
+                            self.lines.put(("too_large", None))
+                            return
+                        break
+                    if delimiter > MAX_FRAME_BYTES:
+                        self.lines.put(("too_large", None))
+                        return
+                    self.lines.put(("line", bytes(buffer[:delimiter])))
+                    del buffer[:delimiter + 1]
+        except OSError:
+            self.lines.put(("eof", None))
+
+    def left(self):
+        remaining = self.deadline - self.clock()
+        if remaining <= 0:
             raise TimeoutError
-        readable, writable, _ = select.select(
-            [self.reader] if read else [], [self.writer] if write else [], [], left,
-        )
-        if not readable and not writable:
+        return remaining
+
+    def write(self, payload):
+        failure = []
+
+        def send():
+            try:
+                self.process.stdin.write(payload)
+                self.process.stdin.flush()
+            except OSError as exc:
+                failure.append(exc)
+
+        writer = threading.Thread(target=send, daemon=True)
+        writer.start()
+        writer.join(self.left())
+        if writer.is_alive():
             raise TimeoutError
+        if failure:
+            raise ProtocolError("agent I/O failed")
 
     def __call__(self, frame):
         payload = (json.dumps(frame, ensure_ascii=True, allow_nan=False) + "\n").encode()
+        self.write(payload)
         try:
-            while payload:
-                self.wait(write=True)
-                written = os.write(self.writer, payload)
-                payload = payload[written:]
-            while True:
-                delimiter = self.buffer.find(b"\n")
-                if delimiter >= 0:
-                    if delimiter > MAX_FRAME_BYTES:
-                        raise ProtocolError("action too large")
-                    line = bytes(self.buffer[:delimiter])
-                    del self.buffer[:delimiter + 1]
-                    try:
-                        return strict_loads(line.decode("utf-8"))
-                    except (ValueError, RecursionError) as exc:
-                        raise ProtocolError("invalid JSON action") from exc
-                if len(self.buffer) > MAX_FRAME_BYTES:
-                    raise ProtocolError("action too large")
-                self.wait(read=True)
-                chunk = os.read(self.reader, 65536)
-                if not chunk:
-                    raise ProtocolError("agent closed stdout")
-                self.buffer.extend(chunk)
-        except TimeoutError:
-            raise
-        except OSError as exc:
-            raise ProtocolError("agent I/O failed") from exc
+            kind, line = self.lines.get(timeout=self.left())
+        except queue.Empty:
+            raise TimeoutError from None
+        if kind == "eof":
+            raise ProtocolError("agent closed stdout")
+        if kind == "too_large":
+            raise ProtocolError("action too large")
+        try:
+            return strict_loads(line.decode("utf-8"))
+        except (ValueError, RecursionError, UnicodeDecodeError) as exc:
+            raise ProtocolError("invalid JSON action") from exc
 
 
 def run_subprocess(env, observation, command, observer=None):

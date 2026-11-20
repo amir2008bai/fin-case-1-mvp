@@ -1,0 +1,469 @@
+{
+  "schema_version": "2.0",
+  "name": "holdout-template.v2",
+  "keyspace": "secret",
+  "splits": {
+    "holdout": [
+      {
+        "case_id": "holdout-01",
+        "category": "clean",
+        "config": {
+          "month": 2,
+          "timezone": "+05:00",
+          "acts": 25,
+          "customers": 10,
+          "foreign_percent": 10,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-02",
+        "category": "clean",
+        "config": {
+          "month": 5,
+          "timezone": "+06:00",
+          "acts": 45,
+          "customers": 20,
+          "foreign_percent": 20,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-03",
+        "category": "clean",
+        "config": {
+          "month": 8,
+          "timezone": "+03:00",
+          "acts": 60,
+          "customers": 30,
+          "foreign_percent": 30,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-04",
+        "category": "clean",
+        "config": {
+          "month": 10,
+          "timezone": "+05:00",
+          "acts": 35,
+          "customers": 15,
+          "foreign_percent": 0,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-05",
+        "category": "clean",
+        "config": {
+          "month": 12,
+          "timezone": "+06:00",
+          "acts": 70,
+          "customers": 35,
+          "foreign_percent": 25,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-06",
+        "category": "interacting",
+        "config": {
+          "month": 1,
+          "timezone": "+05:00",
+          "acts": 40,
+          "customers": 18,
+          "foreign_percent": 30,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 1,
+            "fx_partial_allocation": 1
+          }
+        }
+      },
+      {
+        "case_id": "holdout-07",
+        "category": "interacting",
+        "config": {
+          "month": 4,
+          "timezone": "+03:00",
+          "acts": 50,
+          "customers": 22,
+          "foreign_percent": 25,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 1,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 1,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-08",
+        "category": "interacting",
+        "config": {
+          "month": 7,
+          "timezone": "+06:00",
+          "acts": 45,
+          "customers": 20,
+          "foreign_percent": 35,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 1,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 1
+          }
+        }
+      },
+      {
+        "case_id": "holdout-09",
+        "category": "interacting",
+        "config": {
+          "month": 9,
+          "timezone": "+05:00",
+          "acts": 65,
+          "customers": 30,
+          "foreign_percent": 30,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 1,
+            "period_cutoff": 1
+          },
+          "interactions": {
+            "fx_boundary_payment": 1,
+            "fx_partial_allocation": 1
+          }
+        }
+      },
+      {
+        "case_id": "holdout-10",
+        "category": "interacting",
+        "config": {
+          "month": 11,
+          "timezone": "+03:00",
+          "acts": 55,
+          "customers": 26,
+          "foreign_percent": 40,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 2,
+            "fx_partial_allocation": 1
+          }
+        }
+      },
+      {
+        "case_id": "holdout-11",
+        "category": "single:duplicate_invoice",
+        "config": {
+          "month": 3,
+          "timezone": "+06:00",
+          "acts": 40,
+          "customers": 16,
+          "foreign_percent": 15,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 3,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-12",
+        "category": "single:payment_allocation",
+        "config": {
+          "month": 6,
+          "timezone": "+05:00",
+          "acts": 50,
+          "customers": 24,
+          "foreign_percent": 20,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 3,
+            "fx_rate": 0,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-13",
+        "category": "single:fx_rate",
+        "config": {
+          "month": 8,
+          "timezone": "+03:00",
+          "acts": 45,
+          "customers": 20,
+          "foreign_percent": 40,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 3,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-14",
+        "category": "single:period_cutoff",
+        "config": {
+          "month": 10,
+          "timezone": "+06:00",
+          "acts": 55,
+          "customers": 25,
+          "foreign_percent": 15,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 3
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-15",
+        "category": "multi",
+        "config": {
+          "month": 2,
+          "timezone": "+03:00",
+          "acts": 60,
+          "customers": 28,
+          "foreign_percent": 25,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 1,
+            "payment_allocation": 1,
+            "fx_rate": 1,
+            "period_cutoff": 1
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-16",
+        "category": "multi",
+        "config": {
+          "month": 4,
+          "timezone": "+05:00",
+          "acts": 75,
+          "customers": 35,
+          "foreign_percent": 20,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 2,
+            "payment_allocation": 2,
+            "fx_rate": 2,
+            "period_cutoff": 2
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-17",
+        "category": "multi",
+        "config": {
+          "month": 6,
+          "timezone": "+06:00",
+          "acts": 30,
+          "customers": 12,
+          "foreign_percent": 30,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 1,
+            "payment_allocation": 0,
+            "fx_rate": 2,
+            "period_cutoff": 0
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-18",
+        "category": "multi",
+        "config": {
+          "month": 9,
+          "timezone": "+03:00",
+          "acts": 50,
+          "customers": 22,
+          "foreign_percent": 10,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 0,
+            "payment_allocation": 2,
+            "fx_rate": 0,
+            "period_cutoff": 2
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-19",
+        "category": "multi",
+        "config": {
+          "month": 11,
+          "timezone": "+05:00",
+          "acts": 80,
+          "customers": 40,
+          "foreign_percent": 30,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 3,
+            "payment_allocation": 3,
+            "fx_rate": 3,
+            "period_cutoff": 3
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      },
+      {
+        "case_id": "holdout-20",
+        "category": "multi",
+        "config": {
+          "month": 12,
+          "timezone": "+06:00",
+          "acts": 40,
+          "customers": 18,
+          "foreign_percent": 25,
+          "vat": true,
+          "filler": 30,
+          "errors": {
+            "duplicate_invoice": 2,
+            "payment_allocation": 0,
+            "fx_rate": 0,
+            "period_cutoff": 1
+          },
+          "interactions": {
+            "fx_boundary_payment": 0,
+            "fx_partial_allocation": 0
+          }
+        }
+      }
+    ]
+  }
+}

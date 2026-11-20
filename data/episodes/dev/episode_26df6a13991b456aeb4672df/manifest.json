@@ -1,0 +1,36 @@
+{
+  "schema_version": "2.0",
+  "episode_id": "episode_26df6a13991b456aeb4672df",
+  "company": {
+    "name": "ТОО «Нур Сервис»",
+    "country": "KZ"
+  },
+  "base_currency": "KZT",
+  "period_start": "2026-01-01T00:00:00+03:00",
+  "period_end": "2026-02-01T00:00:00+03:00",
+  "timezone": "+03:00",
+  "counts": {
+    "ledger": 299,
+    "invoices": 45,
+    "payments": 35,
+    "fx": 166
+  },
+  "document_count": 80,
+  "minor_units": {
+    "KZT": 2,
+    "RUB": 2,
+    "USD": 2
+  },
+  "rounding": {
+    "mode": "ROUND_HALF_UP",
+    "fx": "per converted amount",
+    "vat": "per line, included in price"
+  },
+  "id_fields": {
+    "ledger": "row_id",
+    "invoices": "invoice_id",
+    "payments": "payment_id",
+    "fx": "fx_id",
+    "documents": "doc_id"
+  }
+}

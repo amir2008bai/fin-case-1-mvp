@@ -9,16 +9,31 @@ permissions:
   contents: read
 
 jobs:
-  verify:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
-      - name: Offline evaluator and benchmark
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: One-command verification (no network, no extra packages)
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -m audit_env verify
+
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Offline verification container (2 CPU, 4 GB, read-only, no network)
         run: make docker-verify
-      - name: Closed evaluator with separate agent container
-        run: make docker-agent
-      - name: Train and evaluate the micro model in an isolated agent
-        run: make docker-micro

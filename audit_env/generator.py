@@ -1,111 +1,94 @@
-"""Trusted generation: build balanced history, then apply recorded changes."""
+"""Trusted generation: hidden world -> clean books -> recorded errors -> public files."""
+import re
 from copy import deepcopy
-from dataclasses import asdict, replace
-from datetime import datetime, timedelta, timezone
+from dataclasses import replace
 from random import Random
 
-from . import __version__
-from .contracts import SCHEMA_VERSION, Config, Episode
-from .domain import CURRENCY
-from .history import assert_balanced, build_history
-from .scenarios import duplicate_invoice, payment_allocation
+from . import books, keys, render, scenarios, world as world_module
+from .contracts import MAX_ISSUES, Config, Episode, Issue
+
+MIN_ROWS, MAX_ROWS = 200, 2000
+MIN_DOCUMENTS, MAX_DOCUMENTS = 20, 200
+PUBLIC_ID = re.compile(r"^(episode|row|doc|invoice|payment|entity|issue|fx)_[0-9a-f]{24}$")
 
 
-def generate(seed: int, config: Config) -> Episode:
-    if type(seed) is not int:
-        raise ValueError("seed must be an integer")
+def generate(seed, config, key=None):
+    """Same seed, config and key always give byte-identical files and truth."""
+    if type(seed) is not int or seed < 0:
+        raise ValueError("seed must be a non-negative integer")
+    config = Config.from_dict(config)
+    key = keys.resolve(config.keyspace) if key is None else key
+    semantic = config.semantic_json()
+    extra = 0
+    for _ in range(6):
+        world = world_module.build(keys.stream(key, "world", seed, semantic), config, extra_filler=extra)
+        clean = books.post(world)
+        if len(clean) >= MIN_ROWS + 12:
+            break
+        extra += (MIN_ROWS + 12 - len(clean)) // 2 + 4
+    overrides, specs = scenarios.inject(keys.stream(key, "errors", seed, semantic), world, config)
+    rows = books.post(world, overrides)
+    resolved = [scenarios.resolve(spec, world, overrides, rows) for spec in specs]
+    episode = render.present(world, clean, rows, overrides, resolved, key=key, seed=seed, config=config)
+    check_bounds(episode)
+    return episode
+
+
+def check_bounds(episode):
+    counts = episode.manifest["counts"]
+    if not MIN_ROWS <= counts["ledger"] <= MAX_ROWS:
+        raise AssertionError(f"ledger size {counts['ledger']} outside [{MIN_ROWS}, {MAX_ROWS}]")
+    if not MIN_DOCUMENTS <= episode.manifest["document_count"] <= MAX_DOCUMENTS:
+        raise AssertionError(f"document count {episode.manifest['document_count']} outside bounds")
+    if len(episode.issues) > MAX_ISSUES:
+        raise AssertionError("too many issues")
+    for issue in episode.issues:
+        for proof in issue.evidence_sets:
+            if not 1 <= len(proof) <= 10:
+                raise AssertionError("evidence set must hold 1..10 ids")
+
+
+def rename_ids(value, mapping):
+    if isinstance(value, str):
+        return mapping.get(value, value)
+    if isinstance(value, list):
+        return [rename_ids(item, mapping) for item in value]
+    if isinstance(value, tuple):
+        return tuple(rename_ids(item, mapping) for item in value)
+    if isinstance(value, dict):
+        return {mapping.get(key, key): rename_ids(item, mapping) for key, item in value.items()}
+    return value
+
+
+def collect_ids(value, found):
+    if isinstance(value, str):
+        if PUBLIC_ID.match(value):
+            found.add(value)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            collect_ids(item, found)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            collect_ids(key, found)
+            collect_ids(item, found)
+
+
+def transform(episode, seed):
+    """Paired check: rename every opaque ID and reshuffle every table; the answer is preserved."""
     rng = Random(seed)
-
-    def identifier(kind):
-        return f"{kind}_{rng.getrandbits(96):024x}"
-
-    episode_id = identifier("episode")
-    zone = timezone(timedelta(hours=rng.choice([-3, 0, 3, 5, 6])))
-    start = datetime(2026, rng.randint(1, 12), 1, tzinfo=zone)
-    end = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
-    history = build_history(rng, identifier, start, config.invoice_count)
-    issues, changes = [], []
-    eligible_invoices = history.invoices[5:]
-    rng.shuffle(eligible_invoices)
-    duplicate_targets = eligible_invoices[:config.duplicate_count]
-    duplicate_ids = {invoice["invoice_id"] for invoice in duplicate_targets}
-    eligible_payments = [
-        payment for payment in history.eligible_payments if payment["invoice_refs"][0] not in duplicate_ids
-    ]
-    rng.shuffle(eligible_payments)
-    for invoice in duplicate_targets:
-        issue, change = duplicate_invoice.inject(history, invoice, identifier)
-        issues.append(issue)
-        changes.append(change)
-    for payment in eligible_payments[:config.allocation_count]:
-        original = payment["amount_minor"]
-        missing = original if rng.randrange(2) else original // 3
-        issue, change = payment_allocation.inject(history, payment, missing, identifier)
-        issues.append(issue)
-        changes.append(change)
-
-    assert_balanced(history.ledger)
-    tables = {
-        "ledger": history.ledger,
-        "invoices": history.invoices,
-        "payments": history.payments,
-        "fx": [],
-    }
+    found = set()
+    for part in (episode.manifest, episode.tables, episode.documents, episode.provenance):
+        collect_ids(part, found)
+    for issue in episode.issues:
+        collect_ids([issue.issue_id, issue.affected_ids, issue.evidence_sets, issue.relevant_ids], found)
+    mapping = {old: f"{old.split('_', 1)[0]}_{rng.getrandbits(96):024x}" for old in sorted(found)}
+    tables = rename_ids(deepcopy(episode.tables), mapping)
     for rows in tables.values():
         rng.shuffle(rows)
-    manifest = {
-        "schema_version": SCHEMA_VERSION,
-        "episode_id": episode_id,
-        "base_currency": CURRENCY,
-        "period_start": start.isoformat(),
-        "period_end": end.isoformat(),
-        "timezone": start.strftime("%z")[:3] + ":" + start.strftime("%z")[3:],
-        "counts": {table: len(rows) for table, rows in tables.items()},
-        "document_count": len(history.invoices) + len(history.payments),
-        "minor_units": {CURRENCY: 2},
-        "rounding": "HALF_EVEN",
-    }
-    policy = {
-        "fx_date": "transaction_local_date",
-        "period_rule": "start_inclusive_end_exclusive",
-        "rounding": "HALF_EVEN",
-        "invoice_rule": "Один счёт порождает одну пару расход / задолженность.",
-        "payment_rule": (
-            "В этой компании однозначная ссылка в платеже означает полное отнесение "
-            "суммы платежа к указанному счёту. Частично оплачивать сам счёт можно."
-        ),
-    }
-    return Episode(manifest, policy, tables, tuple(issues), {
-        "seed": seed, "config": asdict(config), "generator_version": __version__, "changes": changes,
-    })
-
-
-def transform(episode: Episode, seed: int) -> Episode:
-    """Remap opaque IDs and public order without changing accounting semantics."""
-    rng = Random(seed)
-    opaque = {}
-    prefixes = {"episode", "row", "doc", "entity", "invoice", "payment", "issue", "fx"}
-
-    def remap(value):
-        if isinstance(value, str):
-            kind, _, suffix = value.partition("_")
-            if kind in prefixes and len(suffix) == 24:
-                if value not in opaque:
-                    opaque[value] = f"{kind}_{rng.getrandbits(96):024x}"
-                return opaque[value]
-        if isinstance(value, dict):
-            return {key: remap(item) for key, item in value.items()}
-        if isinstance(value, (list, tuple)):
-            return type(value)(remap(item) for item in value)
-        return value
-
-    tables = remap(episode.tables)
-    for rows in tables.values():
-        rng.shuffle(rows)
-    issues = tuple(
-        replace(issue, issue_id=remap(issue.issue_id), affected_ids=remap(issue.affected_ids),
-                evidence_sets=remap(issue.evidence_sets))
-        for issue in episode.issues
-    )
-    provenance = remap(episode.provenance) | {"transform_seed": seed}
-    return Episode(remap(episode.manifest), deepcopy(episode.policy), tables, issues, provenance)
+    issues = tuple(Issue(**{name: rename_ids(getattr(issue, name), mapping) for name in Issue.__dataclass_fields__})
+                   for issue in episode.issues)
+    issues = tuple(replace(issue, affected_ids=tuple(sorted(issue.affected_ids)),
+                           relevant_ids=tuple(sorted(issue.relevant_ids))) for issue in issues)
+    provenance = rename_ids(deepcopy(episode.provenance), mapping) | {"transform_seed": seed}
+    return Episode(rename_ids(deepcopy(episode.manifest), mapping), deepcopy(episode.policy), tables,
+                   issues, provenance, rename_ids(deepcopy(episode.documents), mapping))
