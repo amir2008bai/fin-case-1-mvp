@@ -35,7 +35,16 @@ docker run --rm --pull=never --network=none --read-only --cap-drop=ALL --cpus=2 
   --tmpfs /tmp:rw,size=256m fintech-audit:verify
 ```
 
-То же самое делает `make docker-verify`. Базовый образ `python:3.11.14-slim` закреплён по digest. CI (`.github/workflows/verify.yml`) запускает `verify` на Python 3.11 в Linux и Windows, а также в контейнере.
+То же самое делает `make docker-verify`. Базовый образ `python:3.11.14-slim` закреплён по digest.
+
+Агент в отдельном контейнере: образ без генератора, без оценщика и без ответов, запуск `--network=none --read-only`. Оценщик остаётся снаружи и общается с агентом по JSONL.
+
+```bash
+docker build --target agent -t fintech-audit:agent .
+python -m audit_env demo --closed --policy expert --agent-image fintech-audit:agent
+```
+
+`make docker-agent` прогоняет так агентов `expert` и `micro`. CI (`.github/workflows/verify.yml`) запускает `verify` на Python 3.11 в Linux и Windows, затем `docker-verify` и `docker-agent`.
 
 ## Что внутри эпизода
 

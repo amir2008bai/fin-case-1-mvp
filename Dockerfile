@@ -5,7 +5,8 @@ USER 65534:65534
 
 # Agent image: public code only (no generator, no evaluator, no answers).
 FROM base AS agent
-COPY audit_env/__init__.py audit_env/agents.py audit_env/checks.py audit_env/contracts.py /app/audit_env/
+COPY audit_env/__init__.py audit_env/agents.py audit_env/checks.py audit_env/contracts.py audit_env/micro.py /app/audit_env/
+COPY models/model.json /app/models/model.json
 ENTRYPOINT ["python", "-m", "audit_env.agents"]
 CMD ["expert"]
 
@@ -15,4 +16,6 @@ COPY audit_env/ audit_env/
 COPY tests/ tests/
 COPY configs/ configs/
 COPY data/ data/
+COPY schemas/ schemas/
+COPY models/ models/
 CMD ["python", "-m", "audit_env", "verify", "--report", "/tmp/verify-report.json"]

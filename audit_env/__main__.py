@@ -178,7 +178,20 @@ def command_demo(args):
 
     config = Config.from_dict(json.loads(args.config)) if args.config else Config(keyspace="open")
     episode = generate(args.seed, config)
-    outcome, trace, seconds = evaluate(episode, args.policy, closed=args.closed)
+    if args.agent_image:
+        from .environment import AuditEnv
+        from .runner import run_container
+
+        if args.policy == "oracle" or not args.closed:
+            raise SystemExit("--agent-image needs --closed and a public policy")
+        env = AuditEnv(training=False)
+        observation, _ = env.load_episode(episode)
+        try:
+            outcome, trace, seconds = run_container(env, observation, args.agent_image, args.policy)
+        except FileNotFoundError:
+            raise SystemExit("docker is not installed or not on PATH") from None
+    else:
+        outcome, trace, seconds = evaluate(episode, args.policy, closed=args.closed)
     if args.trajectory:
         write_lines(args.trajectory, trace)
     out(json.dumps({"episode_id": episode.manifest["episode_id"], "policy": args.policy,
@@ -285,8 +298,9 @@ def main():
     demo = commands.add_parser("demo", help="run one policy on one generated episode")
     demo.add_argument("--seed", type=int, default=202601)
     demo.add_argument("--config", help="JSON config")
-    demo.add_argument("--policy", choices=POLICIES, default="expert")
+    demo.add_argument("--policy", choices=(*POLICIES, "micro"), default="expert")
     demo.add_argument("--closed", action="store_true")
+    demo.add_argument("--agent-image", help="run the agent in this local Docker image (no network, read-only)")
     demo.add_argument("--trajectory", type=Path)
     training = commands.add_parser("train", help="fit the micro model on train, compare on held-out data")
     training.add_argument("--suite", default=DEFAULT_SUITE)

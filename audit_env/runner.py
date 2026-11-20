@@ -82,14 +82,16 @@ def run_policy(env, observation, policy, observer=None):
 
 
 class JsonAgent:
-    def __init__(self, command, clock, deadline):
+    def __init__(self, command, clock, deadline, cwd=None):
         self.command = command
         self.clock = clock
         self.deadline = deadline
+        self.cwd = cwd
 
     def __enter__(self):
         self.process = subprocess.Popen(
             self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
+            cwd=self.cwd,
         )
         self.lines = queue.Queue()
         self.reader = threading.Thread(target=self.read_loop, daemon=True)
@@ -171,8 +173,8 @@ class JsonAgent:
             raise ProtocolError("invalid JSON action") from exc
 
 
-def run_subprocess(env, observation, command, observer=None):
-    with JsonAgent(command, env.clock, env.deadline) as agent:
+def run_subprocess(env, observation, command, observer=None, cwd=None):
+    with JsonAgent(command, env.clock, env.deadline, cwd) as agent:
         return execute(env, observation, agent, observer)
 
 

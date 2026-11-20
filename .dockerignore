@@ -8,6 +8,10 @@
 !tests/*.py
 !configs/
 !configs/*.json
+!schemas/
+!schemas/*.json
+!models/
+!models/*.json
 !data/
 !data/**
 **/__pycache__/

@@ -200,7 +200,11 @@ class OraclePolicy:
         return submission(self.episode_id, [issue.as_finding() for issue in self.issues])
 
 
-def create_policy(name):
+def create_policy(name, model_path="models/model.json"):
+    if name == "micro":
+        from .micro import MicroModel
+
+        return MicroModel.load(model_path).policy()
     return {
         "reconcile": lambda: ScanPolicy(reconcile),
         "flag-all": lambda: ScanPolicy(flag_all),
@@ -217,7 +221,7 @@ def oracle(episode):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("policy", choices=["reconcile", "flag-all", "mark-all", "random", "expert", "micro"])
-    parser.add_argument("--model", default="/app/model.json")
+    parser.add_argument("--model", default="models/model.json")
     args = parser.parse_args()
     if args.policy == "micro":
         from .micro import MicroModel

@@ -17,10 +17,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: One-command verification (no network, no extra packages)
@@ -32,8 +32,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
       - name: Offline verification container (2 CPU, 4 GB, read-only, no network)
         run: make docker-verify
+      - name: Closed episodes with the agent in an isolated container
+        run: make docker-agent
