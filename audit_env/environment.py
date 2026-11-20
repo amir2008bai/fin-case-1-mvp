@@ -15,7 +15,8 @@ NUMBER = re.compile(r"(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)")
 BINARY = {ast.Add: add, ast.Sub: sub, ast.Mult: mul, ast.Div: truediv}
 UNARY = {ast.UAdd: pos, ast.USub: neg}
 TASK = ("Проверьте записи компании за период и отправьте выводы об ошибках с доказательствами. "
-        "Типы: duplicate_invoice, payment_allocation, fx_rate, period_cutoff. Правила — в policy.")
+        "Возможные типы и правила выводов — в policy.findings: duplicate_invoice, payment_allocation, fx_rate, "
+        "period_cutoff, vat_on_top, uncollected_service. Ошибок может не быть. Правила учёта — в policy.")
 TOOLS = {
     "list_records": {"table": sorted(TABLE_IDS), "cursor": "string|null", "limit": f"1..{MAX_PAGE}"},
     "get_record": {"table": sorted(TABLE_IDS), "id": "row_id | invoice_id | payment_id | fx_id"},

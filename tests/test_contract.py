@@ -3,7 +3,7 @@ import json
 import unittest
 
 from audit_env.agents import create_policy, oracle, submission
-from audit_env.contracts import Config
+from audit_env.contracts import ALL_TYPES, Config
 from audit_env.environment import AuditEnv
 from audit_env.generator import collect_ids, generate
 from audit_env.runner import run_policy
@@ -28,6 +28,12 @@ class ContractTests(unittest.TestCase):
                     "counts", "document_count", "minor_units", "rounding"):
             self.assertIn(key, manifest)
         json.dumps(self.observation)
+
+    def test_task_and_policy_name_every_finding_type(self):
+        # An agent learns the possible types from the task and policy.findings: both must list all of them.
+        self.assertEqual(set(self.observation["policy"]["findings"]), set(ALL_TYPES))
+        for kind in ALL_TYPES:
+            self.assertIn(kind, self.observation["task"])
 
     def test_config_validation(self):
         with self.assertRaises(ValueError):
