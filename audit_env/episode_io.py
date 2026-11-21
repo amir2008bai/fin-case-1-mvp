@@ -14,6 +14,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
+from .checks import Auditor
 from .contracts import SCHEMA_VERSION, TABLE_FIELDS, Episode, Issue
 
 PUBLIC_FILES = ("manifest.json", "policy.json", "ledger.csv", "invoices.jsonl", "payments.jsonl", "fx.csv")
@@ -263,6 +264,21 @@ def validate(manifest, policy, tables, problems):
             if row["currency"] not in units:
                 problems.append(f"{table}: currency {row['currency']} has no minor_units in manifest")
                 break
+    if not problems:
+        check_rates(manifest, policy, tables, problems)
+
+
+def check_rates(manifest, policy, tables, problems):
+    """Every foreign-currency document the checks convert needs its rate in fx.csv."""
+    try:
+        needed = Auditor(manifest, policy, tables).required_rates()
+    except (KeyError, TypeError, ValueError, AttributeError):
+        problems.append("policy.json: period.start and period.end must be ISO-8601 with an offset")
+        return
+    available = {(row["date"], row["source_currency"]) for row in tables["fx"]}
+    for (day, currency), doc_id in sorted(needed.items()):
+        if (day.isoformat(), currency) not in available:
+            problems.append(f"fx.csv: no {currency} rate for {day.isoformat()} (needed by {doc_id})")
 
 
 def load_episode(public_dir, answers_dir=None):

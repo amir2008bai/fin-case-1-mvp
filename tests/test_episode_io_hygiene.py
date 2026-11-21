@@ -64,6 +64,13 @@ class EpisodeIoTests(unittest.TestCase):
             load_episode(self.folder)
         self.assertTrue(any("offset" in problem for problem in context.exception.problems))
 
+    def test_missing_fx_rate_is_a_format_problem(self):
+        self.assertTrue(any(row["currency"] != "KZT" for row in self.episode.tables["invoices"]))
+        self.edit("fx.csv", lambda lines: lines[:1])
+        with self.assertRaises(FormatError) as context:
+            load_episode(self.folder)
+        self.assertTrue(any(problem.startswith("fx.csv: no ") for problem in context.exception.problems))
+
     def test_missing_files(self):
         (self.folder / "fx.csv").unlink()
         with self.assertRaises(FormatError):

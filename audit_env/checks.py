@@ -66,6 +66,23 @@ class Auditor:
     def rate(self, day, currency):
         return self.rates[(day, currency)]
 
+    def required_rates(self):
+        """(date, currency) -> doc_id of the first document whose check looks that rate up."""
+        needed = {}
+        for invoice_id in sorted(self.invoices):
+            invoice = self.invoices[invoice_id]
+            if (invoice["currency"] != self.base and self.revenue_rows(invoice_id)
+                    and self.in_period(self.recognized_at(invoice))):
+                needed.setdefault((self.service_end(invoice), invoice["currency"]), invoice["doc_id"])
+        for payment_id in sorted(self.payments):
+            payment = self.payments[payment_id]
+            if payment["currency"] == self.base or payment["amount_minor"] <= 0:
+                continue
+            moment = self.instant(payment)
+            if self.bank_rows(payment_id) or self.in_period(moment):
+                needed.setdefault((self.local_date(moment), payment["currency"]), payment["doc_id"])
+        return needed
+
     def revenue_rows(self, invoice_id):
         return [row for row in self.by_invoice[invoice_id] if row["account"] == REVENUE and row["credit_minor"]]
 
