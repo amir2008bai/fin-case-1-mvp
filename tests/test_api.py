@@ -94,6 +94,9 @@ class ApiTests(unittest.TestCase):
 
     def test_errors(self):
         self.assertEqual(self.call("/api/sessions/nope/step", {"action": None})[0], 404)
+        self.assertEqual(self.call("/api/sessions/nope/files")[0], 404)
+        self.assertEqual(self.call("/api/audit", {})[0], 400)
+        self.assertEqual(self.call("/api/audit", {"manifest": {}, "policy": {}})[0], 400)
         self.assertEqual(self.call("/api/episodes", {"seed": -3})[0], 400)
         self.assertEqual(self.call("/api/health")[1]["ok"], True)
 

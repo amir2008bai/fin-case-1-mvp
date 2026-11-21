@@ -36,6 +36,10 @@ def local_origin(origin):
     return parts.scheme == "http" and parts.hostname in LOCAL_HOSTS and parts.path in ("", "/")
 
 
+class NotFound(LookupError):
+    """Unknown session or route: 404. Any other KeyError is a bad request, not a missing resource."""
+
+
 class Session:
     def __init__(self, episode, *, graded, training):
         self.episode = episode
@@ -94,7 +98,7 @@ class App:
 
     def session(self, session_id):
         if session_id not in self.sessions:
-            raise KeyError("unknown session")
+            raise NotFound("unknown session")
         return self.sessions[session_id]
 
     def step(self, session_id, body):
@@ -125,6 +129,9 @@ class App:
             episode = load_episode(body["folder"])
             manifest, policy, tables = episode.manifest, episode.policy, episode.tables
         else:
+            missing = [name for name in ("manifest", "policy", "tables") if name not in body]
+            if missing:
+                raise ValueError(f"folder or {', '.join(missing)} required")
             manifest, policy, tables = body["manifest"], body["policy"], body["tables"]
         if body.get("auditor", "rules") == "micro":
             from .micro import MicroModel
@@ -178,7 +185,7 @@ def make_handler(app):
                 if len(parts) == 4 and parts[:2] == ["api", "sessions"] and parts[3] == "files":
                     return self.send(200, app.public_files(app.session(parts[2]).episode))
                 return self.send(404, {"error": "not_found"})
-            except KeyError as exc:
+            except NotFound as exc:
                 return self.send(404, {"error": str(exc.args[0])})
 
         def do_POST(self):
@@ -198,8 +205,10 @@ def make_handler(app):
                 return self.send(404, {"error": "not_found"})
             except FormatError as exc:
                 return self.send(400, {"error": "format", "problems": exc.problems})
+            except NotFound as exc:
+                return self.send(404, {"error": str(exc.args[0])})
             except KeyError as exc:
-                return self.send(404, {"error": str(exc.args[0]) if exc.args else "missing field"})
+                return self.send(400, {"error": f"missing field {exc.args[0]}" if exc.args else "missing field"})
             except (ValueError, TypeError) as exc:
                 return self.send(400, {"error": str(exc)})
 
