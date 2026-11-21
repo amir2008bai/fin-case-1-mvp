@@ -14,6 +14,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
+from .checks import Auditor
 from .contracts import SCHEMA_VERSION, TABLE_FIELDS, Episode, Issue
 
 PUBLIC_FILES = ("manifest.json", "policy.json", "ledger.csv", "invoices.jsonl", "payments.jsonl", "fx.csv")
@@ -263,6 +264,21 @@ def validate(manifest, policy, tables, problems):
             if row["currency"] not in units:
                 problems.append(f"{table}: currency {row['currency']} has no minor_units in manifest")
                 break
+    if not problems:
+        check_rates(manifest, policy, tables, problems)
+
+
+def check_rates(manifest, policy, tables, problems):
+    """Every foreign-currency document the checks convert needs its rate in fx.csv."""
+    try:
+        needed = Auditor(manifest, policy, tables).required_rates()
+    except (KeyError, TypeError, ValueError, AttributeError):
+        problems.append("policy.json: period.start and period.end must be ISO-8601 with an offset")
+        return
+    available = {(row["date"], row["source_currency"]) for row in tables["fx"]}
+    for (day, currency), doc_id in sorted(needed.items()):
+        if (day.isoformat(), currency) not in available:
+            problems.append(f"fx.csv: no {currency} rate for {day.isoformat()} (needed by {doc_id})")
 
 
 def load_episode(public_dir, answers_dir=None):
@@ -289,10 +305,16 @@ def load_episode(public_dir, answers_dir=None):
         validate(manifest, policy, tables, problems)
     if problems:
         raise FormatError(problems)
+    # documents.jsonl is an optional richer view of the tables. A document whose row was removed,
+    # or whose shared fields no longer match an edited row, is stale: the row itself is served instead.
+    rows = {row["doc_id"]: row for table in ("invoices", "payments") for row in tables[table]}
     documents = {}
     if (public / "documents.jsonl").is_file():
         for _, item in read_jsonl(public / "documents.jsonl", problems):
-            if isinstance(item, dict) and "doc_id" in item:
+            if not isinstance(item, dict) or item.get("doc_id") not in rows:
+                continue
+            row = rows[item["doc_id"]]
+            if all(key in item and item[key] == value for key, value in row.items()):
                 documents[item["doc_id"]] = item
     manifest = dict(manifest)
     manifest["counts"] = {name: len(rows) for name, rows in tables.items()}

@@ -10,6 +10,7 @@ import threading
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from . import __version__
 from .agents import create_policy
@@ -22,6 +23,21 @@ from .runner import run_policy
 
 MAX_BODY = 4 * 1024 * 1024
 POLICIES = ("expert", "micro", "reconcile", "random", "flag-all")
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def local_origin(origin):
+    """Only a page served from this machine may read responses; `http://localhost.evil.com` may not."""
+    try:
+        parts = urlsplit(origin)
+        parts.port  # raises ValueError on a malformed port
+    except ValueError:
+        return False
+    return parts.scheme == "http" and parts.hostname in LOCAL_HOSTS and parts.path in ("", "/")
+
+
+class NotFound(LookupError):
+    """Unknown session or route: 404. Any other KeyError is a bad request, not a missing resource."""
 
 
 class Session:
@@ -47,14 +63,21 @@ class App:
         return create_policy(name)
 
     def public_files(self, episode):
+        rows = sorted((row["doc_id"], row) for table in ("invoices", "payments") for row in episode.tables[table])
         return {"manifest": episode.manifest, "policy": episode.policy, "tables": episode.tables,
-                "documents": list(episode.documents.values())}
+                "documents": [episode.documents.get(doc_id, row) for doc_id, row in rows]}
 
     def create(self, body):
         mode = body.get("mode", "open")
         if mode not in ("open", "closed"):
             raise ValueError("mode must be open or closed")
-        config = Config.from_dict(body.get("config") or {"keyspace": "open"})
+        config = body.get("config") or {"keyspace": "secret" if mode == "closed" else "open"}
+        if mode == "closed":
+            # An open-key episode can be regenerated from the public code and seed, truth included.
+            if not isinstance(config, dict) or config.get("keyspace", "secret") != "secret":
+                raise ValueError("closed mode needs the secret keyspace")
+            config = config | {"keyspace": "secret"}
+        config = Config.from_dict(config)
         seed = body.get("seed", 202611)
         if type(seed) is not int or seed < 0:
             raise ValueError("seed must be a non-negative integer")
@@ -75,7 +98,7 @@ class App:
 
     def session(self, session_id):
         if session_id not in self.sessions:
-            raise KeyError("unknown session")
+            raise NotFound("unknown session")
         return self.sessions[session_id]
 
     def step(self, session_id, body):
@@ -106,6 +129,9 @@ class App:
             episode = load_episode(body["folder"])
             manifest, policy, tables = episode.manifest, episode.policy, episode.tables
         else:
+            missing = [name for name in ("manifest", "policy", "tables") if name not in body]
+            if missing:
+                raise ValueError(f"folder or {', '.join(missing)} required")
             manifest, policy, tables = body["manifest"], body["policy"], body["tables"]
         if body.get("auditor", "rules") == "micro":
             from .micro import MicroModel
@@ -129,7 +155,7 @@ def make_handler(app):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(data)))
             origin = self.headers.get("Origin", "")
-            if origin.startswith(("http://localhost", "http://127.0.0.1")):
+            if local_origin(origin):
                 self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Access-Control-Allow-Headers", "Content-Type")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -138,6 +164,8 @@ def make_handler(app):
 
         def body(self):
             length = int(self.headers.get("Content-Length") or 0)
+            if length < 0:  # rfile.read(-1) would read until the client closes, past MAX_BODY
+                raise ValueError("invalid Content-Length")
             if length > MAX_BODY:
                 raise ValueError("request body too large")
             raw = self.rfile.read(length) if length else b"{}"
@@ -157,7 +185,7 @@ def make_handler(app):
                 if len(parts) == 4 and parts[:2] == ["api", "sessions"] and parts[3] == "files":
                     return self.send(200, app.public_files(app.session(parts[2]).episode))
                 return self.send(404, {"error": "not_found"})
-            except KeyError as exc:
+            except NotFound as exc:
                 return self.send(404, {"error": str(exc.args[0])})
 
         def do_POST(self):
@@ -177,8 +205,10 @@ def make_handler(app):
                 return self.send(404, {"error": "not_found"})
             except FormatError as exc:
                 return self.send(400, {"error": "format", "problems": exc.problems})
+            except NotFound as exc:
+                return self.send(404, {"error": str(exc.args[0])})
             except KeyError as exc:
-                return self.send(404, {"error": str(exc.args[0]) if exc.args else "missing field"})
+                return self.send(400, {"error": f"missing field {exc.args[0]}" if exc.args else "missing field"})
             except (ValueError, TypeError) as exc:
                 return self.send(400, {"error": str(exc)})
 

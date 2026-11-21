@@ -1,5 +1,6 @@
 """The optional UI API: sessions, steps, agents, folder import and audit; truth never leaves."""
 import json
+import socket
 import tempfile
 import threading
 import unittest
@@ -51,7 +52,11 @@ class ApiTests(unittest.TestCase):
             self.assertNotIn(word, text)
 
     def test_closed_mode_hides_score(self):
-        _, created = self.call("/api/episodes", {"seed": 6, "config": {"keyspace": "open"}, "mode": "closed"})
+        _, created = self.call("/api/episodes", {"seed": 6, "mode": "closed"})
+        regenerated = generate(6, Config(keyspace="open"))
+        self.assertNotEqual(created["observation"]["manifest"]["episode_id"], regenerated.manifest["episode_id"])
+        status, _ = self.call("/api/episodes", {"seed": 6, "config": {"keyspace": "open"}, "mode": "closed"})
+        self.assertEqual(status, 400)
         _, ran = self.call(f"/api/sessions/{created['session_id']}/run", {"policy": "expert"})
         self.assertNotIn("score", ran)
         self.assertIsNone(ran["trajectory"][-1]["reward"])
@@ -63,14 +68,35 @@ class ApiTests(unittest.TestCase):
             write_episode(episode, Path(temp) / "docs")
             status, imported = self.call("/api/episodes/import", {"folder": str(Path(temp) / "docs")})
             self.assertEqual((status, imported["graded"]), (200, False))
+            _, files = self.call(f"/api/sessions/{imported['session_id']}/files")
+            self.assertEqual(len(files["documents"]), files["manifest"]["document_count"])
             status, audited = self.call("/api/audit", {"folder": str(Path(temp) / "docs")})
             self.assertEqual([item["type"] for item in audited["findings"]], ["duplicate_invoice"])
             (Path(temp) / "docs" / "fx.csv").write_text("broken\n", encoding="utf-8")
             status, failed = self.call("/api/audit", {"folder": str(Path(temp) / "docs")})
             self.assertEqual((status, failed["error"]), (400, "format"))
 
+    def test_cors_allows_only_local_origins(self):
+        def allowed(origin):
+            request = urllib.request.Request(self.base + "/api/health", headers={"Origin": origin})
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return response.headers.get("Access-Control-Allow-Origin") == origin
+        for origin in ("http://localhost", "http://localhost:5173", "http://127.0.0.1:3000", "http://[::1]:8080"):
+            self.assertTrue(allowed(origin), origin)
+        for origin in ("http://localhost.evil.com", "http://127.0.0.1.evil.com", "http://localhost:80@evil.com",
+                       "https://evil.com", "null", "http://localhost:abc"):
+            self.assertFalse(allowed(origin), origin)
+
+    def test_negative_content_length_is_rejected(self):
+        with socket.create_connection(("127.0.0.1", self.server.server_address[1]), timeout=10) as connection:
+            connection.sendall(b"POST /api/audit HTTP/1.1\r\nHost: localhost\r\nContent-Length: -1\r\n\r\n{}")
+            self.assertIn(b" 400 ", connection.recv(64))
+
     def test_errors(self):
         self.assertEqual(self.call("/api/sessions/nope/step", {"action": None})[0], 404)
+        self.assertEqual(self.call("/api/sessions/nope/files")[0], 404)
+        self.assertEqual(self.call("/api/audit", {})[0], 400)
+        self.assertEqual(self.call("/api/audit", {"manifest": {}, "policy": {}})[0], 400)
         self.assertEqual(self.call("/api/episodes", {"seed": -3})[0], 400)
         self.assertEqual(self.call("/api/health")[1]["ok"], True)
 
