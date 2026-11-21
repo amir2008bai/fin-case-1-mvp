@@ -16,6 +16,8 @@ CURRICULUM = "configs/curriculum.v2.json"
 LEVELS = ("easy", "medium", "hard")
 DATA = Path("data")
 POLICIES = ("oracle", "expert", "reconcile", "random", "flag-all")
+LEAKAGE_SEED = 7
+LEAKAGE_REPEATS = 3
 
 
 def out(text=""):
@@ -77,6 +79,34 @@ def economy_lines(result):
     lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
     lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
     return "\n".join(lines)
+
+
+def leakage_lines(result):
+    lines = [f"  {result['episodes']} closed episodes (threshold |AUROC - 0.50| <= {result['threshold']:.2f}):"]
+    lines.append(f"  {'feature':20s} {'n':>7s} {'pos':>5s} {'AUROC':>7s} {'drift':>7s}  status")
+    for row in result["features"]:
+        auc = "—" if row["auroc"] is None else f"{row['auroc']:.4f}"
+        drift = "—" if row["drift"] is None else f"{row['drift']:.4f}"
+        status = "OK" if row["ok"] else "LEAK"
+        lines.append(f"  {row['feature']:20s} {row['samples']:7d} {row['positives']:5d} {auc:>7s} {drift:>7s}  {status}")
+    lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
+    lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
+    return "\n".join(lines)
+
+
+def command_leakage(args):
+    import random
+
+    from .leakage import audit_leakage
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    result = audit_leakage(closed_episodes(random.Random(args.seed), key, repeats=args.repeats))
+    out(leakage_lines(result))
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 1 if result["violations"] else 0
 
 
 def command_economy(args):
@@ -258,6 +288,17 @@ def command_verify(args):
     report["sections"]["economy"] = result
     if result["violations"]:
         failed.append("step economy")
+
+    out("\n== 10. Statistical tell-leakage audit: presentation metadata AUROC near 0.50")
+    from .leakage import audit_leakage
+
+    leak_episodes = closed_episodes(random.Random(LEAKAGE_SEED), derived_key(LEAKAGE_SEED),
+                                    repeats=LEAKAGE_REPEATS)
+    leak_result = audit_leakage(leak_episodes)
+    report["sections"]["leakage"] = leak_result
+    out(leakage_lines(leak_result))
+    if leak_result["violations"]:
+        failed.append("tell leakage")
 
     report["seconds"] = round(time.time() - started, 1)
     report["ok"] = not failed
@@ -476,6 +517,11 @@ def main():
     economy.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
     economy.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     economy.add_argument("--report", help="write the full result as JSON")
+    leak = commands.add_parser("leakage", help="statistical tell-leakage audit (AUROC on presentation metadata)")
+    leak.add_argument("--repeats", type=int, default=LEAKAGE_REPEATS, help="seeds per configuration")
+    leak.add_argument("--seed", type=int, default=LEAKAGE_SEED, help="episode seeds and the derived secret key")
+    leak.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
+    leak.add_argument("--report", help="write the full result as JSON")
     data = commands.add_parser("dataset", help="export open episodes, answers, trajectories, checksums")
     data.add_argument("output", type=Path)
     data.add_argument("--suite", default=DEFAULT_SUITE)
@@ -485,7 +531,7 @@ def main():
     demo = commands.add_parser("demo", help="run one policy on one generated episode")
     demo.add_argument("--seed", type=int, default=202601)
     demo.add_argument("--config", help="JSON config")
-    demo.add_argument("--policy", choices=(*POLICIES, "micro"), default="expert")
+    demo.add_argument("--policy", choices=(*POLICIES, "inspector", "micro"), default="expert")
     demo.add_argument("--closed", action="store_true")
     demo.add_argument("--agent-image", help="run the agent in this local Docker image (no network, read-only)")
     demo.add_argument("--trajectory", type=Path)
@@ -507,7 +553,7 @@ def main():
     handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
                 "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
-                "failures": command_failures, "attacks": command_attacks, "economy": command_economy}
+                "failures": command_failures, "attacks": command_attacks, "economy": command_economy, "leakage": command_leakage}
     raise SystemExit(handlers[args.command](args))
 
 

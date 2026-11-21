@@ -33,7 +33,9 @@
             }
           },
           "claimed_amount_minor": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": -1000000000000000000,
+            "maximum": 1000000000000000000
           },
           "currency": {
             "type": "string",

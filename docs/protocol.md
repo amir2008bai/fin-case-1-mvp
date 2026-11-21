@@ -2,7 +2,7 @@
 
 ## reset / step
 
-- `AuditEnv.reset(seed: int, config: Config | dict)` возвращает `(observation, info)`. Первое наблюдение содержит `task`, `manifest`, `policy`, `tools` и `remaining_steps = 100`; `info = {}`.
+- `AuditEnv.reset(seed: int, config: Config | dict | None = None)` возвращает `(observation, info)`. Вызов `AuditEnv().reset(seed)` без конфига и ключа использует открытый набор. Для `Config()`, закрытого запуска и явно заданного ключа сохраняются прежние правила. Первое наблюдение содержит `task`, `manifest`, `policy`, `tools` и `remaining_steps = 100`, а `info = {}`.
 - `AuditEnv.step(action: dict)` возвращает `(observation, reward, terminated, truncated, info)`. Все значения JSON-совместимы.
 - `AuditEnv.load_episode(episode)` загружает готовый эпизод: сгенерированный или прочитанный из папки через `episode_io.load_episode`.
 - `AuditEnv(training=True)` — открытый режим: терминальная награда возвращается политике. При `training=False` (закрытый режим) награда равна `None`, результат остаётся у оценщика в `env.outcome`.
@@ -38,7 +38,7 @@
   "explanation": "коротко"}]}
 ```
 
-Лимиты: не больше 30 выводов, 1–10 уникальных ID доказательств, до 1000 символов объяснения, сумма — целое число. Нарушение структуры даёт −1 и ошибку `invalid_submission` в журнале оценщика.
+Допускаются до 30 выводов, 1–10 уникальных ID доказательств на вывод и до 1000 символов объяснения. Сумма задаётся целым числом от −10¹⁸ до 10¹⁸ в минорных единицах. Нарушение структуры даёт −1 и ошибку `invalid_submission` в журнале оценщика.
 
 `explanation` нужен людям и на оценку не влияет: тот же ответ с любым текстом получает ту же награду. Это проверяет атака `persuasion` против контроля `persuasion-plain` (`python -m audit_env attacks`).
 

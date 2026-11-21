@@ -227,6 +227,46 @@ class OraclePolicy:
         return submission(self.episode_id, [issue.as_finding() for issue in self.issues])
 
 
+class InspectorPolicy(ScanPolicy):
+    """Demonstrate all five tools while using the expert policy for findings."""
+
+    def __init__(self):
+        super().__init__(expert)
+        self.verify_queue = []
+        self.verified = False
+
+    def __call__(self, observation):
+        if "manifest" in observation:
+            self.verify_queue = []
+            self.verified = False
+            return super().__call__(observation)
+        if self.verified:
+            if self.verify_queue and observation["remaining_steps"] > 1:
+                return self.verify_queue.pop(0)
+            return submission(self.episode_id, self.pending_findings)
+        action = super().__call__(observation)
+        if action.get("type") != "submit":
+            return action
+        self.pending_findings = action["findings"]["findings"]
+        self.verified = True
+        # Use three extra calls to show document, record and calculator responses.
+        if self.tables["invoices"]:
+            first_inv = self.tables["invoices"][0]
+            self.verify_queue.append({"type": "get_document", "doc_id": first_inv["doc_id"]})
+            self.verify_queue.append({"type": "get_record", "table": "invoices", "id": first_inv["invoice_id"]})
+            line = first_inv["line_items"][0]
+            self.verify_queue.append({"type": "calculator",
+                                      "expression": f"{line['quantity']} * {line['unit_price_minor']}"})
+        elif self.tables["payments"]:
+            first_pay = self.tables["payments"][0]
+            self.verify_queue.append({"type": "get_document", "doc_id": first_pay["doc_id"]})
+            self.verify_queue.append({"type": "get_record", "table": "payments", "id": first_pay["payment_id"]})
+            self.verify_queue.append({"type": "calculator", "expression": f"{first_pay['amount_minor']} + 0"})
+        if self.verify_queue and observation["remaining_steps"] > len(self.verify_queue) + 1:
+            return self.verify_queue.pop(0)
+        return action
+
+
 def create_policy(name, model_path="models/model.json"):
     if name == "micro":
         from .micro import MicroModel
@@ -237,6 +277,7 @@ def create_policy(name, model_path="models/model.json"):
         "flag-all": lambda: ScanPolicy(flag_all),
         "mark-all": lambda: ScanPolicy(flag_all),
         "expert": lambda: ScanPolicy(expert),
+        "inspector": InspectorPolicy,
         "random": RandomPolicy,
     }[name]()
 
@@ -247,7 +288,7 @@ def oracle(episode):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("policy", choices=["reconcile", "flag-all", "mark-all", "random", "expert", "micro"])
+    parser.add_argument("policy", choices=["reconcile", "flag-all", "mark-all", "random", "expert", "inspector", "micro"])
     parser.add_argument("--model", default="models/model.json")
     args = parser.parse_args()
     if args.policy == "micro":

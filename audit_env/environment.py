@@ -63,8 +63,9 @@ class AuditEnv:
         self.steps = 0
 
     def reset(self, seed: int, config: Config | dict | None = None) -> tuple[dict, dict]:
-        return self.load_episode(generate(seed, Config() if config is None else Config.from_dict(config),
-                                          key=self.key))
+        if config is None:
+            config = Config(keyspace="open" if self.training and self.key is None else "secret")
+        return self.load_episode(generate(seed, config, key=self.key))
 
     def load_episode(self, episode: Episode) -> tuple[dict, dict]:
         self.episode = episode
