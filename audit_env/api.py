@@ -47,8 +47,9 @@ class App:
         return create_policy(name)
 
     def public_files(self, episode):
+        rows = sorted((row["doc_id"], row) for table in ("invoices", "payments") for row in episode.tables[table])
         return {"manifest": episode.manifest, "policy": episode.policy, "tables": episode.tables,
-                "documents": list(episode.documents.values())}
+                "documents": [episode.documents.get(doc_id, row) for doc_id, row in rows]}
 
     def create(self, body):
         mode = body.get("mode", "open")

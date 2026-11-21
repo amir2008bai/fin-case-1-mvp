@@ -44,6 +44,22 @@ class EpisodeIoTests(unittest.TestCase):
         self.assertEqual(audit(loaded.manifest, loaded.policy, loaded.tables), [])
         self.assertEqual(loaded.manifest["counts"]["invoices"], len(self.episode.tables["invoices"]) - 1)
 
+    def test_stale_documents_are_not_served(self):
+        duplicate = audit(self.episode.manifest, self.episode.policy, self.episode.tables)[0]["affected_ids"][1]
+        self.edit("invoices.jsonl", lambda lines: [line for line in lines if duplicate not in line])
+        self.edit("ledger.csv", lambda lines: [line for line in lines if duplicate not in line])
+
+        def shift_due(lines):
+            item = json.loads(lines[0])
+            item["due_at"] = item["issued_at"]
+            return [json.dumps(item, ensure_ascii=False)] + lines[1:]
+        self.edit("invoices.jsonl", shift_due)
+        edited = json.loads((self.folder / "invoices.jsonl").read_text(encoding="utf-8").splitlines()[0])
+        loaded = load_episode(self.folder)
+        self.assertNotIn(duplicate, {item.get("invoice_id") for item in loaded.documents.values()})
+        self.assertNotIn(edited["doc_id"], loaded.documents)
+        self.assertEqual(len(loaded.documents), loaded.manifest["document_count"] - 1)
+
     def test_format_problems_are_reported(self):
         self.edit("ledger.csv", lambda lines: lines[:1] + [lines[1].replace(",", ";", 1)] + lines[2:])
         self.edit("payments.jsonl", lambda lines: lines[:1] + ["{not json"] + lines[1:])

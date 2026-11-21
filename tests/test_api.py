@@ -63,6 +63,8 @@ class ApiTests(unittest.TestCase):
             write_episode(episode, Path(temp) / "docs")
             status, imported = self.call("/api/episodes/import", {"folder": str(Path(temp) / "docs")})
             self.assertEqual((status, imported["graded"]), (200, False))
+            _, files = self.call(f"/api/sessions/{imported['session_id']}/files")
+            self.assertEqual(len(files["documents"]), files["manifest"]["document_count"])
             status, audited = self.call("/api/audit", {"folder": str(Path(temp) / "docs")})
             self.assertEqual([item["type"] for item in audited["findings"]], ["duplicate_invoice"])
             (Path(temp) / "docs" / "fx.csv").write_text("broken\n", encoding="utf-8")

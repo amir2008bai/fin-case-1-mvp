@@ -305,10 +305,16 @@ def load_episode(public_dir, answers_dir=None):
         validate(manifest, policy, tables, problems)
     if problems:
         raise FormatError(problems)
+    # documents.jsonl is an optional richer view of the tables. A document whose row was removed,
+    # or whose shared fields no longer match an edited row, is stale: the row itself is served instead.
+    rows = {row["doc_id"]: row for table in ("invoices", "payments") for row in tables[table]}
     documents = {}
     if (public / "documents.jsonl").is_file():
         for _, item in read_jsonl(public / "documents.jsonl", problems):
-            if isinstance(item, dict) and "doc_id" in item:
+            if not isinstance(item, dict) or item.get("doc_id") not in rows:
+                continue
+            row = rows[item["doc_id"]]
+            if all(key in item and item[key] == value for key, value in row.items()):
                 documents[item["doc_id"]] = item
     manifest = dict(manifest)
     manifest["counts"] = {name: len(rows) for name, rows in tables.items()}
