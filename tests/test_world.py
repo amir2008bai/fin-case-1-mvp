@@ -29,6 +29,14 @@ class WorldTests(unittest.TestCase):
         self.assertEqual(failures, [])
         self.assertEqual(kinds, sorted(ALL_TYPES))
 
+    def test_prior_cutoff_invoice_stays_in_the_prior_period_after_a_collision(self):
+        config = Config(keyspace="open", month=2, acts=40, customers=5, foreign_percent=0,
+                        errors={"period_cutoff": 6, "duplicate_invoice": 2, "payment_allocation": 2})
+        episode = generate(877, config)
+        result = score({"episode_id": episode.manifest["episode_id"], "findings": audit_episode(episode)},
+                       episode.manifest["episode_id"], episode.issues, seen_all(episode), 0)
+        self.assertEqual((result.tp, result.fp, result.fn), (10, 0, 0))
+
     def test_random_configs_respect_the_issue_cap(self):
         # Regression: verify draws fresh random configs; about one in 2 300 used to exceed the cap and crash it.
         rng = random.Random(7)

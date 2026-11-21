@@ -293,6 +293,13 @@ class Builder:
 
     def new_act(self, customer, origin, service_end, issued_at=None, lines=1, max_lag=7, kind="service",
                 code=None, due_days=None):
+        day = timedelta(days=1)
+        if service_end < self.first:
+            earliest, latest = date.min, self.first - day
+        elif service_end > self.last:
+            earliest, latest = self.last + day, date.max
+        else:
+            earliest, latest = self.first, self.last
         for _ in range(60):
             items = tuple(Line(index, *values) for index, values in
                           enumerate(self.lines_for(customer, service_end, lines, kind, code), 1))
@@ -304,7 +311,10 @@ class Builder:
                 self.starts |= starts
                 self.nexts |= nexts
                 break
-            service_end += timedelta(days=-1 if self.rng.randrange(2) else 1)
+            # A collision may change the service date, but must preserve its accounting period.
+            step = -day if self.rng.randrange(2) else day
+            next_end = service_end + step
+            service_end = next_end if earliest <= next_end <= latest else service_end - step
         else:
             raise RuntimeError("could not place a unique act")
         self.busy |= marks
