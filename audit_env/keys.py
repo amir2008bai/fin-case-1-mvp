@@ -9,12 +9,14 @@ import hashlib
 import hmac
 import os
 import sys
+import time
 from pathlib import Path
 from random import Random
 
 OPEN_KEY = b"fin-case-1/open-episodes/v2"
 ENV_VAR = "AUDIT_ENV_SECRET"
 KEY_FILE_VAR = "AUDIT_ENV_KEY_FILE"
+MIN_KEY_BYTES = 16
 _process_key = None
 
 
@@ -29,24 +31,32 @@ def secret_key():
         return value.encode("utf-8")
     path = _key_file()
     try:
-        if path.is_file():
-            data = path.read_bytes().strip()
-            if len(data) >= 16:
+        # A short file is never a key: it is either being written by a parallel process
+        # (wait for it) or damaged (fall back below rather than use a guessable key).
+        for _ in range(20):
+            if not path.is_file():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                data = os.urandom(32).hex().encode("ascii")
+                try:
+                    handle = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
+                except FileExistsError:
+                    continue
+                with os.fdopen(handle, "wb") as stream:
+                    stream.write(data)
                 return data
-        path.parent.mkdir(parents=True, exist_ok=True)
-        data = os.urandom(32).hex().encode("ascii")
-        with open(path, "xb") as stream:
-            stream.write(data)
-        return data
-    except FileExistsError:
-        return path.read_bytes().strip()
+            data = path.read_bytes().strip()
+            if len(data) >= MIN_KEY_BYTES:
+                return data
+            time.sleep(0.025)
+        reason = f"key file {path} holds fewer than {MIN_KEY_BYTES} bytes"
     except OSError:
-        global _process_key
-        if _process_key is None:
-            _process_key = os.urandom(32)
-            print(f"audit_env: no writable key file, using a per-process secret key; "
-                  f"set {ENV_VAR} for reproducible hidden episodes", file=sys.stderr)
-        return _process_key
+        reason = "no writable key file"
+    global _process_key
+    if _process_key is None:
+        _process_key = os.urandom(32)
+        print(f"audit_env: {reason}, using a per-process secret key; "
+              f"set {ENV_VAR} for reproducible hidden episodes", file=sys.stderr)
+    return _process_key
 
 
 def resolve(keyspace):
