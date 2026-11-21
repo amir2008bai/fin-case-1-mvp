@@ -75,6 +75,17 @@ class ApiTests(unittest.TestCase):
             status, failed = self.call("/api/audit", {"folder": str(Path(temp) / "docs")})
             self.assertEqual((status, failed["error"]), (400, "format"))
 
+    def test_cors_allows_only_local_origins(self):
+        def allowed(origin):
+            request = urllib.request.Request(self.base + "/api/health", headers={"Origin": origin})
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return response.headers.get("Access-Control-Allow-Origin") == origin
+        for origin in ("http://localhost", "http://localhost:5173", "http://127.0.0.1:3000", "http://[::1]:8080"):
+            self.assertTrue(allowed(origin), origin)
+        for origin in ("http://localhost.evil.com", "http://127.0.0.1.evil.com", "http://localhost:80@evil.com",
+                       "https://evil.com", "null", "http://localhost:abc"):
+            self.assertFalse(allowed(origin), origin)
+
     def test_errors(self):
         self.assertEqual(self.call("/api/sessions/nope/step", {"action": None})[0], 404)
         self.assertEqual(self.call("/api/episodes", {"seed": -3})[0], 400)

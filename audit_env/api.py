@@ -10,6 +10,7 @@ import threading
 from dataclasses import asdict
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from . import __version__
 from .agents import create_policy
@@ -22,6 +23,17 @@ from .runner import run_policy
 
 MAX_BODY = 4 * 1024 * 1024
 POLICIES = ("expert", "micro", "reconcile", "random", "flag-all")
+LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def local_origin(origin):
+    """Only a page served from this machine may read responses; `http://localhost.evil.com` may not."""
+    try:
+        parts = urlsplit(origin)
+        parts.port  # raises ValueError on a malformed port
+    except ValueError:
+        return False
+    return parts.scheme == "http" and parts.hostname in LOCAL_HOSTS and parts.path in ("", "/")
 
 
 class Session:
@@ -136,7 +148,7 @@ def make_handler(app):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(data)))
             origin = self.headers.get("Origin", "")
-            if origin.startswith(("http://localhost", "http://127.0.0.1")):
+            if local_origin(origin):
                 self.send_header("Access-Control-Allow-Origin", origin)
                 self.send_header("Access-Control-Allow-Headers", "Content-Type")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
