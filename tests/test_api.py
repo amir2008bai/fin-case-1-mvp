@@ -51,7 +51,11 @@ class ApiTests(unittest.TestCase):
             self.assertNotIn(word, text)
 
     def test_closed_mode_hides_score(self):
-        _, created = self.call("/api/episodes", {"seed": 6, "config": {"keyspace": "open"}, "mode": "closed"})
+        _, created = self.call("/api/episodes", {"seed": 6, "mode": "closed"})
+        regenerated = generate(6, Config(keyspace="open"))
+        self.assertNotEqual(created["observation"]["manifest"]["episode_id"], regenerated.manifest["episode_id"])
+        status, _ = self.call("/api/episodes", {"seed": 6, "config": {"keyspace": "open"}, "mode": "closed"})
+        self.assertEqual(status, 400)
         _, ran = self.call(f"/api/sessions/{created['session_id']}/run", {"policy": "expert"})
         self.assertNotIn("score", ran)
         self.assertIsNone(ran["trajectory"][-1]["reward"])

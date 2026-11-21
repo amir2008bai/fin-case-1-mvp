@@ -55,7 +55,13 @@ class App:
         mode = body.get("mode", "open")
         if mode not in ("open", "closed"):
             raise ValueError("mode must be open or closed")
-        config = Config.from_dict(body.get("config") or {"keyspace": "open"})
+        config = body.get("config") or {"keyspace": "secret" if mode == "closed" else "open"}
+        if mode == "closed":
+            # An open-key episode can be regenerated from the public code and seed, truth included.
+            if not isinstance(config, dict) or config.get("keyspace", "secret") != "secret":
+                raise ValueError("closed mode needs the secret keyspace")
+            config = config | {"keyspace": "secret"}
+        config = Config.from_dict(config)
         seed = body.get("seed", 202611)
         if type(seed) is not int or seed < 0:
             raise ValueError("seed must be a non-negative integer")

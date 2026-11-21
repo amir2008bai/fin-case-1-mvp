@@ -346,7 +346,10 @@ def command_demo(args):
     from .episode_io import write_lines
     from .generator import generate
 
-    config = Config.from_dict(json.loads(args.config)) if args.config else Config(keyspace="open")
+    default = Config(keyspace="secret" if args.closed else "open")
+    config = Config.from_dict(json.loads(args.config)) if args.config else default
+    if args.closed and config.keyspace != "secret":
+        raise SystemExit("--closed needs the secret keyspace: an open-key episode can be regenerated from public code")
     episode = generate(args.seed, config)
     if args.agent_image:
         from .environment import AuditEnv
