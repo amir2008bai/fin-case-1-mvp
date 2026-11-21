@@ -1,5 +1,6 @@
 """The optional UI API: sessions, steps, agents, folder import and audit; truth never leaves."""
 import json
+import socket
 import tempfile
 import threading
 import unittest
@@ -85,6 +86,11 @@ class ApiTests(unittest.TestCase):
         for origin in ("http://localhost.evil.com", "http://127.0.0.1.evil.com", "http://localhost:80@evil.com",
                        "https://evil.com", "null", "http://localhost:abc"):
             self.assertFalse(allowed(origin), origin)
+
+    def test_negative_content_length_is_rejected(self):
+        with socket.create_connection(("127.0.0.1", self.server.server_address[1]), timeout=10) as connection:
+            connection.sendall(b"POST /api/audit HTTP/1.1\r\nHost: localhost\r\nContent-Length: -1\r\n\r\n{}")
+            self.assertIn(b" 400 ", connection.recv(64))
 
     def test_errors(self):
         self.assertEqual(self.call("/api/sessions/nope/step", {"action": None})[0], 404)

@@ -157,6 +157,8 @@ def make_handler(app):
 
         def body(self):
             length = int(self.headers.get("Content-Length") or 0)
+            if length < 0:  # rfile.read(-1) would read until the client closes, past MAX_BODY
+                raise ValueError("invalid Content-Length")
             if length > MAX_BODY:
                 raise ValueError("request body too large")
             raw = self.rfile.read(length) if length else b"{}"
