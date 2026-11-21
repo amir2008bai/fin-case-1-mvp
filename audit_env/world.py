@@ -651,7 +651,7 @@ class Builder:
         """Receipt just after the period end, shown in an offset whose wall date is still inside."""
         own = self.tz.utcoffset(None)
         minutes = self.rng.randrange(5, 150)
-        instant = self.end + timedelta(minutes=minutes)
+        instant = self.end + timedelta(minutes=minutes, seconds=self.rng.randrange(60))
         options = [text for text in SHOWN_OFFSETS
                    if parse_offset(text).utcoffset(None) < own - timedelta(minutes=minutes)]
         return self.pay(act.customer, amount, instant, [act.key], kind, shown=self.rng.choice(options))
@@ -718,19 +718,19 @@ class Builder:
         inside, after = self.scaled(2), self.scaled(1)
         for act in open_acts[:inside]:  # inside the period, but the shown wall date is the next day
             minutes = self.rng.randrange(5, 90)
-            instant = self.end - timedelta(minutes=minutes)
+            instant = self.end - timedelta(minutes=minutes) + timedelta(seconds=self.rng.randrange(60))
             options = [text for text in SHOWN_OFFSETS
                        if parse_offset(text).utcoffset(None) >= own + timedelta(minutes=minutes)]
             if options:
                 self.pay(act.customer, act.total_minor, instant, [act.key], "boundary_inside",
                          shown=self.rng.choice(options))
         for act in open_acts[inside:inside + after]:  # after the period end, shown in the company offset
-            instant = self.end + timedelta(hours=self.rng.randrange(1, 40))
+            instant = self.end + timedelta(hours=self.rng.randrange(1, 40), minutes=self.rng.randrange(60), seconds=self.rng.randrange(60))
             self.pay(act.customer, act.total_minor, instant, [act.key], "after_period", shown=self.tz_text)
         prior = [act for act in self.acts.values() if act.origin == "prior_open" and self.paid[act.key] == 0]
         for act in prior[:after]:  # inside the period, but the shown wall date is in the previous month
             minutes = self.rng.randrange(5, 120)
-            instant = self.start + timedelta(minutes=minutes)
+            instant = self.start + timedelta(minutes=minutes, seconds=self.rng.randrange(60))
             options = [text for text in SHOWN_OFFSETS
                        if parse_offset(text).utcoffset(None) < own - timedelta(minutes=minutes)]
             self.pay(act.customer, act.total_minor, instant, [act.key], "boundary_start",

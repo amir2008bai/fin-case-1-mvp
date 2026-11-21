@@ -2,7 +2,7 @@
   "schema_version": "2.0",
   "episode_id": "episode_29dde7eeab65f74d1c15ccfd",
   "company": {
-    "name": "ИП «Бай Дом»",
+    "name": "ТОО «Алтын Систем»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-07-01T00:00:00+06:00",
   "timezone": "+06:00",
   "counts": {
-    "ledger": 395,
+    "ledger": 399,
     "invoices": 50,
-    "payments": 43,
+    "payments": 47,
     "fx": 164
   },
-  "document_count": 93,
+  "document_count": 97,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

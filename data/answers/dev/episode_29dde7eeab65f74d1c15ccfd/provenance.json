@@ -57,21 +57,21 @@
       "filler": 30,
       "goods_deliveries": 6,
       "opening_advances": 2,
-      "payments.after_period": 1,
       "payments.boundary_inside": 2,
       "payments.boundary_start": 1,
-      "payments.full": 24,
+      "payments.full": 28,
+      "payments.multi_act": 1,
       "payments.overpayment": 2,
-      "payments.prepayment_next": 1,
+      "payments.prepayment_next": 2,
       "payments.refund": 1,
-      "payments.split": 8,
-      "payments.unreferenced": 3
+      "payments.split": 9,
+      "payments.unreferenced": 1
     },
     "customers": 22,
     "invoices": 50,
-    "payments": 43
+    "payments": 47
   },
-  "clean_ledger_sha256": "ce5a37ef82c293f7b0fb7725b1d41044cd47a26b4fd17d7640c414dd8edcba8b",
+  "clean_ledger_sha256": "d735b36e3b3ab66a43c5402048e4d12668a948e9fb7f3777351c4993fbe17223",
   "changes": [
     {
       "issue_ids": [
@@ -145,7 +145,7 @@
       "after": [
         {
           "row_id": "row_19a740de7f1644062f0241c0",
-          "timestamp": "2026-06-30T14:18:00+06:00",
+          "timestamp": "2026-06-30T14:18:11+06:00",
           "account": "1030",
           "debit_minor": 1500000,
           "credit_minor": 0,
@@ -156,7 +156,7 @@
         },
         {
           "row_id": "row_b20e2f45ebb427f79f6cd276",
-          "timestamp": "2026-06-30T14:18:00+06:00",
+          "timestamp": "2026-06-30T14:18:11+06:00",
           "account": "1210",
           "debit_minor": 0,
           "credit_minor": 1500000,
