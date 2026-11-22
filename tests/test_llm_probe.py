@@ -2,6 +2,7 @@
 import io
 import json
 import os
+import tempfile
 import threading
 import unittest
 from contextlib import redirect_stdout
@@ -66,13 +67,16 @@ class LlmProbeTests(unittest.TestCase):
         threading.Thread(target=server.serve_forever, daemon=True).start()
         try:
             url = f"http://127.0.0.1:{server.server_address[1]}/v1/chat/completions"
-            with mock.patch.dict(os.environ, {"OPENAI_API_KEY": "dummy"}):
-                code, text = self.run_probe(provider="openai", base_url=url)
+            with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"OPENAI_API_KEY": "dummy"}):
+                report = Path(tmp) / "probe.json"
+                code, text = self.run_probe(provider="openai", base_url=url, report=report)
+                saved = json.loads(report.read_text(encoding="utf-8"))
         finally:
             server.shutdown()
             server.server_close()
         self.assertEqual(code, 0)
         self.assertEqual(FakeOpenAI.seen_auth, "Bearer dummy")
+        self.assertEqual(len(saved["episodes"]), 2)  # the report is rewritten after every episode
         self.assertIn("MEAN", text)
         self.assertIn("submitted", text)
         self.assertNotIn("dummy", text)

@@ -101,7 +101,8 @@ def command_llm_probe(args):
     from .llm_probe import run_probe
 
     return run_probe(HOLDOUT, episodes=args.episodes, seed=args.seed, provider=args.provider, model=args.model,
-                     base_url=args.base_url, compact=args.compact, timeout=args.timeout, emit=out)
+                     base_url=args.base_url, compact=args.compact, timeout=args.timeout, emit=out,
+                     verbose=args.verbose, report=args.report)
 
 
 def command_mcp(args):
@@ -658,6 +659,8 @@ def main():
     probe.add_argument("--base-url", default=None)
     probe.add_argument("--no-compact", dest="compact", action="store_false", default=True)
     probe.add_argument("--timeout", type=int, default=1800)
+    probe.add_argument("--verbose", action="store_true", help="one line per tool call on stderr")
+    probe.add_argument("--report", help="write the per-episode results as JSON (after every episode)")
     truth = commands.add_parser("audit-truth", help="independently re-derive a folder's truth")
     truth.add_argument("public", type=Path)
     truth.add_argument("answers", type=Path)
