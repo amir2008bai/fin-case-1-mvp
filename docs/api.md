@@ -8,11 +8,12 @@ python -m audit_env serve            # http://127.0.0.1:8765, только local
 
 | Метод | Путь | Тело | Ответ |
 |---|---|---|---|
+| GET | `/` | — | веб-интерфейс (`audit_env/ui/index.html`; ещё `/ui/app.js`, `/ui/app.css`, больше ничего не отдаётся) |
 | GET | `/api/health` | — | `{"ok": true, "version", "sessions"}` |
 | POST | `/api/episodes` | `{"seed": 202611, "config": {...}, "mode": "open" \| "closed"}` | `{"session_id", "graded": true, "observation"}` |
 | POST | `/api/episodes/import` | `{"folder": "C:/path/to/episode"}` | `{"session_id", "graded": false, "observation"}` или 400 `{"error": "format", "problems": [...]}` |
 | GET | `/api/sessions/{id}/files` | — | `{"manifest", "policy", "tables", "documents"}` для просмотра документов |
-| POST | `/api/sessions/{id}/step` | `{"action": {"type": "list_records", "table": "ledger", "limit": 50}}` | `{"observation", "reward", "terminated", "truncated", "info"}` |
+| POST | `/api/sessions/{id}/step` | `{"action": {"type": "list_records", "table": "ledger", "limit": 50}}` | `{"observation", "reward", "terminated", "truncated", "info"}`; после завершения эпизода в открытом режиме ещё `"score"` (tp, fp, fn, P, R, F1, награда) |
 | POST | `/api/sessions/{id}/run` | `{"policy": "expert" \| "micro" \| "reconcile" \| "random" \| "flag-all"}` | `{"findings", "steps", "seconds", "trajectory", "score"?}` |
 | POST | `/api/audit` | `{"folder": "..."}` или `{"manifest", "policy", "tables"}`; можно добавить `"auditor": "rules" \| "micro"` | `{"findings": [...]}` |
 

@@ -496,7 +496,7 @@ def command_serve(args):
     from .api import serve
 
     server = serve(args.host, args.port, args.model, import_root=args.import_root)
-    out(f"audit_env API on http://{args.host}:{server.server_address[1]}/api/health (Ctrl+C to stop)")
+    out(f"audit_env UI on http://{args.host}:{server.server_address[1]}/ , API under /api (Ctrl+C to stop)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

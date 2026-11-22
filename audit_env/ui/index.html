@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Среда аудита</title>
+<link rel="stylesheet" href="/ui/app.css">
+<script src="/ui/app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">▦</span>
+    <div>
+      <div class="title">Среда аудита</div>
+      <div class="subtitle" id="version">RL-среда для ИИ-аудитора</div>
+    </div>
+  </div>
+  <div class="episode-info" id="episode-info" hidden>
+    <span class="badge" id="mode-badge"></span>
+    <span id="company"></span>
+    <span class="muted" id="period"></span>
+    <span class="steps" title="Остаток шагов в ручном аудите"><span id="steps-left">100</span> / 100 шагов</span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <section class="panel">
+      <h2>Новый эпизод</h2>
+      <form id="create-form" novalidate>
+        <label>Seed <input id="seed" type="number" min="0" step="1" value="202611" required></label>
+        <label>Сложность
+          <select id="difficulty">
+            <option value="easy">easy — ловушек меньше</option>
+            <option value="medium" selected>medium</option>
+            <option value="hard">hard — больше «двойников»</option>
+          </select>
+        </label>
+        <label>Режим
+          <select id="mode">
+            <option value="open" selected>Открытый: награда видна</option>
+            <option value="closed">Закрытый: награда у оценщика</option>
+          </select>
+        </label>
+        <label>Ошибки
+          <select id="preset">
+            <option value="default" selected>По умолчанию (4 обязательных)</option>
+            <option value="all">Все 6 типов + 2 взаимодействия</option>
+            <option value="interacting">Только взаимодействия</option>
+            <option value="practice">Ошибки из практики</option>
+            <option value="clean">Чистая компания (ошибок нет)</option>
+            <option value="custom">Настроить вручную…</option>
+          </select>
+        </label>
+        <fieldset id="custom-errors" hidden>
+          <legend>Число ошибок каждого типа</legend>
+          <div class="grid-2" id="error-counts"></div>
+        </fieldset>
+        <button type="submit" class="primary" id="create-btn">Создать эпизод</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Свои документы</h2>
+      <form id="import-form" novalidate>
+        <label>Папка с 6 файлами эпизода <input id="folder" type="text" placeholder="C:\data\episode" autocomplete="off"></label>
+        <button type="submit" id="import-btn">Загрузить</button>
+      </form>
+      <p class="hint">Загруженную папку оценить нельзя: эталона нет. Можно запустить аудитора и посмотреть находки.</p>
+    </section>
+
+    <section class="panel" id="agent-panel" hidden>
+      <h2>Запустить агента</h2>
+      <label>Политика
+        <select id="policy">
+          <option value="expert">expert — аудитор по правилам</option>
+          <option value="micro">micro — ранжировщик поверх правил</option>
+          <option value="reconcile">reconcile — простая сверка</option>
+          <option value="random">random — случайный исследователь</option>
+          <option value="flag-all">flag-all — атака «пометить всё»</option>
+        </select>
+      </label>
+      <button class="primary" id="run-btn">Запустить</button>
+      <p class="hint">Агент проходит эпизод в отдельной копии среды; ручной аудит не тратится.</p>
+    </section>
+  </aside>
+
+  <main class="main">
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+
+    <section class="empty" id="empty">
+      <h1>Создайте эпизод</h1>
+      <p>Генератор построит вымышленную компанию за один месяц: книгу проводок, счета и накладные, платежи и курсы валют, и спрячет в них ошибки.</p>
+      <ol>
+        <li>Выберите seed, сложность и набор ошибок слева.</li>
+        <li>Изучите документы и книгу или запустите агента.</li>
+        <li>Пройдите аудит сами: шаги тратятся так же, как у агента, а выводы оцениваются тем же оценщиком.</li>
+      </ol>
+      <p class="muted">Эталон и история генерации в интерфейс не передаются никогда.</p>
+    </section>
+
+    <div id="workspace" hidden>
+      <nav class="tabs" role="tablist" id="tabs">
+        <button role="tab" data-tab="overview" aria-selected="true">Обзор</button>
+        <button role="tab" data-tab="documents">Документы</button>
+        <button role="tab" data-tab="ledger">Книга</button>
+        <button role="tab" data-tab="fx">Курсы</button>
+        <button role="tab" data-tab="agent">Агент</button>
+        <button role="tab" data-tab="manual">Ручной аудит</button>
+        <button role="tab" data-tab="policy">Правила</button>
+      </nav>
+
+      <section class="tab" id="tab-overview">
+        <div class="cards" id="overview-cards"></div>
+        <h3>Задача агента</h3>
+        <p id="task-text"></p>
+        <h3>Типы ошибок</h3>
+        <div class="table-wrap"><table class="data" id="types-table"></table></div>
+      </section>
+
+      <section class="tab" id="tab-documents" hidden>
+        <div class="split">
+          <div class="list-col">
+            <div class="toolbar">
+              <input type="search" id="doc-search" placeholder="Поиск: номер, клиент, ID, сумма">
+              <select id="doc-kind">
+                <option value="all">Все</option>
+                <option value="invoice">Счета</option>
+                <option value="payment">Платежи</option>
+              </select>
+            </div>
+            <div class="table-wrap tall"><table class="data clickable" id="doc-table"></table></div>
+          </div>
+          <div class="detail-col" id="doc-detail"><p class="muted">Выберите документ.</p></div>
+        </div>
+      </section>
+
+      <section class="tab" id="tab-ledger" hidden>
+        <div class="toolbar">
+          <input type="search" id="ledger-search" placeholder="Поиск: ID, счёт, сумма">
+          <select id="ledger-account"><option value="">Все счета учёта</option></select>
+          <span class="muted" id="ledger-count"></span>
+        </div>
+        <div class="table-wrap tall"><table class="data" id="ledger-table"></table></div>
+        <div class="pager" id="ledger-pager"></div>
+      </section>
+
+      <section class="tab" id="tab-fx" hidden>
+        <div class="toolbar"><input type="search" id="fx-search" placeholder="Поиск: дата, валюта, ID"></div>
+        <div class="table-wrap tall"><table class="data" id="fx-table"></table></div>
+      </section>
+
+      <section class="tab" id="tab-agent" hidden>
+        <div id="agent-empty" class="muted">Запустите агента на панели слева.</div>
+        <div id="agent-result" hidden>
+          <div class="cards" id="agent-cards"></div>
+          <h3>Выводы агента</h3>
+          <div id="agent-findings"></div>
+          <h3>Траектория</h3>
+          <div class="table-wrap tall"><table class="data" id="agent-trajectory"></table></div>
+        </div>
+      </section>
+
+      <section class="tab" id="tab-manual" hidden>
+        <div class="split">
+          <div class="list-col">
+            <h3>Действие</h3>
+            <form id="action-form" novalidate>
+              <label>Инструмент
+                <select id="action-type">
+                  <option value="list_records">list_records — страница таблицы</option>
+                  <option value="get_record">get_record — запись по ID</option>
+                  <option value="get_document">get_document — документ</option>
+                  <option value="calculator">calculator — арифметика</option>
+                </select>
+              </label>
+              <div id="action-fields"></div>
+              <button type="submit" class="primary" id="action-btn">Выполнить (1 шаг)</button>
+            </form>
+            <h3>Наблюдение</h3>
+            <pre class="json" id="observation">—</pre>
+          </div>
+          <div class="detail-col">
+            <h3>Черновик выводов</h3>
+            <p class="hint">Доказательства — ID, которые вы уже открыли через инструменты. Добавляйте их кнопкой «+» в наблюдении.</p>
+            <div id="drafts"></div>
+            <button id="add-finding">Добавить вывод</button>
+            <button class="primary" id="submit-btn">Отправить выводы</button>
+            <div id="manual-result"></div>
+            <h3>История шагов</h3>
+            <ol class="history" id="history"></ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="tab" id="tab-policy" hidden>
+        <p class="hint">Учётная политика эпизода — то же, что агент получает в первом наблюдении.</p>
+        <div id="policy-view"></div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

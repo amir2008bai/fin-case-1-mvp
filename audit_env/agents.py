@@ -275,7 +275,7 @@ def create_policy(name, model_path=DEFAULT_MODEL):
     if name == "micro":
         from .micro import MicroModel
 
-        return MicroModel.load(model_path).policy()
+        return MicroModel.load(model_path or DEFAULT_MODEL).policy()
     return {
         "reconcile": lambda: ScanPolicy(reconcile),
         "flag-all": lambda: ScanPolicy(flag_all),

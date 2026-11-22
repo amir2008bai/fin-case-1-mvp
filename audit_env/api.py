@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from . import __version__
-from .agents import create_policy
+from .agents import DEFAULT_MODEL, create_policy
 from .checks import audit
 from .contracts import Config
 from .environment import AuditEnv
@@ -26,6 +26,12 @@ MAX_BODY = 4 * 1024 * 1024
 MAX_SESSIONS = 128
 POLICIES = ("expert", "micro", "reconcile", "random", "flag-all")
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+UI_DIR = Path(__file__).resolve().parent / "ui"
+# The only files the UI route serves: a fixed list, never a path taken from the request.
+UI_FILES = {"": ("index.html", "text/html; charset=utf-8"), "ui/app.js": ("app.js", "text/javascript; charset=utf-8"),
+            "ui/app.css": ("app.css", "text/css; charset=utf-8")}
+UI_POLICY = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; "
+             "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 # A person stepping through an episode in the UI needs far more than the 60 s of an evaluation run.
 SESSION_TIMEOUT_SECONDS = 60 * 60
 
@@ -88,7 +94,7 @@ class App:
     def _micro(self):
         from .micro import MicroModel
 
-        path = Path(self.model_path or "models/model.json")
+        path = Path(self.model_path or DEFAULT_MODEL)  # not relative to the working directory
         mtime = path.stat().st_mtime_ns
         with self._lock:
             if self._model_cache is None or self._model_cache[0] != (str(path), mtime):
@@ -145,8 +151,13 @@ class App:
         session = self.session(session_id)
         with session.lock:
             observation, reward, terminated, truncated, info = session.env.step(body.get("action"))
-        return {"observation": observation, "reward": reward, "terminated": terminated, "truncated": truncated,
-                "info": info}
+            outcome = session.env.outcome
+        result = {"observation": observation, "reward": reward, "terminated": terminated, "truncated": truncated,
+                  "info": info}
+        # Open training mode only: the score is what the policy would be told anyway. Closed runs keep it.
+        if (terminated or truncated) and outcome is not None and session.graded and session.training:
+            result["score"] = {key: value for key, value in asdict(outcome).items() if key != "matches"}
+        return result
 
     def run(self, session_id, body):
         session = self.session(session_id)
@@ -200,6 +211,19 @@ def make_handler(app):
             self.end_headers()
             self.wfile.write(data)
 
+        def send_ui(self, route):
+            name, content_type = UI_FILES[route]
+            data = (UI_DIR / name).read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Content-Security-Policy", UI_POLICY)
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+
         def body(self):
             length = int(self.headers.get("Content-Length") or 0)
             if length < 0:  # rfile.read(-1) would read until the client closes, past MAX_BODY
@@ -241,6 +265,8 @@ def make_handler(app):
             if self.refused(write=False):
                 return None
             parts = [part for part in self.path.split("?")[0].split("/") if part]
+            if "/".join(parts) in UI_FILES:
+                return self.send_ui("/".join(parts))
             try:
                 if parts == ["api", "health"]:
                     return self.send(200, {"ok": True, "version": __version__, "sessions": len(app.sessions)})

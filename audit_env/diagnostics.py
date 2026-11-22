@@ -13,7 +13,7 @@ from .scoring import materiality_reward
 
 
 def evaluate_diagnostics(episodes, policies=("oracle", "expert", "inspector", "micro", "reconcile", "flag-all"),
-                         model_path="models/model.json"):
+                         model_path=None):
     """Run policies in closed mode and return summary rows + per-type P/R/F1 breakdown."""
     summary = []
     per_type_rows = []
