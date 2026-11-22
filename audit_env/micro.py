@@ -227,9 +227,9 @@ class MicroModel:
 
 
 def fit_logistic(rows, size, epochs=300, rate=0.5, l2=1e-3):
+    """Class-balanced batch gradient descent; deterministic, pure Python."""
     if not rows:
         return [0.0] * size
-    """Class-balanced batch gradient descent; deterministic, pure Python."""
     weights = [0.0] * size
     positives = sum(label for _, label in rows) or 1
     negatives = (len(rows) - positives) or 1

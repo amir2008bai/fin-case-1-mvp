@@ -59,3 +59,30 @@ class JuryProtocolTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PairedCheckTests(unittest.TestCase):
+    def test_paired_check_also_compares_the_independent_auditor(self):
+        """The oracle replays the truth; an order- or ID-dependent auditor must still be caught."""
+        from dataclasses import replace
+        from unittest import mock
+
+        from audit_env import dataset
+        from audit_env.dataset import benchmark_cases, suite
+
+        split, case_id, category, _, config = next(case for case in suite(HOLDOUT) if case[2] == "multi")
+        cases = [(split, case_id, category, 11, replace(config, keyspace="secret"))]
+        real = dataset.evaluate
+        calls = {"expert": 0}
+
+        def order_dependent(episode, name, closed=False):
+            outcome, trace, seconds = real(episode, name, closed=closed)
+            if name == "expert":
+                calls["expert"] += 1
+                if calls["expert"] == 3:  # the expert run on the transformed copy
+                    outcome = replace(outcome, tp=outcome.tp - 1, fn=outcome.fn + 1)
+            return outcome, trace, seconds
+
+        with mock.patch.object(dataset, "evaluate", order_dependent):
+            _, failures = benchmark_cases(cases, ("expert",), key=b"x" * 32)
+        self.assertEqual(failures, [f"{case_id}: paired check changed the expert result"])
