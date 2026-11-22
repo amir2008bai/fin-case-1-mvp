@@ -8,6 +8,8 @@ Legitimate look-alikes: late invoices with opening balances, invoices issued aft
 the period end, receipts whose shown wall date is outside the period but whose
 instant is inside (and vice versa, not booked).
 """
+from datetime import datetime, time
+
 from ..contracts import CUTOFF
 from ..world import parse_offset
 
@@ -20,7 +22,10 @@ def naive_booking(world, payment):
 def apply(rng, world, overrides, variant, act_key, payment_key, Spec):
     if variant in ("act_prior", "act_next"):
         act = world.acts[act_key]
-        overrides.act_booked_at[act_key] = act.issued_at
+        # Booked on the issue date, at 00:00 like every other recognition: the issue time of day on the
+        # revenue rows gave these errors away (AUROC 1.0 on "posting time is not midnight").
+        issue_day = act.issued_at.astimezone(world.tz).date()
+        overrides.act_booked_at[act_key] = datetime.combine(issue_day, time(0), world.tz)
         cause = ("Услуга прошлого периода признана в выручке по дате выписки счёта." if variant == "act_prior"
                  else "Услуга следующего периода признана в выручке по дате выписки счёта.")
         return [Spec(CUTOFF, f"period_cutoff.{variant}", acts=(act_key,), cause=cause)]

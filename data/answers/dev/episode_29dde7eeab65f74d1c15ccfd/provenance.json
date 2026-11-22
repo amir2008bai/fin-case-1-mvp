@@ -89,7 +89,7 @@
       "after": [
         {
           "row_id": "row_0497a79164d58839c5635169",
-          "timestamp": "2026-06-28T17:28:16+06:00",
+          "timestamp": "2026-06-28T00:00:00+06:00",
           "account": "1210",
           "debit_minor": 2068966,
           "credit_minor": 0,
@@ -100,7 +100,7 @@
         },
         {
           "row_id": "row_23dfad85630ced0d7bb6059b",
-          "timestamp": "2026-06-28T17:28:16+06:00",
+          "timestamp": "2026-06-28T00:00:00+06:00",
           "account": "6010",
           "debit_minor": 0,
           "credit_minor": 12931034,
@@ -111,7 +111,7 @@
         },
         {
           "row_id": "row_7f9cf840fa6867994334d617",
-          "timestamp": "2026-06-28T17:28:16+06:00",
+          "timestamp": "2026-06-28T00:00:00+06:00",
           "account": "1210",
           "debit_minor": 12931034,
           "credit_minor": 0,
@@ -122,7 +122,7 @@
         },
         {
           "row_id": "row_cf5f534d1f144718ba6e340c",
-          "timestamp": "2026-06-28T17:28:16+06:00",
+          "timestamp": "2026-06-28T00:00:00+06:00",
           "account": "3130",
           "debit_minor": 0,
           "credit_minor": 2068966,
@@ -170,7 +170,7 @@
       "after": [
         {
           "row_id": "row_02501a43ff1603ea8305960a",
-          "timestamp": "2026-06-04T18:16:32+06:00",
+          "timestamp": "2026-06-04T00:00:00+06:00",
           "account": "3130",
           "debit_minor": 0,
           "credit_minor": 551724,
@@ -181,7 +181,7 @@
         },
         {
           "row_id": "row_1c9c2fbfc0b734e90cd860be",
-          "timestamp": "2026-06-04T18:16:32+06:00",
+          "timestamp": "2026-06-04T00:00:00+06:00",
           "account": "6010",
           "debit_minor": 0,
           "credit_minor": 3448276,
@@ -192,7 +192,7 @@
         },
         {
           "row_id": "row_602d19bc00bd28ab792cce34",
-          "timestamp": "2026-06-04T18:16:32+06:00",
+          "timestamp": "2026-06-04T00:00:00+06:00",
           "account": "1210",
           "debit_minor": 3448276,
           "credit_minor": 0,
@@ -203,7 +203,7 @@
         },
         {
           "row_id": "row_9b1e3f817cc6f84daf091acc",
-          "timestamp": "2026-06-04T18:16:32+06:00",
+          "timestamp": "2026-06-04T00:00:00+06:00",
           "account": "1210",
           "debit_minor": 551724,
           "credit_minor": 0,

@@ -26,6 +26,9 @@ STRUCTURE_DESCRIPTIONS = {
     "cited_by_receipt": "есть ли оплата со ссылкой на счёт, у которого услуга вне периода",
     "receipt_lag_days": "дней от счёта до оплаты (оплата в периоде, одна ссылка)",
     "customer_invoices": "число счетов у клиента (KZT)",
+    "revenue_posting_time": "время суток строки выручки 6010 не полночь (ошибка периода против остальных)",
+    "invoice_amount_digit": "первая цифра суммы счёта (закон Бенфорда)",
+    "payment_amount_digit": "первая цифра суммы платежа (закон Бенфорда)",
 }
 
 
@@ -91,6 +94,19 @@ def structural_pairs(episode):
             out["customer_invoices"].append((per_customer[row["entity_id"]], int(key in hit["uncollected_service"])))
         if not inside and first <= row["issued_at"][:10] < stop:
             out["cited_by_receipt"].append((float(cited[key] > 0), int(key in hit["period_cutoff"])))
+    cutoff_rows = {item for issue in episode.issues if issue.type == "period_cutoff"
+                   for proof in issue.evidence_sets for item in proof}
+    affected = {item for issue in episode.issues for item in issue.affected_ids}
+    for row in episode.tables["ledger"]:
+        if row["account"] == "6010":
+            out["revenue_posting_time"].append((float(row["timestamp"][11:19] != "00:00:00"),
+                                                int(row["row_id"] in cutoff_rows)))
+    for row in invoices:
+        if row["total_minor"]:
+            out["invoice_amount_digit"].append((int(str(abs(row["total_minor"]))[0]), int(row["invoice_id"] in affected)))
+    for row in payments:
+        if row["amount_minor"]:
+            out["payment_amount_digit"].append((int(str(abs(row["amount_minor"]))[0]), int(row["payment_id"] in affected)))
     for row in payments:
         refs = row["invoice_refs"] or []
         if len(refs) != 1 or refs[0] not in by_invoice or row["amount_minor"] <= 0:
