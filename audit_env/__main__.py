@@ -57,9 +57,9 @@ def closed_episodes(seed_source, key, repeats=1):
 
 def derived_key(seed):
     """A secret key fixed by --seed, so that a printed table can be reproduced byte for byte."""
-    import hashlib
+    from .keys import table_key
 
-    return hashlib.sha256(f"red-team:{seed}".encode()).digest()
+    return table_key(seed)
 
 
 def economy_lines(result):
