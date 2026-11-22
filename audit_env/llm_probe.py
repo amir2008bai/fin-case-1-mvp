@@ -24,6 +24,7 @@ from .dataset import suite
 from .environment import AuditEnv
 from .generator import generate
 from .mcp_server import MCPAuditServer, MCP_TIMEOUT_SECONDS
+from .keys import table_key
 from .selfcheck import fresh_key
 from .tool_schemas import gemini_tools
 
@@ -80,21 +81,49 @@ def _host(url):
     return f"{parts.scheme}://{parts.hostname}"
 
 
-def _post_json(url, payload, headers, timeout=60):
+RETRY_DELAYS = (5, 20, 60)  # seconds before each retry of a transient failure
+
+
+def _post_json(url, payload, headers, timeout=60, sleep=time.sleep):
+    """POST and parse JSON, retrying what is transient on hosted APIs.
+
+    While a model thinks, OpenRouter keeps the connection open with blank lines, and the body can end
+    without any JSON; 429 and 5xx answers are also temporary. Those are retried, everything else raises
+    ProbeUnavailable at once.
+    """
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        body = ""
+    problem = "no answer"
+    for delay in (0, *RETRY_DELAYS):
+        if delay:
+            sleep(delay)
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
         try:
-            body = exc.read(300).decode("utf-8", errors="replace").strip()
-        except Exception:
-            pass
-        raise ProbeUnavailable(f"HTTP {exc.code} from {_host(url)}: {body or exc.reason}") from None
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
-        raise ProbeUnavailable(f"network/endpoint {_host(url)} unreachable ({exc})") from None
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                text = resp.read().decode("utf-8", errors="replace").strip()
+            parsed = json.loads(text)
+            if isinstance(parsed, dict) and isinstance(parsed.get("error"), dict):
+                code = parsed["error"].get("code")
+                problem = f"API error {code}: {str(parsed['error'].get('message', ''))[:200]}"
+                if code in (429, 500, 502, 503, 504):
+                    continue
+                raise ProbeUnavailable(f"{problem} from {_host(url)}")
+            return parsed
+        except ValueError:
+            problem = "an empty or truncated JSON answer"
+        except urllib.error.HTTPError as exc:
+            body = ""
+            try:
+                body = exc.read(300).decode("utf-8", errors="replace").strip()
+            except Exception:
+                pass
+            problem = f"HTTP {exc.code}: {body or exc.reason}"
+            if exc.code not in (429, 500, 502, 503, 504):
+                raise ProbeUnavailable(f"{problem} from {_host(url)}") from None
+        except TimeoutError as exc:
+            problem = f"timed out ({exc})"
+        except (urllib.error.URLError, OSError) as exc:  # refused or unresolvable: retrying will not help
+            raise ProbeUnavailable(f"network/endpoint {_host(url)} unreachable ({exc})") from None
+    raise ProbeUnavailable(f"{_host(url)}: {problem} after {len(RETRY_DELAYS) + 1} attempts")
 
 
 _progress = None  # set by run_probe(verbose=True): one line per tool call on stderr
@@ -344,7 +373,7 @@ RUNNERS = {
 
 def run_probe(holdout_path, *, episodes=5, seed=7, provider=None, model=None, base_url=None,
               compact=True, timeout=MCP_TIMEOUT_SECONDS, http_timeout=180, max_steps=100, emit=print,
-              verbose=False, report=None):
+              verbose=False, report=None, same_episodes=False):
     """Run an LLM diagnostic across `episodes` closed episodes via MCPAuditServer.
 
     Always returns exit code 0 when skipped due to missing API key or unreachable network.
@@ -359,7 +388,8 @@ def run_probe(holdout_path, *, episodes=5, seed=7, provider=None, model=None, ba
     cases = _select_probe_cases(holdout_path, count=episodes, seed=seed)
     # A fresh evaluator key: a key derived from a public string and the seed would let anyone who knows
     # the code regenerate these closed episodes, truth included. LLM output is not reproducible anyway.
-    secret_key = fresh_key()
+    # --same-episodes: the key of the reproducible tables, so several models face identical episodes.
+    secret_key = table_key(seed) if same_episodes else fresh_key()
     runner = RUNNERS[chosen_provider]
 
     global _progress
@@ -413,7 +443,8 @@ def run_probe(holdout_path, *, episodes=5, seed=7, provider=None, model=None, ba
             Path(report).parent.mkdir(parents=True, exist_ok=True)
             Path(report).write_text(json.dumps({
                 "provider": chosen_provider, "model": chosen_model, "closed": True, "compact": compact,
-                "episode_seeds_from": seed, "evaluator_key": "fresh, not stored", "episodes": rows,
+                "episode_seeds_from": seed,
+                "evaluator_key": f"keys.table_key({seed})" if same_episodes else "fresh, not stored", "episodes": rows,
             }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         emit(
             f"{case_id:12s} {category:24s} {outcome.precision:6.3f} {outcome.recall:6.3f} "
