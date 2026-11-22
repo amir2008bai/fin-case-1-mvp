@@ -82,3 +82,11 @@ def stream(key, *parts):
 
 def opaque(key, kind, *parts):
     return f"{kind}_{digest(key, 'id', kind, *parts).hex()[:24]}"
+
+
+def table_key(seed):
+    """An evaluator key fixed by a printed --seed, so a published table is reproducible byte for byte.
+
+    Only for reproducing benchmark tables; a real closed evaluation uses secret_key() or a fresh key.
+    """
+    return hashlib.sha256(f"red-team:{seed}".encode()).digest()

@@ -7,18 +7,18 @@ checks verifying that renaming IDs and shuffling row order preserve oracle F1
 and reward. Reuses `dataset.benchmark_cases` and `dataset.suite` directly.
 """
 from dataclasses import replace
-import hashlib
 import random
 from statistics import mean
 
 from .dataset import benchmark_cases, suite
+from .keys import table_key
 
 JURY_POLICIES = ("oracle", "reconcile", "random", "flag-all")
 
 
 def derived_key(seed):
-    """Secret key fixed by --seed, matching `audit_env.__main__.derived_key`."""
-    return hashlib.sha256(f"red-team:{seed}".encode()).digest()
+    """Secret key fixed by --seed: the same one every reproducible table uses."""
+    return table_key(seed)
 
 
 def _holdout_cases(path, seed):

@@ -117,6 +117,12 @@ def benchmark_cases(cases, policies=POLICIES, *, paired=True, key=None):
             second, _, _ = evaluate(mirror, "oracle", closed=True)
             if (first.f1, first.reward) != (second.f1, second.reward):
                 failures.append(f"{case_id}: paired check changed the oracle result")
+            # The oracle replays the truth, so it hardly tests anything; the independent auditor reads the
+            # records, so the same counts after reordering and renaming show the task does not hang on them.
+            first, _, _ = evaluate(episode, "expert", closed=True)
+            second, _, _ = evaluate(mirror, "expert", closed=True)
+            if (first.tp, first.fp, first.fn) != (second.tp, second.fp, second.fn):
+                failures.append(f"{case_id}: paired check changed the expert result")
     return rows, failures
 
 
