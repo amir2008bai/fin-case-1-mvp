@@ -1,8 +1,9 @@
 """Keyed randomness: public IDs and data never reveal the seed without the key.
 
 Open train/dev episodes use the published OPEN_KEY so anyone can regenerate them.
-Hidden episodes use a secret key held by the evaluator (env var, key file, or a
-per-process fallback). An agent that knows the generator code and guesses the
+Hidden episodes use a secret key held by the evaluator: AUDIT_ENV_SECRET, a key file
+named by AUDIT_ENV_KEY_FILE, or else a per-process key kept in memory. Nothing is written
+to the home folder by default, so an agent process of the same user has no file to read. An agent that knows the generator code and guesses the
 seed still cannot reproduce a secret-key episode.
 """
 import hashlib
@@ -21,8 +22,10 @@ _process_key = None
 
 
 def _key_file():
+    """The key file only when the evaluator asks for one: a default file in the home folder could be read
+    by any process of the same user, an agent run as a subprocess included."""
     configured = os.environ.get(KEY_FILE_VAR)
-    return Path(configured) if configured else Path.home() / ".audit_env" / "secret.key"
+    return Path(configured) if configured else None
 
 
 def secret_key():
@@ -33,6 +36,8 @@ def secret_key():
             return encoded
         print(f"audit_env: {ENV_VAR} has fewer than {MIN_KEY_BYTES} bytes, ignoring", file=sys.stderr)
     path = _key_file()
+    if path is None:
+        return _memory_key("no AUDIT_ENV_SECRET or AUDIT_ENV_KEY_FILE")
     try:
         # A short file is never a key: it is either being written by a parallel process
         # (wait for it) or damaged (fall back below rather than use a guessable key).
@@ -54,11 +59,16 @@ def secret_key():
         reason = f"key file {path} holds fewer than {MIN_KEY_BYTES} bytes"
     except OSError:
         reason = "no writable key file"
+    return _memory_key(reason)
+
+
+def _memory_key(reason):
+    """A per-process key that never touches the disk: hidden episodes then differ between processes."""
     global _process_key
     if _process_key is None:
         _process_key = os.urandom(32)
-        print(f"audit_env: {reason}, using a per-process secret key; "
-              f"set {ENV_VAR} for reproducible hidden episodes", file=sys.stderr)
+        print(f"audit_env: {reason}, using a per-process secret key kept in memory; "
+              f"set {ENV_VAR} (or {KEY_FILE_VAR}) for hidden episodes reproducible across runs", file=sys.stderr)
     return _process_key
 
 

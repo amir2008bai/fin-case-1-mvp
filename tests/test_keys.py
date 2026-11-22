@@ -45,5 +45,27 @@ class SecretKeyTests(unittest.TestCase):
             self.assertIn("fewer than", warning)
 
 
+
+class DefaultKeyTests(unittest.TestCase):
+    def test_without_configuration_the_key_stays_in_memory(self):
+        """A default key file in the home folder could be read by an agent run as a subprocess."""
+        import io
+        import os
+        import tempfile
+        from contextlib import redirect_stderr
+        from pathlib import Path
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as home:
+            clean = {k: v for k, v in os.environ.items() if k not in (keys.ENV_VAR, keys.KEY_FILE_VAR)}
+            clean["HOME"] = clean["USERPROFILE"] = home
+            with mock.patch.dict(os.environ, clean, clear=True), mock.patch.object(keys, "_process_key", None), \
+                    redirect_stderr(io.StringIO()):
+                first, second = keys.secret_key(), keys.secret_key()
+            self.assertEqual(first, second)
+            self.assertGreaterEqual(len(first), keys.MIN_KEY_BYTES)
+            self.assertEqual(list(Path(home).rglob("*")), [])
+
+
 if __name__ == "__main__":
     unittest.main()

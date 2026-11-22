@@ -2,6 +2,7 @@
 import io
 import json
 import os
+import tempfile
 import threading
 import unittest
 from contextlib import redirect_stdout
@@ -40,6 +41,47 @@ class FakeOpenAI(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+class FlakyApi(BaseHTTPRequestHandler):
+    """Answers like OpenRouter under load: keep-alive blank lines and no JSON, then a 429, then a reply."""
+
+    calls = 0
+
+    def log_message(self, *_):
+        return
+
+    def do_POST(self):
+        self.rfile.read(int(self.headers["Content-Length"]))
+        type(self).calls += 1
+        if type(self).calls == 1:
+            body, status = b"\n\n\n", 200
+        elif type(self).calls == 2:
+            body, status = b'{"error": {"code": 429, "message": "slow down"}}', 429
+        else:
+            body, status = b'{"choices": []}', 200
+        self.send_response(status)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+class TransientFailureTests(unittest.TestCase):
+    def test_blank_and_429_answers_are_retried(self):
+        from audit_env.llm_probe import _post_json
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), FlakyApi)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            url = f"http://127.0.0.1:{server.server_address[1]}/v1/chat/completions"
+            waits = []
+            result = _post_json(url, {}, {"Content-Type": "application/json"}, timeout=5, sleep=waits.append)
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(result, {"choices": []})
+        self.assertEqual(FlakyApi.calls, 3)
+        self.assertEqual(len(waits), 2)
+
+
 class LlmProbeTests(unittest.TestCase):
     def run_probe(self, **kwargs):
         stream = io.StringIO()
@@ -66,13 +108,16 @@ class LlmProbeTests(unittest.TestCase):
         threading.Thread(target=server.serve_forever, daemon=True).start()
         try:
             url = f"http://127.0.0.1:{server.server_address[1]}/v1/chat/completions"
-            with mock.patch.dict(os.environ, {"OPENAI_API_KEY": "dummy"}):
-                code, text = self.run_probe(provider="openai", base_url=url)
+            with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"OPENAI_API_KEY": "dummy"}):
+                report = Path(tmp) / "probe.json"
+                code, text = self.run_probe(provider="openai", base_url=url, report=report)
+                saved = json.loads(report.read_text(encoding="utf-8"))
         finally:
             server.shutdown()
             server.server_close()
         self.assertEqual(code, 0)
         self.assertEqual(FakeOpenAI.seen_auth, "Bearer dummy")
+        self.assertEqual(len(saved["episodes"]), 2)  # the report is rewritten after every episode
         self.assertIn("MEAN", text)
         self.assertIn("submitted", text)
         self.assertNotIn("dummy", text)
