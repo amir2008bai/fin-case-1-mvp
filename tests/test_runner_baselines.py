@@ -18,7 +18,7 @@ class RunnerTests(unittest.TestCase):
     def test_agent_across_a_real_pipe(self):
         env = AuditEnv(training=False)
         observation, _ = env.reset(51, MIXED)
-        outcome, trace, _ = run_subprocess(env, observation, [sys.executable, "-m", "audit_env.agents", "expert"])
+        outcome, trace, _ = run_subprocess(env, observation, [sys.executable, "-m", "audit_env.agents", "expert"], trusted=True)
         self.assertEqual(outcome.f1, 1.0)
         self.assertIsNone(trace[-1]["reward"])
 
@@ -34,7 +34,7 @@ class RunnerTests(unittest.TestCase):
             with self.subTest(reason=reason, script=script):
                 env = AuditEnv(training=False, timeout_seconds=timeout)
                 observation, _ = env.reset(51, MIXED)
-                outcome, trace, _ = run_subprocess(env, observation, [sys.executable, "-c", script])
+                outcome, trace, _ = run_subprocess(env, observation, [sys.executable, "-c", script], trusted=True)
                 self.assertEqual(outcome.termination, reason)
                 self.assertTrue(trace[-1]["truncated"])
                 self.assertIsNone(trace[-1]["reward"])

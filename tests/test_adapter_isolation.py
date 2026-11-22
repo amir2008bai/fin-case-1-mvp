@@ -42,6 +42,29 @@ class ClosedKeyspaceTests(unittest.TestCase):
         self.assertEqual(Config().keyspace, "secret")
 
 
+class NoScoringOracleTests(unittest.TestCase):
+    """Open mode returns the score; on the secret keyspace it would score the episode a closed session gets
+    for the same seed and config, so it could be used to try answers before submitting the closed one."""
+
+    def test_api_open_mode_never_uses_the_secret_keyspace(self):
+        app = App()
+        for config in ({"difficulty": "medium"}, {"keyspace": "open"}):
+            open_episode = app.create({"mode": "open", "seed": 7, "config": config})
+            closed_episode = app.create({"mode": "closed", "seed": 7, "config": {"difficulty": "medium"}})
+            self.assertNotEqual(open_episode["observation"]["manifest"]["episode_id"],
+                                closed_episode["observation"]["manifest"]["episode_id"])
+        with self.assertRaises(ValueError):
+            app.create({"mode": "open", "seed": 7, "config": {"keyspace": "secret"}})
+
+    def test_mcp_without_closed_refuses_the_secret_keyspace(self):
+        import io
+
+        from audit_env.mcp_server import serve_stdio
+
+        with self.assertRaises(ValueError):
+            serve_stdio(7, {"keyspace": "secret"}, stdin=io.StringIO(""), stdout=io.StringIO())
+
+
 class AgentProcessTests(unittest.TestCase):
     def test_agent_process_does_not_inherit_the_evaluator_key(self):
         """With the secret key an agent could regenerate the hidden episode and its truth."""
@@ -54,9 +77,40 @@ class AgentProcessTests(unittest.TestCase):
                      "print(json.dumps({'type': 'submit', 'findings': {'episode_id': '', 'findings': []}}), flush=True)")
             env = AuditEnv(training=False, key=b"evaluator-secret-key-0123456789")
             observation, _ = env.reset(3, CLEAN)
-            run_subprocess(env, observation, [sys.executable, "-c", agent, str(target), *secrets, "AUDIT_PROBE"])
+            run_subprocess(env, observation, [sys.executable, "-c", agent, str(target), *secrets, "AUDIT_PROBE"],
+                           trusted=True)
             seen = json.loads(target.read_text(encoding="utf-8"))
         self.assertEqual(seen, {keys.ENV_VAR: None, keys.KEY_FILE_VAR: None, "AUDIT_PROBE": "kept"})
+
+    def test_closed_episode_refuses_an_untrusted_subprocess_agent(self):
+        """A same-user process can read the evaluator's memory and original environment through /proc (the
+        red-team review read the truth that way), so a closed episode runs an outside agent only in a container."""
+        from audit_env.runner import UntrustedSubprocess
+
+        env = AuditEnv(training=False, key=b"evaluator-secret-key-0123456789")
+        observation, _ = env.reset(3, CLEAN)
+        with self.assertRaises(UntrustedSubprocess):
+            run_subprocess(env, observation, [sys.executable, "-c", "print('{}')"])
+        open_env = AuditEnv(training=True)
+        observation, _ = open_env.reset(3, CLEAN)
+        agent = "import json; input(); print(json.dumps({'type': 'submit', 'findings': {'episode_id': '', 'findings': []}}))"
+        outcome, _, _ = run_subprocess(open_env, observation, [sys.executable, "-c", agent])  # open mode: allowed
+        self.assertIsNotNone(outcome)
+
+    @unittest.skipUnless(os.name == "posix", "process groups are POSIX")
+    def test_agent_grandchildren_are_stopped_with_the_agent(self):
+        import time
+
+        with tempfile.TemporaryDirectory() as temp:
+            marker = Path(temp) / "alive"
+            child = f"import time, pathlib; time.sleep(1.0); pathlib.Path({str(marker)!r}).write_text('x')"
+            agent = ("import json, subprocess, sys; subprocess.Popen([sys.executable, '-c', " + repr(child) + "]); "
+                     "input(); print(json.dumps({'type': 'submit', 'findings': {'episode_id': '', 'findings': []}}), flush=True)")
+            env = AuditEnv(training=True)
+            observation, _ = env.reset(3, CLEAN)
+            run_subprocess(env, observation, [sys.executable, "-c", agent])
+            time.sleep(1.5)
+            self.assertFalse(marker.exists(), "a grandchild of the agent outlived the episode")
 
 
 class InteractiveClockTests(unittest.TestCase):

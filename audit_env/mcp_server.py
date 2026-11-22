@@ -104,11 +104,14 @@ def serve_stdio(seed=202601, config=None, *, closed=False, compact=False, stdin=
     elif isinstance(config, dict):
         if closed and config.get("keyspace", "secret") != "secret":
             raise ValueError("closed mode needs the secret keyspace")
-        cfg = Config.from_dict({**config, "keyspace": "secret"} if closed else config)
+        cfg = Config.from_dict({**config, "keyspace": "secret"} if closed else {"keyspace": "open", **config})
     else:
         cfg = Config.from_dict(config)
         if closed and cfg.keyspace != "secret":
             raise ValueError("closed mode needs the secret keyspace")
+    if not closed and cfg.keyspace != "open":
+        # Without --closed the reward is returned: on the secret keyspace that scores a closed episode.
+        raise ValueError("the secret keyspace needs --closed")
 
     env = AuditEnv(training=not closed, timeout_seconds=timeout_seconds, interactive=True)
     initial_obs, _ = env.reset(seed, cfg)
