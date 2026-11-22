@@ -104,6 +104,11 @@ def resolve(spec, world, overrides, rows):
         spec.affected = (("payment", payment_key),)
         spec.evidence_sets = ((("doc", payment_key), ("doc", spec.acts[0]),
                                ("row", f"PAY:{payment_key}:bank"), ("row", parked.key)),)
+        payment = world.payments[payment_key]
+        if payment.currency != BASE_CURRENCY:
+            correct_day = world.local_date(payment.instant)
+            used = overrides.payment_rate_date.get(payment.key, correct_day)
+            spec.relevant += _fx_refs(world, payment.currency, (correct_day, used))
     elif spec.type == FX_RATE and spec.payments:
         payment = world.payments[spec.payments[0]]
         correct_day = world.local_date(payment.instant)
@@ -135,6 +140,11 @@ def resolve(spec, world, overrides, rows):
         spec.currency = BASE_CURRENCY
         spec.affected = (("payment", payment_key),)
         spec.evidence_sets = ((("doc", payment_key), ("row", f"PAY:{payment_key}:bank")),)
+        payment = world.payments[payment_key]
+        if payment.currency != BASE_CURRENCY:
+            correct_day = world.local_date(payment.instant)
+            used = overrides.payment_rate_date.get(payment.key, correct_day)
+            spec.relevant += _fx_refs(world, payment.currency, (correct_day, used))
     elif spec.type == CUTOFF:
         act_key = spec.acts[0]
         revenue = _revenue_rows(rows, act_key)

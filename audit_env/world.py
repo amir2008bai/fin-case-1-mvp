@@ -620,7 +620,13 @@ class Builder:
             self.candidates[FX_PARTIAL].append((act.key, payment.key))
         for _ in range(errors[VAT_ON_TOP]):
             kind = "goods" if self.config.goods_percent and self.chance(50) else "service"
-            act = self.regular_act(self.rng.choice(domestic), target=True, kind=kind)
+            if kind == "goods":
+                act = self.regular_act(self.rng.choice(domestic), target=True, kind="goods")
+            else:
+                end = self.day_between(self.first, max(self.first, self.last - timedelta(days=7)))
+                act = self.new_act(self.rng.choice(domestic), "regular", end, lines=1, max_lag=2,
+                                   code=self.rng.choice(("SUP", "IMP", "TRN", "DEV")))
+                self.reserved.add(act.key)
             payment = self.full_in_period(act)  # the customer pays the agreed price
             self.candidates["vat"].append((act.key, payment.key))
         for _ in range(errors[UNCOLLECTED]):
@@ -651,7 +657,7 @@ class Builder:
         """Receipt just after the period end, shown in an offset whose wall date is still inside."""
         own = self.tz.utcoffset(None)
         minutes = self.rng.randrange(5, 150)
-        instant = self.end + timedelta(minutes=minutes)
+        instant = self.end + timedelta(minutes=minutes, seconds=self.rng.randrange(60))
         options = [text for text in SHOWN_OFFSETS
                    if parse_offset(text).utcoffset(None) < own - timedelta(minutes=minutes)]
         return self.pay(act.customer, amount, instant, [act.key], kind, shown=self.rng.choice(options))
@@ -685,7 +691,7 @@ class Builder:
                 made += 1
 
     def opening(self):
-        self.opening_bank = self.rng.randrange(2_000_000, 9_000_000) * 100
+        self.opening_bank = (self.rng.randrange(2_000_000, 9_000_000) + self.config.filler * 150_000) * 100
         if not self.on["opening_balances"]:
             return
         acts_of = {}
@@ -718,35 +724,44 @@ class Builder:
         inside, after = self.scaled(2), self.scaled(1)
         for act in open_acts[:inside]:  # inside the period, but the shown wall date is the next day
             minutes = self.rng.randrange(5, 90)
-            instant = self.end - timedelta(minutes=minutes)
+            instant = self.end - timedelta(minutes=minutes) + timedelta(seconds=self.rng.randrange(60))
             options = [text for text in SHOWN_OFFSETS
                        if parse_offset(text).utcoffset(None) >= own + timedelta(minutes=minutes)]
             if options:
                 self.pay(act.customer, act.total_minor, instant, [act.key], "boundary_inside",
                          shown=self.rng.choice(options))
-        for act in open_acts[inside:inside + after]:  # after the period end, shown in the company offset
-            instant = self.end + timedelta(hours=self.rng.randrange(1, 40))
-            self.pay(act.customer, act.total_minor, instant, [act.key], "after_period", shown=self.tz_text)
+        for act in open_acts[inside:inside + after]:  # after the period end, shown in a western offset (not booked)
+            minutes = self.rng.randrange(5, 150)
+            instant = self.end + timedelta(minutes=minutes, seconds=self.rng.randrange(60))
+            options = [text for text in SHOWN_OFFSETS
+                       if parse_offset(text).utcoffset(None) < own - timedelta(minutes=minutes)]
+            self.pay(act.customer, act.total_minor, instant, [act.key], "after_period",
+                     shown=self.rng.choice(options) if options else self.tz_text)
         prior = [act for act in self.acts.values() if act.origin == "prior_open" and self.paid[act.key] == 0]
         for act in prior[:after]:  # inside the period, but the shown wall date is in the previous month
             minutes = self.rng.randrange(5, 120)
-            instant = self.start + timedelta(minutes=minutes)
+            instant = self.start + timedelta(minutes=minutes, seconds=self.rng.randrange(60))
             options = [text for text in SHOWN_OFFSETS
                        if parse_offset(text).utcoffset(None) < own - timedelta(minutes=minutes)]
             self.pay(act.customer, act.total_minor, instant, [act.key], "boundary_start",
                      shown=self.rng.choice(options))
 
     def filler(self):
+        ap_balance = Counter()
         for index in range(self.config.filler):
             at = self.moment(self.day_between(self.first, self.last), 8, 20)
             kind = self.rng.randrange(3)
             supplier = f"S{self.rng.randrange(len(SUPPLIERS))}"
             if kind == 0:
                 item = Filler(f"F{index:03d}", at, "7210", "1030", self.rng.randrange(300, 2_500) * 100, None)
-            elif kind == 1:
-                item = Filler(f"F{index:03d}", at, "7210", "3310", self.rng.randrange(5_000, 300_000) * 100, supplier)
+            elif kind == 1 or ap_balance[supplier] <= 0:
+                amount = self.rng.randrange(5_000, 300_000) * 100
+                ap_balance[supplier] += amount
+                item = Filler(f"F{index:03d}", at, "7210", "3310", amount, supplier)
             else:
-                item = Filler(f"F{index:03d}", at, "3310", "1030", self.rng.randrange(5_000, 300_000) * 100, supplier)
+                amount = min(self.rng.randrange(5_000, 300_000) * 100, ap_balance[supplier])
+                ap_balance[supplier] -= amount
+                item = Filler(f"F{index:03d}", at, "3310", "1030", amount, supplier)
             self.fillers.append(item)
         self.summary["filler"] = self.config.filler
         goods_acts = sum(act.kind == "goods" for act in self.acts.values())

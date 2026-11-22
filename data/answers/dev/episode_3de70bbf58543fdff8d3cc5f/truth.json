@@ -42,7 +42,7 @@
       "affected_ids": [
         "payment_90381551eae689cf11683322"
       ],
-      "expected_amount_minor": 7656000,
+      "expected_amount_minor": 11600000,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
@@ -61,7 +61,6 @@
         "row_66972cd6341bef025ffaa0f9",
         "row_7e3cb17f2d93c17935e4a24c",
         "row_a57d3fddcb0fa48469f1fa1e",
-        "row_a8e2ddea2cabf7da416888b2",
         "row_ef5dee6fbf45acd015a68406"
       ]
     },
@@ -71,7 +70,7 @@
       "affected_ids": [
         "payment_af38aba0ecaef7386cb7a562"
       ],
-      "expected_amount_minor": 54000000,
+      "expected_amount_minor": 6000,
       "currency": "KZT",
       "tolerance_minor": 2,
       "evidence_sets": [
@@ -98,6 +97,7 @@
         "fx_b516ae06350e31d9bf7b2aee",
         "fx_b80d66a8c8aa638975960646",
         "fx_c861c07367e7996f64506be7",
+        "fx_e49d693370052527b64748d5",
         "fx_fdb0db4fafd57bf451fb4f9a",
         "row_78fe16f057bf384c524f0f50",
         "row_7d0f7dc3232b087795e80f30",

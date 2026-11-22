@@ -262,7 +262,7 @@ class Auditor:
         expected = 0
         remaining = payment["amount_minor"]
         if payment["invoice_refs"] is None:
-            expected = remaining
+            expected = kzt(remaining, currency, rate, self.units) if rate is not None else remaining
             remaining = 0
         else:
             for ref in payment["invoice_refs"]:

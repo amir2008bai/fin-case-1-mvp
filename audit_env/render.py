@@ -25,6 +25,7 @@ class Presenter:
         self.acts = {**world.acts, **overrides.extra_acts, **overrides.replace_acts}
         self.salt = (seed, config.semantic_json(), config.presentation_seed)
         self.key = key
+        self._oid_cache = {}
         self.rng = keys.stream(key, "presentation", *self.salt)
         self.episode_id = keys.opaque(key, "episode", *self.salt)
         currencies = {BASE_CURRENCY} | {customer.currency for customer in world.customers.values()}
@@ -47,7 +48,12 @@ class Presenter:
             self.esf[act.key] = f"ЭСФ-{base + index:06d}"
 
     def oid(self, kind, internal):
-        return keys.opaque(self.key, kind, *self.salt, internal)
+        cache_key = (kind, internal)
+        cached = self._oid_cache.get(cache_key)
+        if cached is None:
+            cached = keys.opaque(self.key, kind, *self.salt, internal)
+            self._oid_cache[cache_key] = cached
+        return cached
 
     def doc(self, key):
         return self.oid("doc", key)

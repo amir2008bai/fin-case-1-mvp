@@ -9,7 +9,7 @@ from operator import add, mul, neg, pos, sub, truediv
 
 from .contracts import MAX_PAGE, MAX_STEPS, TABLE_IDS, Config, Episode
 from .generator import generate
-from .scoring import score, score_empty
+from .scoring import reject, score, score_empty
 
 NUMBER = re.compile(r"(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)")
 BINARY = {ast.Add: add, ast.Sub: sub, ast.Mult: mul, ast.Div: truediv}
@@ -25,6 +25,19 @@ TOOLS = {
     "submit": {"findings": "{episode_id, findings:[{type, affected_ids, claimed_amount_minor, currency, "
                            "evidence_ids, explanation}]}"},
 }
+
+
+
+
+def _clone_row(table, row):
+    if table in ("ledger", "fx"):
+        return dict(row)
+    out = dict(row)
+    if table == "payments" and isinstance(out.get("invoice_refs"), list):
+        out["invoice_refs"] = list(out["invoice_refs"])
+    elif table == "invoices" and isinstance(out.get("line_items"), list):
+        out["line_items"] = [dict(line) for line in out["line_items"]]
+    return out
 
 
 def calculate(expression):
@@ -78,7 +91,7 @@ class AuditEnv:
                 self.documents[row["doc_id"]] = (table, episode.documents.get(row["doc_id"], row))
         self.cursor_scope = {
             table: hashlib.sha256(
-                (episode.manifest["episode_id"] + ":" + table).encode("ascii")
+                (episode.manifest["episode_id"] + ":" + table).encode("utf-8")
             ).hexdigest()[:16] for table in episode.tables
         }
         self.seen = set()
@@ -117,12 +130,16 @@ class AuditEnv:
             observation = {"error": error}
         if self.clock() >= self.deadline:
             return self.expire("timeout")
-        return deepcopy(observation | {"remaining_steps": MAX_STEPS - self.steps}), 0.0, False, False, {}
+        observation["remaining_steps"] = MAX_STEPS - self.steps
+        return observation, 0.0, False, False, {}
 
     def expire(self, reason="timeout"):
         if self.episode is None or self.outcome is not None:
             return {"error": "episode_finished", "remaining_steps": 0}, 0.0, *self.final, {}
-        self.outcome = score_empty(self.episode.issues, self.steps, reason)
+        if reason == "agent_protocol":
+            self.outcome = reject(self.episode.issues, self.steps, error=reason, termination=reason)
+        else:
+            self.outcome = score_empty(self.episode.issues, self.steps, reason)
         return self.finish(terminated=False, status="truncated")
 
     def finish(self, *, terminated, status):
@@ -131,6 +148,8 @@ class AuditEnv:
         observation = {"status": status, "remaining_steps": MAX_STEPS - self.steps}
         if not terminated:
             observation["findings"] = []
+            if self.outcome is not None and self.outcome.error == "agent_protocol":
+                observation["error"] = "agent_protocol"
         return observation, reward, terminated, not terminated, {}
 
     def expose(self, table, row):
@@ -151,23 +170,23 @@ class AuditEnv:
                 raise ValueError("unknown_id")
             table, document = self.documents[doc_id]
             self.expose(table, document)
-            return document
+            return deepcopy(document)
         if kind == "get_record" and action.keys() == {"type", "table", "id"}:
             table = self.table(action["table"])
             record_id = action["id"]
             if not isinstance(record_id, str) or record_id not in self.index[table]:
                 raise ValueError("unknown_id")
-            return self.expose(table, self.index[table][record_id])
+            return _clone_row(table, self.expose(table, self.index[table][record_id]))
         if kind == "list_records" and action.keys() <= {"type", "table", "cursor", "limit"}:
             table = self.table(action.get("table"))
-            limit = action.get("limit", MAX_PAGE)
+            limit = MAX_PAGE if action.get("limit") is None else action["limit"]
             if type(limit) is not int or not 1 <= limit <= MAX_PAGE:
                 raise ValueError("invalid_limit")
             rows = self.episode.tables[table]
             start = self.offset(table, action.get("cursor"), len(rows))
             end = start + limit
             return {
-                "records": [self.expose(table, row) for row in rows[start:end]],
+                "records": [_clone_row(table, self.expose(table, row)) for row in rows[start:end]],
                 "next_cursor": f"{self.cursor_scope[table]}:{end}" if end < len(rows) else None,
             }
         raise ValueError("invalid_action")

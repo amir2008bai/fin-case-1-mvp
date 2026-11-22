@@ -27,6 +27,17 @@ def restore_clean(episode):
     manifest = deepcopy(episode.manifest)
     manifest["counts"] = {name: len(rows) for name, rows in tables.items()}
     manifest["document_count"] = len(tables["invoices"]) + len(tables["payments"])
-    documents = {key: value for key, value in episode.documents.items()
+    documents = {key: deepcopy(value) for key, value in episode.documents.items()
                  if value.get("invoice_id") not in removed_invoices}
+    for orig in originals.values():
+        doc_id = orig.get("doc_id")
+        if doc_id in documents:
+            documents[doc_id].update(deepcopy(orig))
+            vat_total = sum(line["vat_minor"] for line in orig["line_items"])
+            documents[doc_id]["vat_minor"] = vat_total
+            if "vat_invoice" in documents[doc_id]:
+                if vat_total:
+                    documents[doc_id]["vat_invoice"]["vat_minor"] = vat_total
+                else:
+                    documents[doc_id].pop("vat_invoice", None)
     return Episode(manifest, deepcopy(episode.policy), tables, (), deepcopy(episode.provenance), documents)

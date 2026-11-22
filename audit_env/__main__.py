@@ -9,12 +9,14 @@ import time
 import unittest
 from pathlib import Path
 
-DEFAULT_SUITE = "configs/suite.v2.json"
-HOLDOUT = "configs/holdout-template.v2.json"
-EXTENDED = "configs/holdout-extended.v2.json"
-CURRICULUM = "configs/curriculum.v2.json"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_SUITE = str(REPO_ROOT / "configs/suite.v2.json")
+HOLDOUT = str(REPO_ROOT / "configs/holdout-template.v2.json")
+EXTENDED = str(REPO_ROOT / "configs/holdout-extended.v2.json")
+CURRICULUM = str(REPO_ROOT / "configs/curriculum.v2.json")
 LEVELS = ("easy", "medium", "hard")
-DATA = Path("data")
+DATA = REPO_ROOT / "data"
+DEFAULT_MODEL = str(REPO_ROOT / "models/model.json")
 POLICIES = ("oracle", "expert", "reconcile", "random", "flag-all")
 
 
@@ -77,6 +79,88 @@ def economy_lines(result):
     lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
     lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
     return "\n".join(lines)
+
+
+
+def leakage_lines(result):
+    lines = [f"  {result['episodes']} closed episodes (threshold |AUROC - 0.50| <= {result['threshold']:.2f}):"]
+    lines.append(f"  {'feature':20s} {'n':>7s} {'pos':>5s} {'AUROC':>7s} {'drift':>7s}  status")
+    for row in result["features"]:
+        auc = "—" if row["auroc"] is None else f"{row['auroc']:.4f}"
+        drift = "—" if row["drift"] is None else f"{row['drift']:.4f}"
+        status = "OK" if row["ok"] else "LEAK"
+        lines.append(f"  {row['feature']:20s} {row['samples']:7d} {row['positives']:5d} {auc:>7s} {drift:>7s}  {status}")
+    lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
+    lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
+    return "\n".join(lines)
+
+
+
+
+
+def command_mcp(args):
+    from .mcp_server import serve_stdio
+
+    config = json.loads(args.config) if args.config else None
+    serve_stdio(seed=args.seed, config=config, closed=args.closed, compact=args.compact)
+    return 0
+
+
+def command_rescore(args):
+    from .rescore import rescore_trajectories
+
+    result = rescore_trajectories(args.trajectories, args.episodes, args.answers,
+                                  pass_f1_threshold=args.pass_threshold)
+    out(f"  rescored {result['episodes']} episodes from {result['trajectories']}:")
+    out(f"  mean_common_f1={result['mean_common_f1']:.4f}  mean_common_reward={result['mean_common_reward']:+.4f}  "
+        f"mean_materiality_reward={result['mean_materiality_reward']:+.4f}  tool_compliance={result['mean_tool_compliance']:.4f}")
+    out(f"  FAIL_TO_PASS={result['fail_to_pass_rate']}  PASS_TO_PASS={result['pass_to_pass_rate']}  "
+        f"pass^k={result['pass_k']}")
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def command_diagnostics(args):
+    import random
+
+    from .diagnostics import evaluate_diagnostics
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    episodes = closed_episodes(random.Random(args.seed), key, repeats=args.repeats)
+    result = evaluate_diagnostics(episodes, model_path=args.model)
+    out(f"  {result['episodes']} closed episodes — official common reward vs experimental materiality reward:")
+    out(f"  {'policy':10s} {'F1':>6s} {'common':>8s} {'mat_F1':>7s} {'mat_rew':>8s} {'comply':>7s} {'steps':>6s}")
+    for row in result["summary"]:
+        out(f"  {row['policy']:10s} {row['common_f1']:6.3f} {row['common_reward']:+8.4f} "
+            f"{row['materiality_f1']:7.3f} {row['materiality_reward']:+8.4f} "
+            f"{row['tool_compliance']:7.3f} {row['steps']:6.1f}")
+    out("\n  per-type F1 (reconcile vs expert vs micro):")
+    by_pt = {(r["policy"], r["type"]): r for r in result["per_type"]}
+    out(f"  {'type':22s} {'reconcile':>10s} {'expert':>10s} {'micro':>10s}")
+    for kind in ("duplicate_invoice", "payment_allocation", "fx_rate", "period_cutoff", "vat_on_top", "uncollected_service"):
+        out(f"  {kind:22s} {by_pt[('reconcile', kind)]['f1']:10.3f} {by_pt[('expert', kind)]['f1']:10.3f} {by_pt[('micro', kind)]['f1']:10.3f}")
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def command_leakage(args):
+    import random
+
+    from .leakage import audit_leakage
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    result = audit_leakage(closed_episodes(random.Random(args.seed), key, repeats=args.repeats), threshold=0.08)
+    out(leakage_lines(result))
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 1 if result["violations"] else 0
 
 
 def command_economy(args):
@@ -160,7 +244,7 @@ def command_verify(args):
     failed = []
 
     out("== 1. Unit tests")
-    suite = unittest.defaultTestLoader.discover("tests", top_level_dir=".")
+    suite = unittest.defaultTestLoader.discover(str(REPO_ROOT / "tests"), top_level_dir=str(REPO_ROOT))
     result = unittest.TextTestRunner(verbosity=1 if args.quick else 2, stream=sys.stdout).run(suite)
     report["sections"]["unit_tests"] = {"run": result.testsRun, "failures": len(result.failures),
                                         "errors": len(result.errors)}
@@ -258,6 +342,15 @@ def command_verify(args):
     report["sections"]["economy"] = result
     if result["violations"]:
         failed.append("step economy")
+
+    out("\n== 10. Statistical tell-leakage audit: presentation metadata AUROC near 0.50")
+    from .leakage import audit_leakage
+
+    leak_result = audit_leakage(episodes, threshold=0.15)
+    report["sections"]["leakage"] = leak_result
+    out(leakage_lines(leak_result))
+    if leak_result["violations"]:
+        failed.append("tell leakage")
 
     report["seconds"] = round(time.time() - started, 1)
     report["ok"] = not failed
@@ -397,7 +490,7 @@ def command_train(args):
 def command_serve(args):
     from .api import serve
 
-    server = serve(args.host, args.port, args.model)
+    server = serve(args.host, args.port, args.model, import_root=args.import_root)
     out(f"audit_env API on http://{args.host}:{server.server_address[1]}/api/health (Ctrl+C to stop)")
     try:
         server.serve_forever()
@@ -463,7 +556,7 @@ def main():
     failures = commands.add_parser("failures", help="measured failure breakdown per policy on hold-out configs")
     failures.add_argument("--repeats", type=int, default=5)
     failures.add_argument("--seed", type=int, default=5)
-    failures.add_argument("--model", default="models/model.json")
+    failures.add_argument("--model", default=DEFAULT_MODEL)
     failures.add_argument("--extended", action="store_true", help="use the extended hold-out (real-practice types)")
     failures.add_argument("--curriculum", action="store_true", help="use the easy/medium/hard curriculum")
     attacks = commands.add_parser("attacks", help="red team: adversarial agents against the grader")
@@ -476,6 +569,23 @@ def main():
     economy.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
     economy.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     economy.add_argument("--report", help="write the full result as JSON")
+    leak = commands.add_parser("leakage", help="statistical tell-leakage audit (AUROC on presentation metadata)")
+    leak.add_argument("--repeats", type=int, default=3, help="seeds per configuration")
+    leak.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
+    leak.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
+    leak.add_argument("--report", help="write the full result as JSON")
+    diag = commands.add_parser("diagnostics", help="per-type F1 and official vs experimental materiality reward")
+    diag.add_argument("--repeats", type=int, default=2, help="seeds per configuration")
+    diag.add_argument("--seed", type=int, default=7, help="episode seeds and derived secret key")
+    diag.add_argument("--fresh-key", action="store_true")
+    diag.add_argument("--model", default=DEFAULT_MODEL)
+    diag.add_argument("--report", help="write full diagnostics JSON")
+    res = commands.add_parser("rescore", help="offline trajectory re-scoring, FAIL_TO_PASS/PASS_TO_PASS and pass^k")
+    res.add_argument("trajectories", type=Path)
+    res.add_argument("--episodes", type=Path, default=REPO_ROOT / "data/episodes")
+    res.add_argument("--answers", type=Path, default=REPO_ROOT / "data/answers")
+    res.add_argument("--pass-threshold", type=float, default=1.0)
+    res.add_argument("--report", help="write rescore JSON report")
     data = commands.add_parser("dataset", help="export open episodes, answers, trajectories, checksums")
     data.add_argument("output", type=Path)
     data.add_argument("--suite", default=DEFAULT_SUITE)
@@ -485,7 +595,7 @@ def main():
     demo = commands.add_parser("demo", help="run one policy on one generated episode")
     demo.add_argument("--seed", type=int, default=202601)
     demo.add_argument("--config", help="JSON config")
-    demo.add_argument("--policy", choices=(*POLICIES, "micro"), default="expert")
+    demo.add_argument("--policy", choices=(*POLICIES, "inspector", "micro"), default="expert")
     demo.add_argument("--closed", action="store_true")
     demo.add_argument("--agent-image", help="run the agent in this local Docker image (no network, read-only)")
     demo.add_argument("--trajectory", type=Path)
@@ -499,7 +609,13 @@ def main():
     serve = commands.add_parser("serve", help="local HTTP/JSON API for a UI (localhost only)")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
-    serve.add_argument("--model", default="models/model.json")
+    serve.add_argument("--model", default=DEFAULT_MODEL)
+    serve.add_argument("--import-root", default=None, help="restrict folder imports to this base directory")
+    mcp = commands.add_parser("mcp", help="Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio")
+    mcp.add_argument("--seed", type=int, default=202601)
+    mcp.add_argument("--config", help="JSON config")
+    mcp.add_argument("--closed", action="store_true")
+    mcp.add_argument("--compact", action="store_true", help="compact policy & tabular pages (~40-80%% fewer tokens)")
     truth = commands.add_parser("audit-truth", help="independently re-derive a folder's truth")
     truth.add_argument("public", type=Path)
     truth.add_argument("answers", type=Path)
@@ -507,7 +623,7 @@ def main():
     handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
                 "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
-                "failures": command_failures, "attacks": command_attacks, "economy": command_economy}
+                "failures": command_failures, "attacks": command_attacks, "economy": command_economy, "leakage": command_leakage, "diagnostics": command_diagnostics, "rescore": command_rescore, "mcp": command_mcp}
     raise SystemExit(handlers[args.command](args))
 
 

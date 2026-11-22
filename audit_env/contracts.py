@@ -11,6 +11,7 @@ MAX_EVIDENCE = 10
 MAX_EXPLANATION = 1000
 MAX_FRAME_BYTES = 256 * 1024
 MAX_ISSUES = 12
+MAX_AMOUNT_MINOR = 10**18
 
 DUPLICATE = "duplicate_invoice"
 ALLOCATION = "payment_allocation"
@@ -67,7 +68,7 @@ def _int_in(name, value, low, high):
 class Config:
     """Episode configuration. Unknown keys and out-of-range values are rejected."""
 
-    keyspace: str = "secret"
+    keyspace: str = "open"
     presentation_seed: int = 0
     difficulty: str = "medium"
     month: int | None = None

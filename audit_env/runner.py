@@ -20,26 +20,29 @@ class ProtocolError(Exception):
     pass
 
 
-def strict_loads(payload):
-    def object_pairs(pairs):
-        result = {}
-        for key, value in pairs:
-            if key in result:
-                raise ValueError("duplicate key")
-            result[key] = value
-        return result
+def _object_pairs(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate key")
+        result[key] = value
+    return result
 
-    def reject_constant(_):
+
+def _reject_constant(_):
+    raise ValueError("non-finite number")
+
+
+def _finite_float(raw):
+    value = float(raw)
+    if not math.isfinite(value):
         raise ValueError("non-finite number")
+    return value
 
-    def finite_float(raw):
-        value = float(raw)
-        if not math.isfinite(value):
-            raise ValueError("non-finite number")
-        return value
 
-    return json.loads(payload, object_pairs_hook=object_pairs, parse_constant=reject_constant,
-                      parse_float=finite_float)
+def strict_loads(payload):
+    return json.loads(payload, object_pairs_hook=_object_pairs, parse_constant=_reject_constant,
+                      parse_float=_finite_float)
 
 
 def wire_frame(observation, reward, terminated, truncated, info):
@@ -93,19 +96,33 @@ class JsonAgent:
             self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
             cwd=self.cwd,
         )
-        self.lines = queue.Queue()
+        self.stop_event = threading.Event()
+        self.lines = queue.Queue(maxsize=16)
         self.reader = threading.Thread(target=self.read_loop, daemon=True)
         self.reader.start()
         return self
 
+    def _put(self, item):
+        while not self.stop_event.is_set():
+            try:
+                self.lines.put(item, timeout=0.05)
+                return True
+            except queue.Full:
+                continue
+        return False
+
     def __exit__(self, *_):
+        self.stop_event.set()
         with suppress(OSError):
             if self.process.poll() is None:
                 self.process.kill()
         self.process.wait()
-        for stream in (self.process.stdin, self.process.stdout):
+        self.reader.join(timeout=0.5)
+        with suppress(OSError):
+            self.process.stdin.close()
+        if not self.reader.is_alive():
             with suppress(OSError):
-                stream.close()
+                self.process.stdout.close()
 
     def read_loop(self):
         buffer = bytearray()
@@ -114,23 +131,23 @@ class JsonAgent:
             while True:
                 chunk = os.read(handle, 65536)
                 if not chunk:
-                    self.lines.put(("eof", None))
+                    self._put(("eof", None))
                     return
                 buffer.extend(chunk)
                 while True:
                     delimiter = buffer.find(b"\n")
                     if delimiter < 0:
                         if len(buffer) > MAX_FRAME_BYTES:
-                            self.lines.put(("too_large", None))
+                            self._put(("too_large", None))
                             return
                         break
                     if delimiter > MAX_FRAME_BYTES:
-                        self.lines.put(("too_large", None))
+                        self._put(("too_large", None))
                         return
-                    self.lines.put(("line", bytes(buffer[:delimiter])))
+                    if not self._put(("line", bytes(buffer[:delimiter]))): return
                     del buffer[:delimiter + 1]
         except OSError:
-            self.lines.put(("eof", None))
+            self._put(("eof", None))
 
     def left(self):
         remaining = self.deadline - self.clock()
@@ -184,7 +201,7 @@ def run_container(env, observation, image, policy, observer=None):
         "docker", "run", "--rm", "-i", "--name", name, "--pull=never",
         "--network=none", "--read-only", "--cap-drop=ALL", "--security-opt=no-new-privileges",
         "--cpus=2", "--memory=4g", "--memory-swap=4g", "--pids-limit=64",
-        "--user=65534:65534", "--log-driver=none", "--tmpfs=/tmp:rw,nosuid,noexec,size=32m",
+        "--user=65534:65534", "--log-driver=none", "--tmpfs=/tmp:rw,nosuid,nodev,noexec,size=32m",
         "--entrypoint=python", image, "-m", "audit_env.agents", policy,
     ]
     try:

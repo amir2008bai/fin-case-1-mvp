@@ -27,7 +27,7 @@ def vat_on_top(rng, world, overrides, act_key, payment_key, Spec):
 def uncollected(rng, world, overrides, act_key, Spec):
     act = world.acts[act_key]
     day = act.due_at.astimezone(world.tz).date() + timedelta(days=rng.randrange(1, 5))
-    issued = datetime.combine(day, time(rng.randrange(10, 18), rng.randrange(60)), world.tz)
+    issued = datetime.combine(day, time(rng.randrange(10, 18), rng.randrange(60), rng.randrange(60)), world.tz)
     if issued >= world.period_end:
         raise RuntimeError("renewal must be issued inside the period")
     start = act.service_end + timedelta(days=1)

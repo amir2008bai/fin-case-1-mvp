@@ -86,13 +86,20 @@ def transform(episode, seed):
     for issue in episode.issues:
         collect_ids([issue.issue_id, issue.affected_ids, issue.evidence_sets, issue.relevant_ids], found)
     mapping = {old: f"{old.split('_', 1)[0]}_{rng.getrandbits(96):024x}" for old in sorted(found)}
-    tables = rename_ids(deepcopy(episode.tables), mapping)
+    tables = rename_ids(episode.tables, mapping)
     for rows in tables.values():
         rng.shuffle(rows)
     issues = tuple(Issue(**{name: rename_ids(getattr(issue, name), mapping) for name in Issue.__dataclass_fields__})
                    for issue in episode.issues)
     issues = tuple(replace(issue, affected_ids=tuple(sorted(issue.affected_ids)),
                            relevant_ids=tuple(sorted(issue.relevant_ids))) for issue in issues)
-    provenance = rename_ids(deepcopy(episode.provenance), mapping) | {"transform_seed": seed}
-    return Episode(rename_ids(deepcopy(episode.manifest), mapping), deepcopy(episode.policy), tables,
-                   issues, provenance, rename_ids(deepcopy(episode.documents), mapping))
+    provenance = rename_ids(episode.provenance, mapping) | {"transform_seed": seed}
+    reverted = {row["row_id"]: row for row in tables["ledger"]}
+    for change in provenance.get("changes", []):
+        for row in change.get("after", []):
+            reverted.pop(row["row_id"], None)
+        for row in change.get("before", []):
+            reverted[row["row_id"]] = row
+    provenance["clean_ledger_sha256"] = render.canonical_hash(list(reverted.values()))
+    return Episode(rename_ids(episode.manifest, mapping), deepcopy(episode.policy), tables,
+                   issues, provenance, rename_ids(episode.documents, mapping))

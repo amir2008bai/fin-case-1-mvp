@@ -28,7 +28,10 @@ def _key_file():
 def secret_key():
     value = os.environ.get(ENV_VAR)
     if value:
-        return value.encode("utf-8")
+        encoded = value.encode("utf-8")
+        if len(encoded) >= MIN_KEY_BYTES:
+            return encoded
+        print(f"audit_env: {ENV_VAR} has fewer than {MIN_KEY_BYTES} bytes, ignoring", file=sys.stderr)
     path = _key_file()
     try:
         # A short file is never a key: it is either being written by a parallel process
@@ -69,7 +72,7 @@ def fingerprint(key):
 
 def digest(key, *parts):
     message = "\x1f".join(str(part) for part in parts).encode("utf-8")
-    return hmac.new(key, message, hashlib.sha256).digest()
+    return hmac.digest(key, message, "sha256")
 
 
 def stream(key, *parts):

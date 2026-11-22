@@ -65,13 +65,14 @@
       "payments.partial": 1,
       "payments.prepayment_next": 1,
       "payments.refund": 1,
-      "payments.split": 8
+      "payments.split": 2,
+      "payments.unreferenced": 1
     },
     "customers": 18,
     "invoices": 40,
-    "payments": 38
+    "payments": 33
   },
-  "clean_ledger_sha256": "b2876b9d47675849bd721d7fb00d3b7250fc79a1cf96bbcb840be7fe41ca6cba",
+  "clean_ledger_sha256": "0a48d82b681c671fbb5324db8ac5c852c6630c768bf7abe45345d1377023dd92",
   "changes": [
     {
       "issue_ids": [
@@ -148,7 +149,7 @@
       "after": [
         {
           "row_id": "row_0b5103af3165754561d2e224",
-          "timestamp": "2026-09-30T22:23:00+03:00",
+          "timestamp": "2026-09-30T17:23:19+03:00",
           "account": "6250",
           "debit_minor": 0,
           "credit_minor": 42000,
@@ -159,7 +160,7 @@
         },
         {
           "row_id": "row_40e26c2e5e0cc1636c9d5cd3",
-          "timestamp": "2026-09-30T22:23:00+03:00",
+          "timestamp": "2026-09-30T17:23:19+03:00",
           "account": "1210",
           "debit_minor": 0,
           "credit_minor": 6426000,
@@ -170,7 +171,7 @@
         },
         {
           "row_id": "row_a51abad43ca785fc7faf0a9a",
-          "timestamp": "2026-09-30T22:23:00+03:00",
+          "timestamp": "2026-09-30T17:23:19+03:00",
           "account": "1030",
           "debit_minor": 6468000,
           "credit_minor": 0,
