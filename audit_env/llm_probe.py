@@ -101,7 +101,11 @@ def _post_json(url, payload, headers, timeout=60, sleep=time.sleep):
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 text = resp.read().decode("utf-8", errors="replace").strip()
             parsed = json.loads(text)
-            if isinstance(parsed, dict) and isinstance(parsed.get("error"), dict):
+            if isinstance(parsed, list) and len(parsed) == 1 and isinstance(parsed[0], dict):
+                parsed = parsed[0]  # Gemini's OpenAI-compatible endpoint wraps errors in a list
+            if not isinstance(parsed, dict):
+                raise ValueError("JSON object expected")
+            if isinstance(parsed.get("error"), dict):
                 code = parsed["error"].get("code")
                 problem = f"API error {code}: {str(parsed['error'].get('message', ''))[:200]}"
                 if code in (429, 500, 502, 503, 504):
