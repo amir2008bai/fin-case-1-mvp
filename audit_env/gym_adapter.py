@@ -1,10 +1,15 @@
 """Optional Gymnasium-compatible adapter (zero runtime dependencies).
 
-If `gymnasium` is installed, `GymAuditEnv` inherits from `gymnasium.Env`;
-otherwise it exposes the identical `reset(seed, options)` / `step(action)` API
-so RL training stacks (TRL, RLlib, Prime Intellect verifiers, SB3) can plug in
-without adding any dependency to the offline core package.
+If `gymnasium` is installed, `GymAuditEnv` inherits from `gymnasium.Env` and
+exposes real `gymnasium.spaces.Text` action and observation spaces over UTF-8
+JSON strings, plus `encode`/`decode` helpers between `dict` and JSON. Without
+`gymnasium`, it exposes the identical `reset(seed, options)` / `step(action)`
+API with `action_space = None` and `observation_space = None` so the offline
+core package keeps zero external dependencies.
 """
+import json
+
+from .contracts import MAX_FRAME_BYTES
 from .environment import AuditEnv
 
 try:  # pragma: no cover - optional dependency
@@ -14,30 +19,78 @@ except ImportError:
     _gym = None
     _BASE = object
 
+OBSERVATION_MAX_CHARS = 8 * MAX_FRAME_BYTES  # escaped Cyrillic takes six characters per letter
+# Printable ASCII + JSON whitespace + Cyrillic block + common accounting/punctuation symbols.
+JSON_CHARSET = (
+    "".join(chr(c) for c in range(32, 127))
+    + "\t\n\r"
+    + "".join(chr(c) for c in range(0x0370, 0x0500))
+    + "".join(chr(c) for c in range(0x2000, 0x2300))
+    + "№«»·×±§©®™"
+)
+
 
 class GymAuditEnv(_BASE):
     """Thin Gymnasium-compatible wrapper around AuditEnv."""
 
     metadata = {"render_modes": []}
 
-    def __init__(self, *, training=True, timeout_seconds=60, key=None, default_config=None):
+    def __init__(self, *, training=True, timeout_seconds=60, key=None, default_config=None, json_text=False):
+        """`json_text=False` (default): actions and observations are dicts, as in AuditEnv; no Space is claimed.
+
+        `json_text=True`: actions and observations are JSON strings (ASCII, non-ASCII escaped), and
+        `action_space`/`observation_space` are `gymnasium.spaces.Text` that really contain them, so the
+        environment passes `gymnasium.utils.env_checker.check_env`. A string that is not a JSON object is
+        an invalid action: a bounded error that costs a step, never an exception.
+        """
         self._env = AuditEnv(training=training, timeout_seconds=timeout_seconds, key=key)
         self._default_config = default_config
-        # Actions and observations are JSON objects, not tensors: their contract is the JSON Schema in
-        # schemas/action.schema.json and the observation description in docs/protocol.md. A text policy
-        # (an LLM) consumes them directly; a tensor policy needs its own encoder, so no Space is claimed.
-        self.action_space = None
-        self.observation_space = None
+        self.json_text = json_text
+        if json_text and _gym is not None:  # pragma: no cover - optional dependency
+            self.action_space = _gym.spaces.Text(min_length=0, max_length=MAX_FRAME_BYTES, charset=JSON_CHARSET)
+            self.observation_space = _gym.spaces.Text(min_length=2, max_length=OBSERVATION_MAX_CHARS,
+                                                      charset=JSON_CHARSET)
+        else:
+            self.action_space = None
+            self.observation_space = None
         self.action_schema = "schemas/action.schema.json"
 
+    @staticmethod
+    def encode(payload):
+        """Serialize a dict observation or action to compact JSON; non-ASCII is escaped, so the text is
+        always within JSON_CHARSET."""
+        if not isinstance(payload, dict):
+            raise TypeError("expected dict payload")
+        return json.dumps(payload, ensure_ascii=True, separators=(",", ":"))
+
+    @staticmethod
+    def decode(text):
+        """Parse a UTF-8 JSON string back into a dict observation or action."""
+        if not isinstance(text, str):
+            raise TypeError("expected JSON str")
+        parsed = json.loads(text)
+        if not isinstance(parsed, dict):
+            raise ValueError("decoded JSON payload must be an object")
+        return parsed
+
     def reset(self, *, seed=None, options=None):
+        if _gym is not None:  # pragma: no cover - seeds Env.np_random as gymnasium expects
+            super().reset(seed=seed)
         episode_seed = 0 if seed is None else int(seed)
         config = (options or {}).get("config", self._default_config)
-        return self._env.reset(episode_seed, config)
+        observation, info = self._env.reset(episode_seed, config)
+        return (self.encode(observation) if self.json_text else observation), info
 
     def step(self, action):
+        if isinstance(action, str):
+            try:
+                action = self.decode(action)
+            except (ValueError, TypeError, RecursionError):
+                action = None  # AuditEnv answers invalid_action and charges the step
         observation, reward, terminated, truncated, info = self._env.step(action)
-        # Gymnasium expects a numeric float when training; closed mode preserves None.
+        if self.json_text:
+            observation = self.encode(observation)
+            reward = 0.0 if reward is None else reward  # closed mode: the reward stays with the evaluator
         return observation, reward, terminated, truncated, info
 
     @property

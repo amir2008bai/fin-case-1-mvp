@@ -1,4 +1,5 @@
-"""Tests for RLVR standards: Gymnasium #1111 reset isolation, offline rescore/pass^k, and API import_root."""
+"""Tests for RLVR standards: Gymnasium #1111 reset isolation, Gym spaces, offline rescore/pass^k, and API import_root."""
+import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,7 +9,10 @@ from audit_env.contracts import Config
 from audit_env.environment import AuditEnv
 from audit_env.episode_io import write_episode
 from audit_env.generator import generate
+from audit_env.gym_adapter import GymAuditEnv, JSON_CHARSET
 from audit_env.rescore import pass_at_k, rescore_trajectories
+
+_HAS_GYM = importlib.util.find_spec("gymnasium") is not None
 
 ERRORS = {"duplicate_invoice": 1, "payment_allocation": 1, "fx_rate": 1, "period_cutoff": 1}
 MIXED = Config(keyspace="open", errors=ERRORS, interactions={"fx_boundary_payment": 1, "fx_partial_allocation": 1})
@@ -30,6 +34,47 @@ class RLVRStandardsTests(unittest.TestCase):
         step2 = env.step({"type": "list_records", "table": "ledger", "limit": 25})
         self.assertEqual(obs1, obs2)
         self.assertEqual(step1, step2)
+
+    def test_gym_adapter_encode_decode_json_round_trip(self):
+        env = GymAuditEnv(training=True, default_config=MIXED)
+        obs, _ = env.reset(seed=42)
+        encoded_obs = env.encode(obs)
+        self.assertIsInstance(encoded_obs, str)
+        self.assertEqual(env.decode(encoded_obs), obs)
+        # Every character of the encoded UTF-8 JSON observation is covered by JSON_CHARSET.
+        self.assertTrue(set(encoded_obs).issubset(set(JSON_CHARSET)))
+        action = {"type": "calculator", "expression": "10 + 5"}
+        encoded_action = env.encode(action)
+        self.assertEqual(env.decode(encoded_action), action)
+        step_obs, reward, terminated, truncated, _ = env.step(encoded_action)
+        self.assertEqual(step_obs["result"], "15")
+        self.assertEqual(reward, 0.0)
+        self.assertFalse(terminated or truncated)
+
+    def test_gym_adapter_json_text_mode_without_gymnasium(self):
+        env = GymAuditEnv(training=True, default_config=MIXED, json_text=True)
+        obs, _ = env.reset(seed=42)
+        self.assertIsInstance(obs, str)
+        self.assertTrue(set(obs) <= set(JSON_CHARSET))
+        step_obs, reward, terminated, truncated, _ = env.step("not json")
+        self.assertEqual(env.decode(step_obs)["error"], "invalid_action")  # bounded error, not an exception
+        self.assertEqual((reward, terminated, truncated), (0.0, False, False))
+
+    @unittest.skipUnless(_HAS_GYM, "gymnasium is not installed")
+    def test_gym_adapter_spaces_when_gymnasium_installed(self):
+        import gymnasium
+        from gymnasium.utils.env_checker import check_env
+
+        env = GymAuditEnv(training=True, default_config=MIXED, json_text=True)
+        self.assertIsInstance(env.action_space, gymnasium.spaces.Text)
+        self.assertIsInstance(env.observation_space, gymnasium.spaces.Text)
+        obs, _ = env.reset(seed=42)
+        self.assertTrue(env.observation_space.contains(obs))
+        action = env.encode({"type": "list_records", "table": "invoices", "limit": 5})
+        self.assertTrue(env.action_space.contains(action))
+        step_obs, *_ = env.step(action)
+        self.assertTrue(env.observation_space.contains(step_obs))
+        check_env(GymAuditEnv(training=True, default_config=MIXED, json_text=True), skip_render_check=True)
 
     def test_unbiased_pass_k_math(self):
         self.assertEqual(pass_at_k(5, 5, 1), 1.0)

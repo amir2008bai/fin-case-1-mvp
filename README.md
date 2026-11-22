@@ -199,6 +199,7 @@ python -m audit_env demo --closed --policy expert --agent-image fintech-audit:ag
 
 ```bash
 python -m audit_env verify                    # единая проверка
+python -m audit_env jury                      # протокол жюри из раздела 06 ТЗ: 20 закрытых эпизодов, 4 политики, 20 парных проверок
 python -m audit_env demo --policy expert      # один эпизод, метрики
 python -m audit_env benchmark --holdout       # таблица по категориям (шаблон жюри); --repeats N — seed на конфигурацию
 python -m audit_env benchmark --extended      # то же для ошибок из практики и товаров
@@ -269,7 +270,7 @@ python -m audit_env llm-probe                 # диагностика: LLM че
 - Контроль утечек (раздел 10 `verify`) проверяет конкретный список примет: ID, порядок строк, секунды меток времени, «это накладная», «на счёт есть оплата», срок оплаты и число счетов у клиента. Секунды меток когда-то были приметой (у пограничных платежей было ровно `:00`) и устранены раньше; четыре структурные приметы давали AUROC 0.11–0.29, то есть по ним можно было найти ошибку, не читая книгу, и тоже устранены в генераторе. Приметы вне этого списка не исключены.
 - `uncollected_service` и платные продления-«двойники» строятся только на подписках (`SUB`, `SUP`), а валютные ошибки — только на услугах иностранным клиентам: так устроен и чистый бизнес генератора, товары за валюту он не продаёт.
 - `AuditEnv` повторяет контракт Gymnasium, но не наследует `gymnasium.Env`; в закрытом режиме терминальная награда равна `None`.
-- Для интеграции с RL-библиотеками доступен опциональный адаптер `audit_env/gym_adapter.py` (ленивый импорт `gymnasium`, ноль обязательных зависимостей).
+- Для интеграции с RL-библиотеками есть опциональный адаптер `audit_env/gym_adapter.py`: наследует `gymnasium.Env`, если пакет установлен, а в режиме `json_text=True` принимает и возвращает JSON-строки и объявляет `gymnasium.spaces.Text`, так что проходит `gymnasium.utils.env_checker.check_env` (проверено с gymnasium 1.x; без пакета тест пропускается). Пространства текстовые: тензорной политике нужен свой кодировщик.
 
 ## Навигация для разработчика
 
@@ -281,6 +282,8 @@ python -m audit_env llm-probe                 # диагностика: LLM че
 | ID, документы, эталон, provenance | `audit_env/render.py`, `audit_env/keys.py` | `tests/test_repro.py` |
 | Контракт `reset`/`step` | `audit_env/environment.py` | `tests/test_contract.py` |
 | Matcher и награда | `audit_env/scoring.py` | `tests/test_scoring.py` |
+| Требования ТЗ, пункт за пунктом | — | `tests/test_brief_criteria.py` (карта «пункт ТЗ → тест» в конце файла) |
+| Протокол жюри одной командой | `audit_env/jury.py` | `tests/test_jury.py` |
 | Атаки на оценщика | `audit_env/attacks.py` | `tests/test_attacks.py`, `verify`, шаг 8 |
 | Экономия шагов | `audit_env/economy.py`, `ScanPolicy` в `audit_env/agents.py` | `tests/test_economy.py`, `verify`, шаг 9 |
 | Независимый аудитор | `audit_env/checks.py` | `verify`, шаг 3 |

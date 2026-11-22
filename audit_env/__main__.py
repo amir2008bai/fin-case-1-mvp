@@ -377,6 +377,19 @@ def command_verify(args):
     return 0 if not failed else 1
 
 
+def command_jury(args):
+    from .jury import format_jury_table, run_jury
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    result = run_jury(HOLDOUT, seed=args.seed, key=key)
+    out(format_jury_table(result))
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 1 if result["failures"] else 0
+
+
 def command_benchmark(args):
     import random
 
@@ -559,6 +572,10 @@ def main():
     verify.add_argument("--quick", action="store_true")
     verify.add_argument("--cases", type=int, default=60)
     verify.add_argument("--report", default="build/verify-report.json")
+    jury = commands.add_parser("jury", help="section 06 jury protocol: 20 closed hold-out episodes + 20 paired checks")
+    jury.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
+    jury.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
+    jury.add_argument("--report", help="write the full jury report as JSON")
     bench = commands.add_parser("benchmark", help="compare baselines per category (closed mode)")
     bench.add_argument("--suite", default=DEFAULT_SUITE)
     bench.add_argument("--holdout", action="store_true")
@@ -645,7 +662,7 @@ def main():
     truth.add_argument("public", type=Path)
     truth.add_argument("answers", type=Path)
     args = parser.parse_args()
-    handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
+    handlers = {"verify": command_verify, "benchmark": command_benchmark, "jury": command_jury, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
                 "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
                 "failures": command_failures, "attacks": command_attacks, "economy": command_economy, "leakage": command_leakage, "diagnostics": command_diagnostics, "rescore": command_rescore, "mcp": command_mcp,
