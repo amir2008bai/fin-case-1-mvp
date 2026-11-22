@@ -64,7 +64,43 @@ class FlakyApi(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+class DroppingApi(BaseHTTPRequestHandler):
+    """Closes the first connection without an answer, as an overloaded API does, then replies."""
+
+    calls = 0
+
+    def log_message(self, *_):
+        return
+
+    def do_POST(self):
+        self.rfile.read(int(self.headers["Content-Length"]))
+        type(self).calls += 1
+        if type(self).calls == 1:
+            self.close_connection = True
+            self.connection.close()
+            return
+        body = b'{"choices": []}'
+        self.send_response(200)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
 class TransientFailureTests(unittest.TestCase):
+    def test_a_dropped_connection_is_retried(self):
+        from audit_env.llm_probe import _post_json
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), DroppingApi)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        try:
+            url = f"http://127.0.0.1:{server.server_address[1]}/v1/chat/completions"
+            result = _post_json(url, {}, {"Content-Type": "application/json"}, timeout=5, sleep=lambda _: None)
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(result, {"choices": []})
+        self.assertEqual(DroppingApi.calls, 2)
+
     def test_blank_and_429_answers_are_retried(self):
         from audit_env.llm_probe import _post_json
 

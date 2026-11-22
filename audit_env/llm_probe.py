@@ -9,6 +9,7 @@ exits with status code 0. Zero external dependencies; never touches or exposes
 `AUDIT_ENV_SECRET` to the LLM.
 """
 from dataclasses import replace
+import http.client
 import json
 import os
 import random
@@ -123,9 +124,14 @@ def _post_json(url, payload, headers, timeout=60, sleep=time.sleep):
             problem = f"HTTP {exc.code}: {body or exc.reason}"
             if exc.code not in (429, 500, 502, 503, 504):
                 raise ProbeUnavailable(f"{problem} from {_host(url)}") from None
-        except TimeoutError as exc:
-            problem = f"timed out ({exc})"
-        except (urllib.error.URLError, OSError) as exc:  # refused or unresolvable: retrying will not help
+        except (TimeoutError, ConnectionResetError, http.client.RemoteDisconnected) as exc:
+            problem = f"connection dropped ({exc})"
+        except urllib.error.URLError as exc:
+            if isinstance(exc.reason, (TimeoutError, ConnectionResetError, http.client.RemoteDisconnected)):
+                problem = f"connection dropped ({exc.reason})"
+                continue
+            raise ProbeUnavailable(f"network/endpoint {_host(url)} unreachable ({exc})") from None  # refused, DNS
+        except OSError as exc:
             raise ProbeUnavailable(f"network/endpoint {_host(url)} unreachable ({exc})") from None
     raise ProbeUnavailable(f"{_host(url)}: {problem} after {len(RETRY_DELAYS) + 1} attempts")
 
