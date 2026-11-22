@@ -8,7 +8,7 @@
 - Закрытый режим: эталон и награда остаются у оценщика, секретный ключ — только в его памяти, агент может работать в отдельном контейнере без сети и без ответов.
 
 - [Текущая стадия и история изменений](PROJECT_STATUS.md) · [Правила ведения журнала для агентов](AGENTS.md)
-- [Записка о дизайне](docs/design.md) · [Контракт и протокол](docs/protocol.md) · [API для UI](docs/api.md) · [Разбор сбоев](docs/failure_analysis.md) · [Как расширять](docs/extend.md) · [Микромодель](docs/micro-model.md) · [Каталог ошибок с разбором примеров](docs/error_catalog.md) · [Карточка среды](docs/environment_card.md) · [Паспорт данных](docs/datasheet.md)
+- [Записка о дизайне](docs/design.md) · [Контракт и протокол](docs/protocol.md) · [API для UI](docs/api.md) · [Разбор сбоев](docs/failure_analysis.md) · [Как расширять](docs/extend.md) · [Микромодель](docs/micro-model.md) · [Каталог ошибок с разбором примеров](docs/error_catalog.md) · [Карточка среды](docs/environment_card.md) · [Паспорт данных](docs/datasheet.md) · [Чек-лист ABC](docs/abc_checklist.md) · [Защиты от взлома награды](docs/spec_gaming.md) · [Метаморфные отношения](docs/metamorphic_relations.md)
 
 ## Соответствие ТЗ
 
@@ -275,6 +275,8 @@ python -m audit_env diagnostics               # разбивка P/R/F1 по т�
 python -m audit_env rescore data/trajectories.jsonl  # офлайн-рескоринг траекторий: доли решённых эпизодов с ошибками и чистых
 python -m audit_env dataset data              # экспорт 10 train + 10 dev, ответов, траекторий, SHA256SUMS
 python -m audit_env selfcheck --n 300         # доказательство корректности эталона на N конфигурациях
+python tools/grader_mutation.py               # мутационный тест оценщика: 60 испорченных версий scoring.py, все ловятся тестами
+python tools/catalog_check.py                 # пересчёт 10 примеров каталога ошибок по data/
 python -m audit_env train                     # обучить ранжировщик micro и сравнить на отложенных данных
 python -m audit_env audit <папка>             # проверить свои документы (6 файлов) без эталона
 python -m audit_env audit-truth <папка> <ответы>   # независимо перепроверить эталон папки
