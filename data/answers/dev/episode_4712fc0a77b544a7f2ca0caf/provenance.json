@@ -1,6 +1,6 @@
 {
-  "schema_version": "2.0",
-  "generator_version": "2.0.0",
+  "schema_version": "2.1",
+  "generator_version": "2.1.0",
   "episode_id": "episode_4712fc0a77b544a7f2ca0caf",
   "seed": 2026109,
   "config": {
@@ -51,15 +51,17 @@
       "acts.late": 2,
       "acts.next_period": 2,
       "acts.prior_open": 4,
-      "acts.regular": 32,
+      "acts.regular": 34,
+      "acts.repeated_amount": 2,
       "documents.goods": 20,
-      "documents.service": 20,
+      "documents.service": 22,
       "filler": 30,
       "goods_deliveries": 5,
       "opening_advances": 2,
       "payments.after_period": 1,
       "payments.boundary_inside": 2,
-      "payments.full": 22,
+      "payments.boundary_start": 1,
+      "payments.full": 23,
       "payments.overpayment": 1,
       "payments.partial": 1,
       "payments.prepayment_next": 1,
@@ -67,10 +69,10 @@
       "payments.split": 6
     },
     "customers": 18,
-    "invoices": 40,
-    "payments": 35
+    "invoices": 42,
+    "payments": 37
   },
-  "clean_ledger_sha256": "190564a41d47a96274c0ced09191d1229a930ed07c75901f2426e79b752bfdd9",
+  "clean_ledger_sha256": "8e9214186c6d7317bee734f3f4efd2e1121441037c195f945fc53e0cf5fe5fb2",
   "changes": [
     {
       "issue_ids": [
@@ -82,13 +84,26 @@
       ],
       "documents_added": [],
       "documents_changed": [],
+      "amounts": [
+        {
+          "issue_id": "issue_518e0a50d7c08384ec633a91",
+          "type": "fx_rate",
+          "expected_amount_minor": 360000,
+          "amount_minor": 12000000,
+          "currency": "RUB",
+          "posted_kzt_minor": 73200000,
+          "correct_kzt_minor": 72840000,
+          "rate_correct": "fx_d963997d91aea9ad879a1f46",
+          "rate_used": "fx_b6c4b67e24d255f99059e647"
+        }
+      ],
       "before": [
         {
           "row_id": "row_4966c0799460af442884939c",
-          "timestamp": "2026-03-21T09:20:30+05:00",
-          "account": "6250",
-          "debit_minor": 0,
-          "credit_minor": 360000,
+          "timestamp": "2026-03-16T14:30:53+05:00",
+          "account": "7430",
+          "debit_minor": 360000,
+          "credit_minor": 0,
           "currency": "KZT",
           "entity_id": "entity_4a9fe55b5bcd46db8c66ea5d",
           "invoice_id": null,
@@ -96,9 +111,9 @@
         },
         {
           "row_id": "row_9c0e4f2534a08a24157ca25a",
-          "timestamp": "2026-03-21T09:20:30+05:00",
+          "timestamp": "2026-03-16T14:30:53+05:00",
           "account": "1030",
-          "debit_minor": 73560000,
+          "debit_minor": 72840000,
           "credit_minor": 0,
           "currency": "KZT",
           "entity_id": "entity_4a9fe55b5bcd46db8c66ea5d",
@@ -109,7 +124,7 @@
       "after": [
         {
           "row_id": "row_9c0e4f2534a08a24157ca25a",
-          "timestamp": "2026-03-21T09:20:30+05:00",
+          "timestamp": "2026-03-16T14:30:53+05:00",
           "account": "1030",
           "debit_minor": 73200000,
           "credit_minor": 0,
@@ -132,6 +147,19 @@
       ],
       "documents_added": [],
       "documents_changed": [],
+      "amounts": [
+        {
+          "issue_id": "issue_b1802c8570e6dbd48e6bb060",
+          "type": "fx_rate",
+          "expected_amount_minor": 648,
+          "amount_minor": 64800,
+          "currency": "USD",
+          "posted_kzt_minor": 32620968,
+          "correct_kzt_minor": 32620320,
+          "rate_correct": "fx_5e1199d9d94f6658325b7dd2",
+          "rate_used": "fx_8c578a2fe3d52b2e3b92c7be"
+        }
+      ],
       "before": [],
       "after": [
         {

@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_bcd71d9ff00e42e7bb4621d1",
   "company": {
     "name": "ИП «Алтын Дом»",
@@ -10,12 +10,12 @@
   "period_end": "2026-09-01T00:00:00+06:00",
   "timezone": "+06:00",
   "counts": {
-    "ledger": 382,
-    "invoices": 45,
-    "payments": 44,
+    "ledger": 373,
+    "invoices": 47,
+    "payments": 41,
     "fx": 166
   },
-  "document_count": 89,
+  "document_count": 88,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_3de70bbf58543fdff8d3cc5f",
   "company": {
-    "name": "ОСИ «Сункар Плюс»",
+    "name": "ИП «Кок Систем»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-05-01T00:00:00+03:00",
   "timezone": "+03:00",
   "counts": {
-    "ledger": 464,
-    "invoices": 62,
-    "payments": 52,
+    "ledger": 477,
+    "invoices": 64,
+    "payments": 54,
     "fx": 164
   },
-  "document_count": 114,
+  "document_count": 118,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

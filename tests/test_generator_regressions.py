@@ -55,3 +55,29 @@ class SmallestEpisodeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FxAmountBasisTests(unittest.TestCase):
+    def test_every_fx_rate_issue_spells_out_its_conversion(self):
+        """The fx_rate half of fx_boundary_payment is not a before/after difference: the receipt is not in
+        the clean books at all. Provenance gives posted and correct conversions with both rate IDs."""
+        from audit_env.contracts import Config
+
+        mix = {"fx_boundary_payment": 1, "fx_partial_allocation": 1}
+        for seed in range(25):
+            episode = generate(seed, Config(keyspace="open", interactions=mix))
+            fx = {row["fx_id"] for row in episode.tables["fx"]}
+            amounts = {item["issue_id"]: item for change in episode.provenance["changes"]
+                       for item in change.get("amounts", ())}
+            for issue in episode.issues:
+                if issue.type != "fx_rate":
+                    continue
+                basis = amounts[issue.issue_id]
+                self.assertEqual(abs(basis["posted_kzt_minor"] - basis["correct_kzt_minor"]),
+                                 issue.expected_amount_minor)
+                self.assertIn(basis["rate_correct"], fx)
+                if "rate_used_value" in basis:  # a mistyped rate is not a row of fx.csv
+                    self.assertNotIn("rate_used", basis)
+                else:
+                    self.assertIn(basis["rate_used"], fx)
+                    self.assertNotEqual(basis["rate_used"], basis["rate_correct"])

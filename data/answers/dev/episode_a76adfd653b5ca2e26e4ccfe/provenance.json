@@ -1,6 +1,6 @@
 {
-  "schema_version": "2.0",
-  "generator_version": "2.0.0",
+  "schema_version": "2.1",
+  "generator_version": "2.1.0",
   "episode_id": "episode_a76adfd653b5ca2e26e4ccfe",
   "seed": 2026110,
   "config": {
@@ -51,27 +51,28 @@
       "acts.late": 4,
       "acts.next_period": 3,
       "acts.prior_open": 5,
-      "acts.regular": 38,
+      "acts.regular": 40,
+      "acts.repeated_amount": 2,
       "documents.goods": 25,
-      "documents.service": 25,
+      "documents.service": 27,
       "filler": 30,
       "goods_deliveries": 6,
       "opening_advances": 2,
       "payments.after_period": 1,
       "payments.boundary_inside": 2,
       "payments.boundary_start": 1,
-      "payments.full": 25,
-      "payments.multi_act": 2,
+      "payments.full": 26,
+      "payments.multi_act": 1,
       "payments.prepayment_next": 1,
       "payments.refund": 1,
-      "payments.split": 6,
+      "payments.split": 4,
       "payments.unreferenced": 2
     },
     "customers": 24,
-    "invoices": 50,
-    "payments": 41
+    "invoices": 52,
+    "payments": 39
   },
-  "clean_ledger_sha256": "8752997ac4a63e6dbd0b3f2420b89e557fe767938ec10c7cf3819afbac9a30ed",
+  "clean_ledger_sha256": "4aacc6e996ecc7a27336c570dedefa0b7cb394801e64b3452e26f0b3fb0dcde2",
   "changes": [
     {
       "issue_ids": [
@@ -166,37 +167,50 @@
       ],
       "documents_added": [],
       "documents_changed": [],
+      "amounts": [
+        {
+          "issue_id": "issue_5df2c583043446771bc58510",
+          "type": "fx_rate",
+          "expected_amount_minor": 5400,
+          "amount_minor": 90000,
+          "currency": "USD",
+          "posted_kzt_minor": 46113300,
+          "correct_kzt_minor": 46118700,
+          "rate_correct": "fx_64006b2e265fe7e2aeab1715",
+          "rate_used": "fx_46b7753afe24af883ad9fe5f"
+        }
+      ],
       "before": [
         {
           "row_id": "row_45d41e56114abdbc08aa3fbc",
-          "timestamp": "2026-11-15T18:32:28+06:00",
+          "timestamp": "2026-11-30T10:50:44+06:00",
           "account": "6250",
           "debit_minor": 0,
-          "credit_minor": 840000,
+          "credit_minor": 5400,
           "currency": "KZT",
-          "entity_id": "entity_0f79b1e2dfd93d340ba45c92",
+          "entity_id": "entity_8691134dae74179155592705",
           "invoice_id": null,
           "payment_id": "payment_13bcdb915d3dbca8d2150e2e"
         },
         {
           "row_id": "row_9691fffa3595d54f9584ed18",
-          "timestamp": "2026-11-15T18:32:28+06:00",
+          "timestamp": "2026-11-30T10:50:44+06:00",
           "account": "1030",
-          "debit_minor": 74520000,
+          "debit_minor": 46118700,
           "credit_minor": 0,
           "currency": "KZT",
-          "entity_id": "entity_0f79b1e2dfd93d340ba45c92",
+          "entity_id": "entity_8691134dae74179155592705",
           "invoice_id": null,
           "payment_id": "payment_13bcdb915d3dbca8d2150e2e"
         },
         {
           "row_id": "row_caa02653c2f31eadd5555d97",
-          "timestamp": "2026-11-15T18:32:28+06:00",
+          "timestamp": "2026-11-30T10:50:44+06:00",
           "account": "1210",
           "debit_minor": 0,
-          "credit_minor": 73680000,
+          "credit_minor": 46113300,
           "currency": "KZT",
-          "entity_id": "entity_0f79b1e2dfd93d340ba45c92",
+          "entity_id": "entity_8691134dae74179155592705",
           "invoice_id": "invoice_8b10259ae2bf930dc842d3ed",
           "payment_id": "payment_13bcdb915d3dbca8d2150e2e"
         }
@@ -204,34 +218,34 @@
       "after": [
         {
           "row_id": "row_0cbd8b148597b3b261122153",
-          "timestamp": "2026-11-15T18:32:28+06:00",
+          "timestamp": "2026-11-30T10:50:44+06:00",
           "account": "3510",
           "debit_minor": 0,
-          "credit_minor": 37576800,
+          "credit_minor": 23517783,
           "currency": "KZT",
-          "entity_id": "entity_0f79b1e2dfd93d340ba45c92",
+          "entity_id": "entity_8691134dae74179155592705",
           "invoice_id": null,
           "payment_id": "payment_13bcdb915d3dbca8d2150e2e"
         },
         {
           "row_id": "row_9691fffa3595d54f9584ed18",
-          "timestamp": "2026-11-15T18:32:28+06:00",
+          "timestamp": "2026-11-30T10:50:44+06:00",
           "account": "1030",
-          "debit_minor": 73680000,
+          "debit_minor": 46113300,
           "credit_minor": 0,
           "currency": "KZT",
-          "entity_id": "entity_0f79b1e2dfd93d340ba45c92",
+          "entity_id": "entity_8691134dae74179155592705",
           "invoice_id": null,
           "payment_id": "payment_13bcdb915d3dbca8d2150e2e"
         },
         {
           "row_id": "row_caa02653c2f31eadd5555d97",
-          "timestamp": "2026-11-15T18:32:28+06:00",
+          "timestamp": "2026-11-30T10:50:44+06:00",
           "account": "1210",
           "debit_minor": 0,
-          "credit_minor": 36103200,
+          "credit_minor": 22595517,
           "currency": "KZT",
-          "entity_id": "entity_0f79b1e2dfd93d340ba45c92",
+          "entity_id": "entity_8691134dae74179155592705",
           "invoice_id": "invoice_8b10259ae2bf930dc842d3ed",
           "payment_id": "payment_13bcdb915d3dbca8d2150e2e"
         }

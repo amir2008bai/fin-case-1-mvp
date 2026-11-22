@@ -398,12 +398,17 @@ class Builder:
         self.domestic = [self.new_customer(BASE_CURRENCY) for _ in range(config.customers - foreign_count)]
         self.foreign = [self.new_customer(self.rng.choice(FOREIGN_CURRENCIES)) for _ in range(foreign_count)]
 
-        self.reserve_targets()
-        dedicated = len(self.acts)
         floor = 0 if self.level == "easy" else 1
         prior = self.scaled(config.acts * 0.10) if self.on["opening_balances"] else 0
         late = max(floor, self.scaled(config.acts * 0.05)) if self.on["late_acts"] else 0
         upcoming = max(floor, self.scaled(config.acts * 0.05)) if self.on["prepayments"] else 0
+        # Waybills are only domestic in-period invoices, so their share there is above goods_percent;
+        # error targets take that share, otherwise "it is a waybill" would still hint "no error here".
+        in_period = max(1, config.acts - prior - late - upcoming)
+        domestic_in = max(1.0, in_period * (1 - config.foreign_percent / 100))
+        self.goods_share = min(100.0, 100 * round(config.acts * config.goods_percent / 100) / domestic_in)
+        self.reserve_targets()
+        dedicated = len(self.acts)
         regular = max(6, config.acts - dedicated - prior - late - upcoming)
         foreign_regular = round(regular * config.foreign_percent / 100) if self.foreign else 0
         # goods_percent is the share of ALL invoices of the episode that are waybills for goods
@@ -414,19 +419,15 @@ class Builder:
             pool = self.foreign if index < foreign_regular else self.domestic
             kind = "goods" if foreign_regular <= index < foreign_regular + goods else "service"
             self.regular_act(self.rng.choice(pool), kind=kind)
+        if self.on["repeated_amounts"]:
+            for _ in range(self.scaled(2)):
+                self.repeated_amount()
         for _ in range(prior):
             self.prior_act(self.rng.choice(self.domestic))
         for _ in range(late):
-            act = self.late_act(self.rng.choice(self.domestic))
-            if self.chance(60):
-                self.pay(act.customer, act.total_minor, self.after(act, 0, 12), [act.key], "full")
+            self.late_receipt(self.late_act(self.rng.choice(self.domestic)))
         for _ in range(upcoming):
-            act = self.next_act(self.rng.choice(self.domestic))
-            if self.chance(60):
-                day = self.day_between(act.issued_at.date(), self.last)
-                instant = max(self.moment(day), act.issued_at + timedelta(minutes=30))
-                if instant < self.end:
-                    self.pay(act.customer, act.total_minor, instant, [act.key], "prepayment_next")
+            self.next_receipt(self.next_act(self.rng.choice(self.domestic)))
         if self.hard_on("paid_renewals"):
             for _ in range(self.scaled(1.5)):
                 self.paid_renewal(self.rng.choice(self.domestic))
@@ -536,6 +537,28 @@ class Builder:
             self.pay(act.customer, net, self.after(act), [act.key], "underpaid_vat")
         # "open": the act stays unpaid at period end
 
+    def repeated_amount(self):
+        """Another customer buys the same service at the same price: an equal amount, not a duplicate."""
+        sources = [act for act in self.acts.values()
+                   if act.origin == "regular" and act.kind == "service" and act.currency == BASE_CURRENCY
+                   and len(act.lines) == 1 and act.key not in self.reserved]
+        if not sources or len(self.domestic) < 2:
+            return None
+        source = self.rng.choice(sources)
+        customer = self.rng.choice([key for key in self.domestic if key != source.customer])
+        line = source.lines[0]
+        try:
+            act = self.new_act(customer, "regular", self.day_between(self.first, self.last), lines=1,
+                               code=line.service_code)
+        except RuntimeError:
+            return None
+        lines = tuple(replace(item, unit_price_minor=line.unit_price_minor) for item in act.lines)
+        act = replace(act, lines=lines)
+        self.acts[act.key] = act
+        self.summary["acts.repeated_amount"] += 1
+        self.receipts_for(act)
+        return act
+
     def paid_renewal(self, customer):
         """A subscription renewed back-to-back after the due date — legit because it was paid in time."""
         service_end = self.day_between(self.first, self.first + timedelta(days=6))
@@ -605,19 +628,20 @@ class Builder:
         domestic, foreign = self.domestic, self.foreign
         for _ in range(errors[DUPLICATE]):
             pool = foreign if foreign and self.chance(20) else domestic
-            act = self.regular_act(self.rng.choice(pool), lines=self.rng.choice((1, 1, 2)), target=True)
+            act = self.regular_act(self.rng.choice(pool), lines=self.rng.choice((1, 1, 2)), target=True,
+                                   kind=self.target_kind(pool is domestic))
             if self.chance(50):
-                self.pay(act.customer, act.total_minor, self.after(act, 0, 4), [act.key], "full")
+                self.pay(act.customer, act.total_minor, self.after(act), [act.key], "full")
             self.candidates["dup"].append(act.key)
         for _ in range(errors[ALLOCATION]):
-            act = self.regular_act(self.rng.choice(domestic), target=True)
+            act = self.regular_act(self.rng.choice(domestic), target=True, kind=self.target_kind(True))
             payment = self.full_in_period(act)
             self.candidates["alloc"].append((act.key, payment.key))
         for _ in range(errors[FX_RATE]):
             act = self.regular_act(self.rng.choice(foreign), target=True)
             if self.chance(50):
                 if self.chance(50):
-                    self.pay(act.customer, act.total_minor, self.after(act, 0, 4), [act.key], "full")
+                    self.pay(act.customer, act.total_minor, self.after(act), [act.key], "full")
                 self.candidates["fx"].append(("act", act.key, None))
             else:
                 payment = self.full_in_period(act, distinct_rate=True)
@@ -627,13 +651,15 @@ class Builder:
             if variant == "act_prior":
                 act = self.late_act(self.rng.choice(domestic))
                 self.reserved.add(act.key)
+                self.late_receipt(act)
                 self.candidates["cut"].append(("act_prior", act.key, None))
             elif variant == "act_next":
                 act = self.next_act(self.rng.choice(domestic))
                 self.reserved.add(act.key)
+                self.next_receipt(act)
                 self.candidates["cut"].append(("act_next", act.key, None))
             else:
-                act = self.regular_act(self.rng.choice(domestic), target=True)
+                act = self.regular_act(self.rng.choice(domestic), target=True, kind=self.target_kind(True))
                 payment = self.after_end(act, act.total_minor)
                 self.candidates["cut"].append(("payment", act.key, payment.key))
         for _ in range(mix[FX_BOUNDARY]):
@@ -651,8 +677,7 @@ class Builder:
             payment = self.full_in_period(act, distinct_rate=True)
             self.candidates[FX_PARTIAL].append((act.key, payment.key))
         for _ in range(errors[VAT_ON_TOP]):
-            kind = "goods" if self.config.goods_percent and self.chance(50) else "service"
-            if kind == "goods":
+            if self.target_kind(True) == "goods":
                 act = self.regular_act(self.rng.choice(domestic), target=True, kind="goods")
             else:
                 end = self.day_between(self.first, max(self.first, self.last - timedelta(days=7)))
@@ -663,12 +688,43 @@ class Builder:
             payment = self.full_in_period(act)  # the customer pays the agreed price
             self.candidates["vat"].append((act.key, payment.key))
         for _ in range(errors[UNCOLLECTED]):
-            customer = self.new_customer(BASE_CURRENCY)  # dedicated: no other documents of this customer
+            # An ordinary customer, like the paid renewals it must be told apart from (a dedicated customer
+            # with exactly two invoices used to give the answer away). Its renewal slot is reserved below.
+            # (a new customer some of the time: a renewal adds two invoices, so always reusing one makes
+            # the target's customer busier than average, the opposite tell)
+            customer = self.new_customer(BASE_CURRENCY) if self.chance(35) else self.rng.choice(domestic)
             service_end = self.day_between(self.first, self.first + timedelta(days=6))
             act = self.new_act(customer, "regular", service_end, lines=1, max_lag=1,
                                code=self.rng.choice(("SUB", "SUP")), due_days=10, window=(self.first, self.last))
             self.reserved.add(act.key)
+            for line in act.lines:
+                start = line.period_end + timedelta(days=1)
+                self.busy.add((customer, line.service_code, start, start + timedelta(days=29)))
+                self.starts.add((customer, line.service_code, start))
+                self.nexts.add((customer, line.service_code, start + timedelta(days=30)))
             self.candidates["uncollected"].append(act.key)
+
+    def target_kind(self, domestic):
+        """Goods or service for an error target, as often as for an ordinary domestic invoice.
+
+        Errors used to sit only in service acts, so "it is a waybill" ruled out half of the invoices unread.
+        """
+        if not domestic or not self.config.goods_percent:
+            return "service"
+        return "goods" if self.rng.random() * 100 < self.goods_share else "service"
+
+    def late_receipt(self, act):
+        """A late act (service before the period, invoice inside it) is often paid in the period."""
+        if self.chance(60):
+            self.pay(act.customer, act.total_minor, self.after(act, 0, 12), [act.key], "full")
+
+    def next_receipt(self, act):
+        """A next-period act issued in the last days is often prepaid before the period ends."""
+        if self.chance(60):
+            day = self.day_between(act.issued_at.date(), self.last)
+            instant = max(self.moment(day), act.issued_at + timedelta(minutes=30))
+            if instant < self.end:
+                self.pay(act.customer, act.total_minor, instant, [act.key], "prepayment_next")
 
     def gap(self, amount, currency, first_day, second_day):
         return abs(convert(amount, currency, self.rates[(first_day, currency)])
@@ -676,7 +732,7 @@ class Builder:
 
     def full_in_period(self, act, distinct_rate=False):
         for _ in range(60):
-            instant = self.after(act, 1, 5)
+            instant = self.after(act)  # the lag of an ordinary receipt (used to be 1-5 days: a tell)
             local = instant.astimezone(self.tz).date()
             if not (max(self.start, act.issued_at) < instant < self.end):
                 continue

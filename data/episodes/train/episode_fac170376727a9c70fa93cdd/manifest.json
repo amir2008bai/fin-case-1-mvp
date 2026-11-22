@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_fac170376727a9c70fa93cdd",
   "company": {
-    "name": "ИП «Достык Систем»",
+    "name": "ТОО «Достык Сауда»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -11,8 +11,8 @@
   "timezone": "+05:00",
   "counts": {
     "ledger": 275,
-    "invoices": 30,
-    "payments": 30,
+    "invoices": 32,
+    "payments": 28,
     "fx": 83
   },
   "document_count": 60,

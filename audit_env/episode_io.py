@@ -123,15 +123,18 @@ def read_csv(path, name, problems):
     text = Path(path).read_text(encoding="utf-8-sig")
     reader = csv.reader(io.StringIO(text, newline=""))
     rows = list(reader)
-    if not rows or tuple(rows[0]) != TABLE_FIELDS[name]:
+    # The same columns in another order are read by name (fx.csv before v2.1 had fx_id first).
+    if not rows or len(rows[0]) != len(TABLE_FIELDS[name]) or set(rows[0]) != set(TABLE_FIELDS[name]):
         problems.append(f"{path.name}: header must be {','.join(TABLE_FIELDS[name])}")
         return []
+    header = tuple(rows[0])
     records = []
     for number, values in enumerate(rows[1:], start=2):
-        if len(values) != len(TABLE_FIELDS[name]):
-            problems.append(f"{path.name}:{number}: expected {len(TABLE_FIELDS[name])} columns")
+        if len(values) != len(header):
+            problems.append(f"{path.name}:{number}: expected {len(header)} columns")
             continue
-        records.append((number, dict(zip(TABLE_FIELDS[name], values))))
+        by_name = dict(zip(header, values))
+        records.append((number, {field: by_name[field] for field in TABLE_FIELDS[name]}))
     return records
 
 

@@ -30,6 +30,7 @@ class Spec:
     affected: tuple = ()
     evidence_sets: tuple = ()
     relevant: tuple = field(default_factory=tuple)
+    basis: dict = field(default_factory=dict)  # how the amount follows from the records (provenance only)
 
 
 def inject(rng, world, config):
@@ -80,6 +81,17 @@ def _fx_refs(world, currency, days):
                  if code == currency and low <= day <= high)
 
 
+def _fx_basis(amount, currency, posted, correct, correct_day, typed_rate, used_day):
+    """Posted vs correct conversion; the wrong rate is either another day's fx row or a mistyped value."""
+    basis = {"amount_minor": amount, "currency": currency, "posted_kzt_minor": posted,
+             "correct_kzt_minor": correct, "rate_correct": ("fx", (correct_day, currency))}
+    if typed_rate is not None:
+        basis["rate_used_value"] = f"{typed_rate:.2f}"
+    else:
+        basis["rate_used"] = ("fx", (used_day, currency))
+    return basis
+
+
 def resolve(spec, world, overrides, rows):
     acts = {**world.acts, **overrides.extra_acts, **overrides.replace_acts}
     by_key = {row.key: row for row in rows}
@@ -119,6 +131,8 @@ def resolve(spec, world, overrides, rows):
         spec.evidence_sets = ((("doc", payment.key), ("fx", (correct_day, payment.currency)),
                                ("row", f"PAY:{payment.key}:bank")),)
         used = overrides.payment_rate_date.get(payment.key, correct_day)
+        spec.basis = _fx_basis(payment.amount_minor, payment.currency, posted, correct, correct_day,
+                               overrides.payment_rate.get(payment.key), used)
         spec.relevant += _fx_refs(world, payment.currency, (correct_day, used))
     elif spec.type == FX_RATE:
         act = acts[spec.acts[0]]
@@ -134,6 +148,8 @@ def resolve(spec, world, overrides, rows):
         )
         used = overrides.act_rate_date.get(act.key, act.service_end)
         spec.relevant += _fx_refs(world, act.currency, (act.service_end, used, world.local_date(act.issued_at)))
+        spec.basis = _fx_basis(act.total_minor, act.currency, posted, correct, act.service_end,
+                               overrides.act_rate.get(act.key), used)
     elif spec.type == CUTOFF and spec.payments:
         payment_key = spec.payments[0]
         spec.amount = by_key[f"PAY:{payment_key}:bank"].debit

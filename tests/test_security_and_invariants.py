@@ -117,7 +117,7 @@ class SecurityAndInvariantsTests(unittest.TestCase):
             fx_lines = (folder / "fx.csv").read_text(encoding="utf-8").splitlines()
             if len(fx_lines) > 1:
                 parts = fx_lines[1].split(",")
-                parts[-1] = "Infinity"
+                parts[fx_lines[0].split(",").index("rate")] = "Infinity"
                 fx_lines[1] = ",".join(parts)
                 (folder / "fx.csv").write_text("\n".join(fx_lines) + "\n", encoding="utf-8")
                 with self.assertRaises(FormatError):

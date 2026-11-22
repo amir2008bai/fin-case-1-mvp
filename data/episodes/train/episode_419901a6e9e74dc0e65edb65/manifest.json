@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_419901a6e9e74dc0e65edb65",
   "company": {
-    "name": "АО «Дала Логистик»",
+    "name": "ТОО «Кок Строй»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-07-01T00:00:00+06:00",
   "timezone": "+06:00",
   "counts": {
-    "ledger": 377,
-    "invoices": 55,
-    "payments": 50,
+    "ledger": 376,
+    "invoices": 57,
+    "payments": 49,
     "fx": 164
   },
-  "document_count": 105,
+  "document_count": 106,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

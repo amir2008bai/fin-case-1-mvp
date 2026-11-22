@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_112d63db457ffe97b34ee128",
   "company": {
     "name": "ТОО «Тау Финанс»",
@@ -10,12 +10,12 @@
   "period_end": "2026-05-01T00:00:00+05:00",
   "timezone": "+05:00",
   "counts": {
-    "ledger": 381,
+    "ledger": 383,
     "invoices": 50,
-    "payments": 40,
+    "payments": 41,
     "fx": 164
   },
-  "document_count": 90,
+  "document_count": 91,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

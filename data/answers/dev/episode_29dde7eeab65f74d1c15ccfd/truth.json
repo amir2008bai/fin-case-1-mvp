@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_29dde7eeab65f74d1c15ccfd",
   "issues": [
     {
@@ -29,22 +29,20 @@
       "issue_id": "issue_4546e9273d3ff87489e5c38d",
       "type": "period_cutoff",
       "affected_ids": [
-        "payment_a55cf509d1307af48d8639d8"
+        "invoice_82b10191e6a176d38edb5b3c"
       ],
-      "expected_amount_minor": 1500000,
+      "expected_amount_minor": 3448276,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
         [
-          "doc_6f61d9acc4c761ba203467b1",
-          "row_19a740de7f1644062f0241c0"
+          "doc_d9e0fb66c8f874b4235aeff4",
+          "row_1c9c2fbfc0b734e90cd860be"
         ]
       ],
       "relevant_ids": [
-        "doc_6f61d9acc4c761ba203467b1",
         "doc_d9e0fb66c8f874b4235aeff4",
         "row_02501a43ff1603ea8305960a",
-        "row_19a740de7f1644062f0241c0",
         "row_1c9c2fbfc0b734e90cd860be",
         "row_602d19bc00bd28ab792cce34",
         "row_9b1e3f817cc6f84daf091acc",

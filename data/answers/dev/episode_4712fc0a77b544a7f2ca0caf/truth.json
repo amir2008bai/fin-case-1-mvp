@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_4712fc0a77b544a7f2ca0caf",
   "issues": [
     {
@@ -14,7 +14,7 @@
       "evidence_sets": [
         [
           "doc_78faeaf1b4aa54b5ad26d953",
-          "fx_df925e3cc492b2c939ac5458",
+          "fx_d963997d91aea9ad879a1f46",
           "row_9c0e4f2534a08a24157ca25a"
         ]
       ],
@@ -22,7 +22,6 @@
         "doc_78faeaf1b4aa54b5ad26d953",
         "doc_ce37fbc9effbe8ea8423a143",
         "fx_31a38306fcf82b1971c5c7d3",
-        "fx_328806086e0cf8429c9811ba",
         "fx_3353458323301b27c0b4c3fc",
         "fx_3e6cb32ac85f11809c5a06b2",
         "fx_3f26489e8e8720f7641b109d",
@@ -31,18 +30,14 @@
         "fx_65b53ee1dc0e10ff51a1f422",
         "fx_70c60b73afb37c603b873a04",
         "fx_70f5262040fe2802fd9ccaeb",
-        "fx_7cbf45a2486808913426c577",
         "fx_8f2357378d16f11b304322a8",
         "fx_965e40b51173f8cc9393fea0",
         "fx_9c497a0f4776f945b060bc27",
-        "fx_9dce7c03970d84b5f285eabd",
-        "fx_9e196e6c71ca35664fd9c825",
         "fx_b6c4b67e24d255f99059e647",
         "fx_b8297001379db840cfda8a74",
         "fx_d963997d91aea9ad879a1f46",
         "fx_de9b7cd764b02f51e6d69dbc",
         "fx_df925e3cc492b2c939ac5458",
-        "fx_dfbe032813291b2ab4b9f715",
         "row_1d5f35eb73f2742ced910ea3",
         "row_8aa164b533cef3546bde7c47",
         "row_9bcd2f1ed699b44d58b18027",

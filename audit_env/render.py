@@ -212,8 +212,8 @@ def present(world, clean_rows, rows, overrides, specs, *, key, seed, config):
     payments = sorted((view.payment_row(payment) for payment in world.payments.values()),
                       key=lambda item: item["payment_id"])
     used = [code for code in view.currencies if code != BASE_CURRENCY]
-    fx = sorted(({"fx_id": view.fx(day, code), "date": day.isoformat(), "source_currency": code,
-                  "target_currency": BASE_CURRENCY, "rate": f"{rate:.2f}"}
+    fx = sorted(({"date": day.isoformat(), "source_currency": code, "target_currency": BASE_CURRENCY,
+                  "rate": f"{rate:.2f}", "fx_id": view.fx(day, code)}
                  for (day, code), rate in world.rates.items() if code in used), key=lambda item: item["fx_id"])
     tables = {"ledger": ledger, "invoices": invoices, "payments": payments, "fx": fx}
     for name, items in tables.items():
@@ -272,8 +272,15 @@ def build_provenance(view, world, clean_rows, rows, overrides, specs, issues, se
     for spec, issue in zip(specs, issues):
         group = groups.setdefault(spec.group, {"issue_ids": [], "scenario": spec.scenario, "causes": [],
                                                "targets": set(), "before": [], "after": [],
-                                               "documents_added": [], "documents_changed": []})
+                                               "documents_added": [], "documents_changed": [], "amounts": []})
         group["issue_ids"].append(issue.issue_id)
+        if spec.basis:
+            # The fx_rate part of an interaction is not a before/after difference (the receipt was not in
+            # the clean books at all), so the conversion is spelled out: posted minus correct, both rates.
+            basis = {name: view.public(value) if isinstance(value, tuple) else value
+                     for name, value in spec.basis.items()}
+            group["amounts"].append({"issue_id": issue.issue_id, "type": spec.type,
+                                     "expected_amount_minor": issue.expected_amount_minor, **basis})
         group["causes"].append(spec.cause)
         group["targets"] |= set(spec.acts) | set(spec.payments)
     for row_key in changed:
@@ -302,6 +309,7 @@ def build_provenance(view, world, clean_rows, rows, overrides, specs, issues, se
             "causes": group["causes"],
             "documents_added": group["documents_added"],
             "documents_changed": group["documents_changed"],
+            **({"amounts": group["amounts"]} if group["amounts"] else {}),
             "before": sorted(group["before"], key=lambda item: item["row_id"]),
             "after": sorted(group["after"], key=lambda item: item["row_id"]),
         })

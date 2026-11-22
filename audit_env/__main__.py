@@ -26,13 +26,15 @@ def out(text=""):
 
 
 def table(rows, order=None):
-    lines = [f"{'policy':10s} {'category':12s} {'n':>3s} {'P':>6s} {'R':>6s} {'F1':>6s} {'return':>7s} {'steps':>6s} {'ms':>7s}"]
+    lines = [f"{'policy':10s} {'category':12s} {'n':>3s} {'P':>6s} {'R':>6s} {'F1':>6s} {'FP/ep':>6s} {'return':>7s} "
+             f"{'steps':>6s} {'ms':>7s}"]
     rank = {name: index for index, name in enumerate(order or ())}
     for (policy, category), items in sorted(rows.items(), key=lambda item: (item[0][0], rank.get(item[0][1], 99),
                                                                               item[0][1])):
         mean = lambda key: statistics.mean(item[key] for item in items)  # noqa: E731
         lines.append(f"{policy:10s} {category:12s} {len(items):3d} {mean('precision'):6.3f} {mean('recall'):6.3f} "
-                     f"{mean('f1'):6.3f} {mean('reward'):+7.3f} {mean('steps'):6.1f} {1000 * mean('seconds'):7.1f}")
+                     f"{mean('f1'):6.3f} {mean('fp'):6.1f} {mean('reward'):+7.3f} {mean('steps'):6.1f} "
+                     f"{1000 * mean('seconds'):7.1f}")
     return "\n".join(lines)
 
 
@@ -82,17 +84,17 @@ def economy_lines(result):
 
 
 def leakage_lines(result):
-    lines = [f"  {result['episodes']} closed episodes (threshold |AUROC - 0.50| <= {result['threshold']:.2f}):"]
-    lines.append(f"  {'feature':20s} {'n':>7s} {'pos':>5s} {'AUROC':>7s} {'drift':>7s}  status")
+    lines = [f"  {result['episodes']} closed episodes, each feature within its |AUROC - 0.50| limit:"]
+    lines.append(f"  {'feature':20s} {'n':>7s} {'pos':>5s} {'AUROC':>7s} {'drift':>7s} {'limit':>6s}  status")
     for row in result["features"]:
         auc = "—" if row["auroc"] is None else f"{row['auroc']:.4f}"
         drift = "—" if row["drift"] is None else f"{row['drift']:.4f}"
         status = "OK" if row["ok"] else "LEAK"
-        lines.append(f"  {row['feature']:20s} {row['samples']:7d} {row['positives']:5d} {auc:>7s} {drift:>7s}  {status}")
+        lines.append(f"  {row['feature']:20s} {row['samples']:7d} {row['positives']:5d} {auc:>7s} {drift:>7s} "
+                     f"{row['threshold']:6.2f}  {status}")
     lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
     lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
     return "\n".join(lines)
-
 
 
 def command_mcp(args):
@@ -342,7 +344,7 @@ def command_verify(args):
     if result["violations"]:
         failed.append("step economy")
 
-    out("\n== 10. Statistical tell-leakage audit: presentation metadata AUROC near 0.50")
+    out("\n== 10. Statistical tell-leakage audit: presentation metadata and structural shortcuts, AUROC near 0.50")
     from .leakage import LEAKAGE_REPEATS, LEAKAGE_SEED, audit_leakage
 
     # Its own, larger and fixed sample: on the 36 episodes above the noise alone is as large as a real leak,

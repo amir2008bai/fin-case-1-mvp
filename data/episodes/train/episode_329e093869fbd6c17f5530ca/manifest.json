@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_329e093869fbd6c17f5530ca",
   "company": {
-    "name": "АО «Достык Логистик»",
+    "name": "ОСИ «Кулан Трейд»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-10-01T00:00:00+03:00",
   "timezone": "+03:00",
   "counts": {
-    "ledger": 325,
-    "invoices": 40,
-    "payments": 33,
+    "ledger": 362,
+    "invoices": 42,
+    "payments": 42,
     "fx": 164
   },
-  "document_count": 73,
+  "document_count": 84,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

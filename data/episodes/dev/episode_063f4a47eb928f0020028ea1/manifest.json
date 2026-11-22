@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_063f4a47eb928f0020028ea1",
   "company": {
-    "name": "ИП «Береке Финанс»",
+    "name": "АО «Тау Групп»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -11,11 +11,11 @@
   "timezone": "+05:00",
   "counts": {
     "ledger": 219,
-    "invoices": 20,
-    "payments": 23,
+    "invoices": 22,
+    "payments": 24,
     "fx": 80
   },
-  "document_count": 43,
+  "document_count": 46,
   "minor_units": {
     "KZT": 2,
     "RUB": 2

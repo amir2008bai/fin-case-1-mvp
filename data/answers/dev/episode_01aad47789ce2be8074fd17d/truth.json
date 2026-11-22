@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_01aad47789ce2be8074fd17d",
   "issues": [
     {
@@ -9,7 +9,7 @@
         "invoice_51badc2da8ebe82b85e25f7a",
         "invoice_529e2d2d8baa08e4b57d7862"
       ],
-      "expected_amount_minor": 6000000,
+      "expected_amount_minor": 460000,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
@@ -23,20 +23,14 @@
           "doc_88c7297216807319f91a503f",
           "doc_2c3e42e735517524b3b9b4c0",
           "row_d901e26b9d8fd80e0b4e8f30",
-          "row_31815a538c42e0295615261f",
-          "row_92fdc227718d6ddfb2c3a4b3",
-          "row_1819f76ed5457b728434d9d3"
+          "row_92fdc227718d6ddfb2c3a4b3"
         ]
       ],
       "relevant_ids": [
         "doc_2c3e42e735517524b3b9b4c0",
         "doc_88c7297216807319f91a503f",
         "row_01330aef5eaeae836c282f5c",
-        "row_1819f76ed5457b728434d9d3",
         "row_1eb0bc35b537e6e41d77f6a3",
-        "row_2afee7973e1bfde5414cb5fb",
-        "row_31815a538c42e0295615261f",
-        "row_64a91b75ff76c43a69793910",
         "row_72443f581ac7688e71ffb976",
         "row_92fdc227718d6ddfb2c3a4b3",
         "row_d901e26b9d8fd80e0b4e8f30"
@@ -49,7 +43,7 @@
         "invoice_52bad984fe6f514b3ad4efca",
         "invoice_75cf2a6f230318e91d27cf86"
       ],
-      "expected_amount_minor": 500000,
+      "expected_amount_minor": 33000000,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
@@ -63,15 +57,25 @@
           "doc_0741ccd0571e2f0a94d6a030",
           "doc_3690c93baa867acf442c9f18",
           "row_ece3b815688b6e65d16552b1",
-          "row_775f20ca5683c13d3e932389"
+          "row_380f238e46ac933cf2382568",
+          "row_775f20ca5683c13d3e932389",
+          "row_2e45531677d83867f6f883b8"
         ]
       ],
       "relevant_ids": [
         "doc_0741ccd0571e2f0a94d6a030",
         "doc_3690c93baa867acf442c9f18",
+        "row_0d6ee41597572e3ea7c05fbe",
+        "row_0d974f0b1cb49997fdca2f0f",
+        "row_0da31e241d9c116ff1bcb5ab",
+        "row_2e45531677d83867f6f883b8",
+        "row_380f238e46ac933cf2382568",
+        "row_3cb500bac0dfb046520d92cc",
         "row_489fb2f007ea9efc5352a702",
+        "row_608d1a06f32049b8710d053a",
         "row_6c3983b26efebb316f46033e",
         "row_775f20ca5683c13d3e932389",
+        "row_973d0c72ee8b7eb02a75d1f6",
         "row_ece3b815688b6e65d16552b1"
       ]
     }

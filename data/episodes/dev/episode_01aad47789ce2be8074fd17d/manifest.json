@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_01aad47789ce2be8074fd17d",
   "company": {
-    "name": "АО «Шыгыс Агро»",
+    "name": "ТОО «Сары Логистик»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-10-01T00:00:00+06:00",
   "timezone": "+06:00",
   "counts": {
-    "ledger": 350,
-    "invoices": 42,
-    "payments": 33,
+    "ledger": 366,
+    "invoices": 44,
+    "payments": 34,
     "fx": 164
   },
-  "document_count": 75,
+  "document_count": 78,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

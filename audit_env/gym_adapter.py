@@ -23,8 +23,12 @@ class GymAuditEnv(_BASE):
     def __init__(self, *, training=True, timeout_seconds=60, key=None, default_config=None):
         self._env = AuditEnv(training=training, timeout_seconds=timeout_seconds, key=key)
         self._default_config = default_config
+        # Actions and observations are JSON objects, not tensors: their contract is the JSON Schema in
+        # schemas/action.schema.json and the observation description in docs/protocol.md. A text policy
+        # (an LLM) consumes them directly; a tensor policy needs its own encoder, so no Space is claimed.
         self.action_space = None
         self.observation_space = None
+        self.action_schema = "schemas/action.schema.json"
 
     def reset(self, *, seed=None, options=None):
         episode_seed = 0 if seed is None else int(seed)

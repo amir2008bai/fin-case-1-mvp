@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_bcd71d9ff00e42e7bb4621d1",
   "issues": [
     {
@@ -8,7 +8,7 @@
       "affected_ids": [
         "payment_bd32487991d0ea2463fa83c9"
       ],
-      "expected_amount_minor": 4200000,
+      "expected_amount_minor": 2000000,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
@@ -36,7 +36,7 @@
       "affected_ids": [
         "payment_19d5033e9e20340d55e6db48"
       ],
-      "expected_amount_minor": 4000000,
+      "expected_amount_minor": 6400000,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
@@ -50,14 +50,12 @@
       "relevant_ids": [
         "doc_36a071c3b17322e5b304d079",
         "doc_c42e95645201976d79773e72",
-        "row_03551fccb8731b16ce6be435",
-        "row_321a0204d0bd0ea731f6daaf",
         "row_36778bfa7f47b98a0a0c7158",
         "row_3936fd3f53d6bd3547c1c4cb",
         "row_3f551c41e846f4dac97281ee",
-        "row_73a7e127dddbb6c7e571e697",
+        "row_66cf09ae2a7459bf8beeabc9",
         "row_a08ba332e2e261eba669a1d8",
-        "row_b12c845b6c3a60ab88b6675b",
+        "row_a40f6e625ee1acdcb4d8d687",
         "row_e032819851987a6bcb5cba53",
         "row_f888bf8c4f56074c657c4f14"
       ]

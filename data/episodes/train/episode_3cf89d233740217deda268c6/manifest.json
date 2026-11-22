@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_3cf89d233740217deda268c6",
   "company": {
-    "name": "ОСИ «Тау Учёт»",
+    "name": "ТОО «Сары Сауда»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-04-01T00:00:00+05:00",
   "timezone": "+05:00",
   "counts": {
-    "ledger": 358,
-    "invoices": 42,
-    "payments": 41,
+    "ledger": 362,
+    "invoices": 44,
+    "payments": 40,
     "fx": 166
   },
-  "document_count": 83,
+  "document_count": 84,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

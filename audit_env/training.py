@@ -105,11 +105,3 @@ def compare(model, suite_path, holdout_path, extended_path=None, curriculum_path
             key: round(statistics.mean(row[key] for row in rows), 4)
             for key in ("precision", "recall", "f1", "reward", "steps", "fp", "fn")})
     return summary
-
-
-def collect_public(episode):
-    """Compatibility helper for the RAG tools: the tables an agent can read."""
-    return episode.tables
-
-
-DEFAULT_EPOCHS = 300
