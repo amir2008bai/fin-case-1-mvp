@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_474803c2c8416437117f5031",
   "company": {
-    "name": "ИП «Сункар Консалт»",
+    "name": "АО «Шыгыс Агро»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-06-01T00:00:00+06:00",
   "timezone": "+06:00",
   "counts": {
-    "ledger": 463,
-    "invoices": 62,
-    "payments": 48,
+    "ledger": 485,
+    "invoices": 64,
+    "payments": 50,
     "fx": 166
   },
-  "document_count": 110,
+  "document_count": 114,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

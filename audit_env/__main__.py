@@ -9,15 +9,15 @@ import time
 import unittest
 from pathlib import Path
 
-DEFAULT_SUITE = "configs/suite.v2.json"
-HOLDOUT = "configs/holdout-template.v2.json"
-EXTENDED = "configs/holdout-extended.v2.json"
-CURRICULUM = "configs/curriculum.v2.json"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_SUITE = str(REPO_ROOT / "configs/suite.v2.json")
+HOLDOUT = str(REPO_ROOT / "configs/holdout-template.v2.json")
+EXTENDED = str(REPO_ROOT / "configs/holdout-extended.v2.json")
+CURRICULUM = str(REPO_ROOT / "configs/curriculum.v2.json")
 LEVELS = ("easy", "medium", "hard")
-DATA = Path("data")
+DATA = REPO_ROOT / "data"
+DEFAULT_MODEL = str(REPO_ROOT / "models/model.json")
 POLICIES = ("oracle", "expert", "reconcile", "random", "flag-all")
-LEAKAGE_SEED = 7
-LEAKAGE_REPEATS = 3
 
 
 def out(text=""):
@@ -26,13 +26,15 @@ def out(text=""):
 
 
 def table(rows, order=None):
-    lines = [f"{'policy':10s} {'category':12s} {'n':>3s} {'P':>6s} {'R':>6s} {'F1':>6s} {'return':>7s} {'steps':>6s} {'ms':>7s}"]
+    lines = [f"{'policy':10s} {'category':12s} {'n':>3s} {'P':>6s} {'R':>6s} {'F1':>6s} {'FP/ep':>6s} {'return':>7s} "
+             f"{'steps':>6s} {'ms':>7s}"]
     rank = {name: index for index, name in enumerate(order or ())}
     for (policy, category), items in sorted(rows.items(), key=lambda item: (item[0][0], rank.get(item[0][1], 99),
                                                                               item[0][1])):
         mean = lambda key: statistics.mean(item[key] for item in items)  # noqa: E731
         lines.append(f"{policy:10s} {category:12s} {len(items):3d} {mean('precision'):6.3f} {mean('recall'):6.3f} "
-                     f"{mean('f1'):6.3f} {mean('reward'):+7.3f} {mean('steps'):6.1f} {1000 * mean('seconds'):7.1f}")
+                     f"{mean('f1'):6.3f} {mean('fp'):6.1f} {mean('reward'):+7.3f} {mean('steps'):6.1f} "
+                     f"{1000 * mean('seconds'):7.1f}")
     return "\n".join(lines)
 
 
@@ -82,16 +84,75 @@ def economy_lines(result):
 
 
 def leakage_lines(result):
-    lines = [f"  {result['episodes']} closed episodes (threshold |AUROC - 0.50| <= {result['threshold']:.2f}):"]
-    lines.append(f"  {'feature':20s} {'n':>7s} {'pos':>5s} {'AUROC':>7s} {'drift':>7s}  status")
+    lines = [f"  {result['episodes']} closed episodes, each feature within its |AUROC - 0.50| limit:"]
+    lines.append(f"  {'feature':20s} {'n':>7s} {'pos':>5s} {'AUROC':>7s} {'drift':>7s} {'limit':>6s}  status")
     for row in result["features"]:
         auc = "—" if row["auroc"] is None else f"{row['auroc']:.4f}"
         drift = "—" if row["drift"] is None else f"{row['drift']:.4f}"
         status = "OK" if row["ok"] else "LEAK"
-        lines.append(f"  {row['feature']:20s} {row['samples']:7d} {row['positives']:5d} {auc:>7s} {drift:>7s}  {status}")
+        lines.append(f"  {row['feature']:20s} {row['samples']:7d} {row['positives']:5d} {auc:>7s} {drift:>7s} "
+                     f"{row['threshold']:6.2f}  {status}")
     lines.append("  violations: " + (str(len(result["violations"])) if result["violations"] else "none"))
     lines.extend(f"  FAIL {line}" for line in result["violations"][:20])
     return "\n".join(lines)
+
+
+def command_llm_probe(args):
+    from .llm_probe import run_probe
+
+    return run_probe(HOLDOUT, episodes=args.episodes, seed=args.seed, provider=args.provider, model=args.model,
+                     base_url=args.base_url, compact=args.compact, timeout=args.timeout, emit=out)
+
+
+def command_mcp(args):
+    from .mcp_server import serve_stdio
+
+    config = json.loads(args.config) if args.config else None
+    serve_stdio(seed=args.seed, config=config, closed=args.closed, compact=args.compact,
+                timeout_seconds=args.timeout)
+    return 0
+
+
+def command_rescore(args):
+    from .rescore import rescore_trajectories
+
+    result = rescore_trajectories(args.trajectories, args.episodes, args.answers,
+                                  pass_f1_threshold=args.pass_threshold)
+    out(f"  rescored {result['episodes']} episodes from {result['trajectories']}:")
+    out(f"  mean_common_f1={result['mean_common_f1']:.4f}  mean_common_reward={result['mean_common_reward']:+.4f}  "
+        f"mean_materiality_reward={result['mean_materiality_reward']:+.4f}  tool_compliance={result['mean_tool_compliance']:.4f}")
+    out(f"  FAIL_TO_PASS={result['fail_to_pass_rate']}  PASS_TO_PASS={result['pass_to_pass_rate']}  "
+        f"pass^k={result['pass_k']}")
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def command_diagnostics(args):
+    import random
+
+    from .diagnostics import evaluate_diagnostics
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    episodes = closed_episodes(random.Random(args.seed), key, repeats=args.repeats)
+    result = evaluate_diagnostics(episodes, model_path=args.model)
+    out(f"  {result['episodes']} closed episodes — official common reward vs experimental materiality reward:")
+    out(f"  {'policy':10s} {'F1':>6s} {'common':>8s} {'mat_F1':>7s} {'mat_rew':>8s} {'comply':>7s} {'steps':>6s}")
+    for row in result["summary"]:
+        out(f"  {row['policy']:10s} {row['common_f1']:6.3f} {row['common_reward']:+8.4f} "
+            f"{row['materiality_f1']:7.3f} {row['materiality_reward']:+8.4f} "
+            f"{row['tool_compliance']:7.3f} {row['steps']:6.1f}")
+    out("\n  per-type F1 (reconcile vs expert vs micro):")
+    by_pt = {(r["policy"], r["type"]): r for r in result["per_type"]}
+    out(f"  {'type':22s} {'reconcile':>10s} {'expert':>10s} {'micro':>10s}")
+    for kind in ("duplicate_invoice", "payment_allocation", "fx_rate", "period_cutoff", "vat_on_top", "uncollected_service"):
+        out(f"  {kind:22s} {by_pt[('reconcile', kind)]['f1']:10.3f} {by_pt[('expert', kind)]['f1']:10.3f} {by_pt[('micro', kind)]['f1']:10.3f}")
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 0
 
 
 def command_leakage(args):
@@ -170,13 +231,14 @@ def command_attacks(args):
     return 1 if result["violations"] else 0
 
 
-def holdout_cases(path, seed_source, by_split=False):
+def holdout_cases(path, seed_source, by_split=False, repeats=1):
     """Cases of a template; seeds are drawn here. by_split groups results by split (the difficulty level)."""
     from .dataset import suite
 
     for split, case_id, category, seed, config in suite(path):
-        yield (split, case_id, split if by_split else category,
-               seed if seed is not None else seed_source.randrange(2**31), config)
+        for _ in range(repeats):
+            yield (split, case_id, split if by_split else category,
+                   seed if seed is not None else seed_source.randrange(2**31), config)
 
 
 def command_verify(args):
@@ -190,7 +252,7 @@ def command_verify(args):
     failed = []
 
     out("== 1. Unit tests")
-    suite = unittest.defaultTestLoader.discover("tests", top_level_dir=".")
+    suite = unittest.defaultTestLoader.discover(str(REPO_ROOT / "tests"), top_level_dir=str(REPO_ROOT))
     result = unittest.TextTestRunner(verbosity=1 if args.quick else 2, stream=sys.stdout).run(suite)
     report["sections"]["unit_tests"] = {"run": result.testsRun, "failures": len(result.failures),
                                         "errors": len(result.errors)}
@@ -289,12 +351,13 @@ def command_verify(args):
     if result["violations"]:
         failed.append("step economy")
 
-    out("\n== 10. Statistical tell-leakage audit: presentation metadata AUROC near 0.50")
-    from .leakage import audit_leakage
+    out("\n== 10. Statistical tell-leakage audit: presentation metadata and structural shortcuts, AUROC near 0.50")
+    from .leakage import LEAKAGE_REPEATS, LEAKAGE_SEED, audit_leakage
 
-    leak_episodes = closed_episodes(random.Random(LEAKAGE_SEED), derived_key(LEAKAGE_SEED),
-                                    repeats=LEAKAGE_REPEATS)
-    leak_result = audit_leakage(leak_episodes)
+    # Its own, larger and fixed sample: on the 36 episodes above the noise alone is as large as a real leak,
+    # and a fixed seed keeps the table identical between runs.
+    leak_result = audit_leakage(closed_episodes(random.Random(LEAKAGE_SEED), derived_key(LEAKAGE_SEED),
+                                                repeats=LEAKAGE_REPEATS))
     report["sections"]["leakage"] = leak_result
     out(leakage_lines(leak_result))
     if leak_result["violations"]:
@@ -314,28 +377,42 @@ def command_verify(args):
     return 0 if not failed else 1
 
 
+def command_jury(args):
+    from .jury import format_jury_table, run_jury
+    from .selfcheck import fresh_key
+
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    result = run_jury(HOLDOUT, seed=args.seed, key=key)
+    out(format_jury_table(result))
+    if args.report:
+        Path(args.report).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.report).write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return 1 if result["failures"] else 0
+
+
 def command_benchmark(args):
     import random
 
     from .dataset import benchmark_cases, suite
     from .selfcheck import fresh_key
 
+    # The secret key shapes the hidden world, so a table is reproducible only with a key fixed by --seed.
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    policies = (*POLICIES, "micro")
     if args.curriculum:
-        rows, problems = benchmark_cases(holdout_cases(CURRICULUM, random.Random(args.seed), by_split=True),
-                                         POLICIES, key=fresh_key())
+        cases = holdout_cases(CURRICULUM, random.Random(args.seed), by_split=True, repeats=args.repeats)
+        rows, problems = benchmark_cases(cases, policies, key=key)
         out(table(rows, order=LEVELS))
         for line in problems:
             out(f"FAIL {line}")
         return 1 if problems else 0
     if args.extended:
-        cases = holdout_cases(EXTENDED, random.Random(args.seed))
-        key = fresh_key()
+        cases = holdout_cases(EXTENDED, random.Random(args.seed), repeats=args.repeats)
     elif args.suite == HOLDOUT or args.holdout:
-        cases = holdout_cases(HOLDOUT, random.Random(args.seed))
-        key = fresh_key()
+        cases = holdout_cases(HOLDOUT, random.Random(args.seed), repeats=args.repeats)
     else:
         cases, key = suite(args.suite), None
-    rows, problems = benchmark_cases(cases, POLICIES, key=key)
+    rows, problems = benchmark_cases(cases, policies, key=key)
     out(table(rows))
     for line in problems:
         out(f"FAIL {line}")
@@ -438,8 +515,8 @@ def command_train(args):
 def command_serve(args):
     from .api import serve
 
-    server = serve(args.host, args.port, args.model)
-    out(f"audit_env API on http://{args.host}:{server.server_address[1]}/api/health (Ctrl+C to stop)")
+    server = serve(args.host, args.port, args.model, import_root=args.import_root)
+    out(f"audit_env UI on http://{args.host}:{server.server_address[1]}/ , API under /api (Ctrl+C to stop)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -495,16 +572,22 @@ def main():
     verify.add_argument("--quick", action="store_true")
     verify.add_argument("--cases", type=int, default=60)
     verify.add_argument("--report", default="build/verify-report.json")
+    jury = commands.add_parser("jury", help="section 06 jury protocol: 20 closed hold-out episodes + 20 paired checks")
+    jury.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
+    jury.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
+    jury.add_argument("--report", help="write the full jury report as JSON")
     bench = commands.add_parser("benchmark", help="compare baselines per category (closed mode)")
     bench.add_argument("--suite", default=DEFAULT_SUITE)
     bench.add_argument("--holdout", action="store_true")
     bench.add_argument("--extended", action="store_true", help="real-practice error types and goods")
     bench.add_argument("--curriculum", action="store_true", help="easy / medium / hard difficulty levels")
-    bench.add_argument("--seed", type=int, default=7)
+    bench.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
+    bench.add_argument("--repeats", type=int, default=1, help="seeds per configuration of a hold-out template")
+    bench.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     failures = commands.add_parser("failures", help="measured failure breakdown per policy on hold-out configs")
     failures.add_argument("--repeats", type=int, default=5)
     failures.add_argument("--seed", type=int, default=5)
-    failures.add_argument("--model", default="models/model.json")
+    failures.add_argument("--model", default=DEFAULT_MODEL)
     failures.add_argument("--extended", action="store_true", help="use the extended hold-out (real-practice types)")
     failures.add_argument("--curriculum", action="store_true", help="use the easy/medium/hard curriculum")
     attacks = commands.add_parser("attacks", help="red team: adversarial agents against the grader")
@@ -518,10 +601,22 @@ def main():
     economy.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     economy.add_argument("--report", help="write the full result as JSON")
     leak = commands.add_parser("leakage", help="statistical tell-leakage audit (AUROC on presentation metadata)")
-    leak.add_argument("--repeats", type=int, default=LEAKAGE_REPEATS, help="seeds per configuration")
-    leak.add_argument("--seed", type=int, default=LEAKAGE_SEED, help="episode seeds and the derived secret key")
+    leak.add_argument("--repeats", type=int, default=10, help="seeds per configuration (verify uses the same)")
+    leak.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key (verify uses 7)")
     leak.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     leak.add_argument("--report", help="write the full result as JSON")
+    diag = commands.add_parser("diagnostics", help="per-type F1 and official vs experimental materiality reward")
+    diag.add_argument("--repeats", type=int, default=2, help="seeds per configuration")
+    diag.add_argument("--seed", type=int, default=7, help="episode seeds and derived secret key")
+    diag.add_argument("--fresh-key", action="store_true")
+    diag.add_argument("--model", default=DEFAULT_MODEL)
+    diag.add_argument("--report", help="write full diagnostics JSON")
+    res = commands.add_parser("rescore", help="offline trajectory re-scoring, FAIL_TO_PASS/PASS_TO_PASS and pass^k")
+    res.add_argument("trajectories", type=Path)
+    res.add_argument("--episodes", type=Path, default=REPO_ROOT / "data/episodes")
+    res.add_argument("--answers", type=Path, default=REPO_ROOT / "data/answers")
+    res.add_argument("--pass-threshold", type=float, default=1.0)
+    res.add_argument("--report", help="write rescore JSON report")
     data = commands.add_parser("dataset", help="export open episodes, answers, trajectories, checksums")
     data.add_argument("output", type=Path)
     data.add_argument("--suite", default=DEFAULT_SUITE)
@@ -545,15 +640,33 @@ def main():
     serve = commands.add_parser("serve", help="local HTTP/JSON API for a UI (localhost only)")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
-    serve.add_argument("--model", default="models/model.json")
+    serve.add_argument("--model", default=DEFAULT_MODEL)
+    serve.add_argument("--import-root", default=None, help="restrict folder imports to this base directory")
+    mcp = commands.add_parser("mcp", help="Model Context Protocol (MCP) JSON-RPC 2.0 server over stdio")
+    mcp.add_argument("--seed", type=int, default=202601)
+    mcp.add_argument("--config", help="JSON config")
+    mcp.add_argument("--closed", action="store_true")
+    mcp.add_argument("--compact", action="store_true",
+                     help="table pages as columns + rows (~40%% fewer characters, lossless); policy stays verbatim")
+    mcp.add_argument("--timeout", type=int, default=1800,
+                     help="episode wall clock in seconds, starts at initialize (scored runs use the runner: 60 s)")
+    probe = commands.add_parser("llm-probe", help="diagnostic only: an LLM agent via MCP on 5 closed episodes")
+    probe.add_argument("--episodes", type=int, default=5)
+    probe.add_argument("--seed", type=int, default=7, help="episode seeds (the evaluator key is always fresh)")
+    probe.add_argument("--provider", choices=("openai", "anthropic", "gemini"), default=None)
+    probe.add_argument("--model", default=None)
+    probe.add_argument("--base-url", default=None)
+    probe.add_argument("--no-compact", dest="compact", action="store_false", default=True)
+    probe.add_argument("--timeout", type=int, default=1800)
     truth = commands.add_parser("audit-truth", help="independently re-derive a folder's truth")
     truth.add_argument("public", type=Path)
     truth.add_argument("answers", type=Path)
     args = parser.parse_args()
-    handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
+    handlers = {"verify": command_verify, "benchmark": command_benchmark, "jury": command_jury, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
                 "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
-                "failures": command_failures, "attacks": command_attacks, "economy": command_economy, "leakage": command_leakage}
+                "failures": command_failures, "attacks": command_attacks, "economy": command_economy, "leakage": command_leakage, "diagnostics": command_diagnostics, "rescore": command_rescore, "mcp": command_mcp,
+                "llm-probe": command_llm_probe}
     raise SystemExit(handlers[args.command](args))
 
 

@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_c499857f3223b62111865338",
   "company": {
-    "name": "ТОО «Ак Групп»",
+    "name": "ИП «Дала Учёт»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-11-01T00:00:00+03:00",
   "timezone": "+03:00",
   "counts": {
-    "ledger": 361,
-    "invoices": 55,
-    "payments": 42,
+    "ledger": 370,
+    "invoices": 57,
+    "payments": 46,
     "fx": 166
   },
-  "document_count": 97,
+  "document_count": 103,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_329e093869fbd6c17f5530ca",
   "issues": [
     {
@@ -8,13 +8,13 @@
       "affected_ids": [
         "payment_7da386c7f7f0161a48498bf7"
       ],
-      "expected_amount_minor": 3600,
+      "expected_amount_minor": 6000,
       "currency": "KZT",
       "tolerance_minor": 2,
       "evidence_sets": [
         [
           "doc_65717a2713c2ea8e1b5fade1",
-          "fx_597b773864c9750c62a4fcdd",
+          "fx_95d402f6759bf59d63a0c2ff",
           "row_2656c1923e6f6ff085c19b6f"
         ]
       ],
@@ -22,9 +22,10 @@
         "doc_65717a2713c2ea8e1b5fade1",
         "doc_aece1594a8458beb2db1e561",
         "fx_04d8fe5606e97f39cefe80a9",
-        "fx_27272ca653352bb55e73c2fc",
+        "fx_225dca9620c50b1c42b942c3",
         "fx_3912b3c68192b7a1a33409e3",
         "fx_4199d4db7c08a96d7a5521a5",
+        "fx_58909bd808ea7b7c3ac2818b",
         "fx_597b773864c9750c62a4fcdd",
         "fx_6962d1f26a6fe95b55d164cb",
         "fx_8569062de9b8fb26a4d8feaa",
@@ -34,7 +35,6 @@
         "fx_a96e1bdb1252f9cbd72ab472",
         "fx_ab173e62ade64c51b637a8e9",
         "fx_adced4c3a8e67144901fef68",
-        "fx_b8b7681fc809bf5dec6e90b6",
         "fx_ba7b0a2e777a8b5089212bd1",
         "fx_e77d5bfbba900cc561ed2ea3",
         "row_1e1803385a714efd900d62ee",
@@ -50,7 +50,7 @@
       "affected_ids": [
         "payment_2d46b5d8c5309dca7fd18b76"
       ],
-      "expected_amount_minor": 6468000,
+      "expected_amount_minor": 9188400,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
@@ -62,6 +62,21 @@
       "relevant_ids": [
         "doc_125635a01fae7e915f288604",
         "doc_a406efd6977b3e61df45a8d6",
+        "fx_27272ca653352bb55e73c2fc",
+        "fx_28b9b366cbede0a767a98a6c",
+        "fx_34c60ca7cc98ef959e16b76c",
+        "fx_4199d4db7c08a96d7a5521a5",
+        "fx_597b773864c9750c62a4fcdd",
+        "fx_6962d1f26a6fe95b55d164cb",
+        "fx_870cf7421c095d4cd4c4bcf8",
+        "fx_929f9c40be246f7e05ee9cd3",
+        "fx_995a183e1d776dadbe4a120e",
+        "fx_a03208276e7e10fa26f2479a",
+        "fx_a1f3ffd51cb1378ea86d6c71",
+        "fx_adced4c3a8e67144901fef68",
+        "fx_b8b7681fc809bf5dec6e90b6",
+        "fx_e77d5bfbba900cc561ed2ea3",
+        "fx_fa43486925b9308238b81000",
         "row_0b5103af3165754561d2e224",
         "row_40e26c2e5e0cc1636c9d5cd3",
         "row_501be3d835e701b6d3374364",
@@ -75,34 +90,34 @@
       "affected_ids": [
         "payment_2d46b5d8c5309dca7fd18b76"
       ],
-      "expected_amount_minor": 21000,
+      "expected_amount_minor": 930,
       "currency": "KZT",
       "tolerance_minor": 2,
       "evidence_sets": [
         [
           "doc_a406efd6977b3e61df45a8d6",
-          "fx_ab7e7a84f04cf45e80d1d914",
+          "fx_b8b7681fc809bf5dec6e90b6",
           "row_a51abad43ca785fc7faf0a9a"
         ]
       ],
       "relevant_ids": [
         "doc_125635a01fae7e915f288604",
         "doc_a406efd6977b3e61df45a8d6",
-        "fx_0aff6b55a5a6d2c932ead6f5",
-        "fx_2980e9dd862edb23edc28222",
-        "fx_312c4d7a216b1b5a0b59994b",
-        "fx_514fffe2e60f1ebef12281d8",
-        "fx_5a4b111e24f44c7ff55c3d5b",
-        "fx_6f0436ee8771ccc17b7861b3",
-        "fx_86ef0802d89ab0aa2f6be58f",
-        "fx_9b4a2724d1dc7df85dec2bcf",
-        "fx_ab7e7a84f04cf45e80d1d914",
-        "fx_af356926dc538cbf4f54aa91",
-        "fx_becfa0293536ba9c544271a2",
-        "fx_bf7bc49ea7c8d8f8673be9e1",
-        "fx_ca042304002668cd7b19902a",
-        "fx_cad73d8900ec6ab627c0fea5",
-        "fx_d3a01c1991632c741671d1c4",
+        "fx_27272ca653352bb55e73c2fc",
+        "fx_28b9b366cbede0a767a98a6c",
+        "fx_34c60ca7cc98ef959e16b76c",
+        "fx_4199d4db7c08a96d7a5521a5",
+        "fx_597b773864c9750c62a4fcdd",
+        "fx_6962d1f26a6fe95b55d164cb",
+        "fx_870cf7421c095d4cd4c4bcf8",
+        "fx_929f9c40be246f7e05ee9cd3",
+        "fx_995a183e1d776dadbe4a120e",
+        "fx_a03208276e7e10fa26f2479a",
+        "fx_a1f3ffd51cb1378ea86d6c71",
+        "fx_adced4c3a8e67144901fef68",
+        "fx_b8b7681fc809bf5dec6e90b6",
+        "fx_e77d5bfbba900cc561ed2ea3",
+        "fx_fa43486925b9308238b81000",
         "row_0b5103af3165754561d2e224",
         "row_40e26c2e5e0cc1636c9d5cd3",
         "row_501be3d835e701b6d3374364",

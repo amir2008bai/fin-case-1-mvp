@@ -12,6 +12,7 @@ from audit_env.checks import audit_episode
 from audit_env.contracts import Config
 from audit_env.environment import AuditEnv
 from audit_env.generator import generate, transform
+from audit_env.gym_adapter import GymAuditEnv
 from audit_env.micro import MicroModel
 from audit_env.provenance import restore_clean
 from audit_env.runner import run_policy
@@ -98,9 +99,23 @@ class MetamorphicTests(unittest.TestCase):
             obs, _ = env.reset(42, config)
             self.assertEqual(obs["manifest"], expected)
 
-    def test_inspector_uses_all_five_tools(self):
-        env = AuditEnv()
-        obs, info = env.reset(seed=17, config=MIXED)
+    def test_default_reset_reproducible_across_processes_in_readonly_home(self):
+        """MR-5: Bare AuditEnv().reset(seed) must be deterministic across processes even with unwritable HOME."""
+        code = (
+            "from audit_env.environment import AuditEnv; "
+            "obs, _ = AuditEnv().reset(42); "
+            "print(obs['manifest']['episode_id'])"
+        )
+        env = {k: v for k, v in os.environ.items() if k not in ("AUDIT_ENV_SECRET", "AUDIT_ENV_KEY_FILE")}
+        env["HOME"] = "/nonexistent_readonly_home_dir"
+        first = subprocess.check_output([sys.executable, "-c", code], env=env, text=True).strip()
+        second = subprocess.check_output([sys.executable, "-c", code], env=env, text=True).strip()
+        self.assertEqual(first, second)
+
+    def test_gym_adapter_and_inspector_use_all_five_tools(self):
+        """Verify optional GymAuditEnv adapter and InspectorPolicy exercise all 5 contract tools."""
+        env = GymAuditEnv(training=True)
+        obs, info = env.reset(seed=17, options={"config": MIXED})
         self.assertEqual(info, {})
         policy = create_policy("inspector")
         used = set()

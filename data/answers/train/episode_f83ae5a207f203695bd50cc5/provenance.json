@@ -1,6 +1,6 @@
 {
-  "schema_version": "2.0",
-  "generator_version": "2.0.0",
+  "schema_version": "2.1",
+  "generator_version": "2.1.0",
   "episode_id": "episode_f83ae5a207f203695bd50cc5",
   "seed": 2026006,
   "config": {
@@ -67,7 +67,7 @@
     "invoices": 35,
     "payments": 29
   },
-  "clean_ledger_sha256": "740ad8f1312dfe873cfe87d8dfe3989ee05e0fe902f164a8e3f3052a01aac9bb",
+  "clean_ledger_sha256": "e0bf47675acc83c639e9362ae0d3c39820083380ef721647c39eb07bd40228b6",
   "changes": [
     {
       "issue_ids": [
@@ -79,6 +79,19 @@
       ],
       "documents_added": [],
       "documents_changed": [],
+      "amounts": [
+        {
+          "issue_id": "issue_04186825cbe064294d1aa9e5",
+          "type": "fx_rate",
+          "expected_amount_minor": 24300000,
+          "amount_minor": 9000000,
+          "currency": "RUB",
+          "posted_kzt_minor": 77130000,
+          "correct_kzt_minor": 52830000,
+          "rate_correct": "fx_4e58bd566ea4b68c6896dd57",
+          "rate_used_value": "8.57"
+        }
+      ],
       "before": [
         {
           "row_id": "row_d24b05d0b460a51b6ca03dfb",
@@ -138,6 +151,19 @@
       ],
       "documents_added": [],
       "documents_changed": [],
+      "amounts": [
+        {
+          "issue_id": "issue_ceeb51a0fcff35c3c8f35f55",
+          "type": "fx_rate",
+          "expected_amount_minor": 9900,
+          "amount_minor": 90000,
+          "currency": "USD",
+          "posted_kzt_minor": 44225100,
+          "correct_kzt_minor": 44215200,
+          "rate_correct": "fx_264fff452ae27dc5f4144003",
+          "rate_used": "fx_f907eee7838eeff05b64ac9d"
+        }
+      ],
       "before": [
         {
           "row_id": "row_0ea6da2f61ab35a399e4494e",

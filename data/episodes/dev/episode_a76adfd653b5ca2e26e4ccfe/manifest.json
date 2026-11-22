@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_a76adfd653b5ca2e26e4ccfe",
   "company": {
-    "name": "ТОО «Алтын Логистик»",
+    "name": "ТОО «Бай Логистик»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -11,8 +11,8 @@
   "timezone": "+06:00",
   "counts": {
     "ledger": 400,
-    "invoices": 50,
-    "payments": 41,
+    "invoices": 52,
+    "payments": 39,
     "fx": 164
   },
   "document_count": 91,

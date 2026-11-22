@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_66183c495bc66b147ed05819",
   "company": {
-    "name": "ОСИ «Шыгыс Логистик»",
+    "name": "ИП «Кайнар Курылыс»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-02-01T00:00:00+03:00",
   "timezone": "+03:00",
   "counts": {
-    "ledger": 365,
-    "invoices": 45,
-    "payments": 39,
+    "ledger": 379,
+    "invoices": 47,
+    "payments": 43,
     "fx": 166
   },
-  "document_count": 84,
+  "document_count": 90,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

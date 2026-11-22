@@ -3,7 +3,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = "2.1"
 MAX_STEPS = 100
 MAX_PAGE = 50
 MAX_FINDINGS = 30
@@ -55,7 +55,8 @@ TABLE_FIELDS = {
     "invoices": ("doc_id", "invoice_id", "entity_id", "issued_at", "due_at",
                  "currency", "total_minor", "line_items"),
     "payments": ("doc_id", "payment_id", "timestamp", "currency", "amount_minor", "invoice_refs"),
-    "fx": ("fx_id", "date", "source_currency", "target_currency", "rate"),
+    # the brief's four columns first, in its order; the ID that evidence cites comes last
+    "fx": ("date", "source_currency", "target_currency", "rate", "fx_id"),
 }
 
 
@@ -68,7 +69,7 @@ def _int_in(name, value, low, high):
 class Config:
     """Episode configuration. Unknown keys and out-of-range values are rejected."""
 
-    keyspace: str = "secret"
+    keyspace: str = "secret"  # fail safe: an open-key episode can be regenerated from the public code
     presentation_seed: int = 0
     difficulty: str = "medium"
     month: int | None = None

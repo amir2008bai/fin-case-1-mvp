@@ -1,5 +1,5 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_9bcf64280e7419609038604d",
   "issues": [
     {
@@ -20,6 +20,7 @@
       "relevant_ids": [
         "doc_879e37181319d755405afb37",
         "row_05fcd9748e39af0b7b145c93",
+        "row_6fa34d8eb4f3f40d72a69ac5",
         "row_795aa69300e897403c70c9f1",
         "row_86501e96e32a915212495a93",
         "row_ae63eb97edcd30dc8252b7ad"
@@ -31,7 +32,7 @@
       "affected_ids": [
         "invoice_a25eaf7c988dd0cd38fc1694"
       ],
-      "expected_amount_minor": 862069,
+      "expected_amount_minor": 460000,
       "currency": "KZT",
       "tolerance_minor": 0,
       "evidence_sets": [
@@ -43,9 +44,7 @@
       "relevant_ids": [
         "doc_58ef34e287487811212c1404",
         "row_1b1a905100566c78729587d4",
-        "row_441dd4ef96b84a6eb18491db",
-        "row_4a870019081d9a93ea4301a6",
-        "row_939f8eaea73b3c4dcb4127d6"
+        "row_4a870019081d9a93ea4301a6"
       ]
     }
   ]

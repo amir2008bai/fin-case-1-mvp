@@ -14,7 +14,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from .agents import create_policy, oracle
-from .contracts import EXTRA_TYPES, Config
+from .contracts import EXTRA_TYPES, MAX_ISSUES
 from .dataset import suite
 from .environment import AuditEnv
 from .generator import generate
@@ -32,7 +32,7 @@ def run(episode, policy, closed=False):
     env = AuditEnv(training=not closed)
     observation, _ = env.load_episode(episode)
     outcome, trace, seconds = run_policy(env, observation, policy)
-    return outcome, len(trace) - 1, seconds
+    return outcome, outcome.inspection_steps, seconds
 
 
 def augmented(config, index):
@@ -40,7 +40,10 @@ def augmented(config, index):
     config = replace(config, difficulty=("medium", "hard", "easy")[index % 3])
     if index % 2 == 0:
         return config
-    errors = dict(config.errors) | {kind: 1 for kind in EXTRA_TYPES}
+    extra = {kind: 1 for kind in EXTRA_TYPES}
+    errors = dict(config.errors) | extra
+    if sum(errors.values()) + 2 * sum(config.interactions.values()) > MAX_ISSUES:
+        return config
     return replace(config, errors=errors)
 
 
@@ -56,7 +59,9 @@ def train(suite_path, output, *, seeds_per_config=12, seed=20261120):
     weights = {kind: fit_logistic(rows[kind], len(FEATURES[kind])) if rows[kind] else [0.0] * len(FEATURES[kind])
                for kind in TYPES}
     tuning = {}
-    sample = episodes[::2]
+    val_rng = random.Random(seed + 10_000)
+    sample = [generate(val_rng.randrange(2**31), augmented(config, i))
+              for _, config in configs for i in range(2)]
     for threshold in THRESHOLDS:
         model = MicroModel(weights, threshold)
         tuning[threshold] = statistics.mean(run(episode, model.policy())[0].reward for episode in sample)
@@ -100,11 +105,3 @@ def compare(model, suite_path, holdout_path, extended_path=None, curriculum_path
             key: round(statistics.mean(row[key] for row in rows), 4)
             for key in ("precision", "recall", "f1", "reward", "steps", "fp", "fn")})
     return summary
-
-
-def collect_public(episode):
-    """Compatibility helper for the RAG tools: the tables an agent can read."""
-    return episode.tables
-
-
-DEFAULT_EPOCHS = 300

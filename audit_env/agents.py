@@ -10,13 +10,15 @@ import argparse
 import json
 import sys
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import datetime
+from pathlib import Path
 from random import Random
 
 from .checks import audit as expert_audit, kzt
 from .contracts import ALLOCATION, CUTOFF, DUPLICATE, ERROR_TYPES, FX_RATE, MAX_FINDINGS, TABLE_IDS
 
 SCAN_ORDER = ("invoices", "payments", "fx", "ledger")
+DEFAULT_MODEL = str(Path(__file__).resolve().parent.parent / "models" / "model.json")
 
 
 def submission(episode_id, findings):
@@ -227,8 +229,10 @@ class OraclePolicy:
         return submission(self.episode_id, [issue.as_finding() for issue in self.issues])
 
 
+
+
 class InspectorPolicy(ScanPolicy):
-    """Demonstrate all five tools while using the expert policy for findings."""
+    """Investigative policy that scans tables and verifies suspect items via get_document, get_record, and calculator."""
 
     def __init__(self):
         super().__init__(expert)
@@ -249,7 +253,7 @@ class InspectorPolicy(ScanPolicy):
             return action
         self.pending_findings = action["findings"]["findings"]
         self.verified = True
-        # Use three extra calls to show document, record and calculator responses.
+        # Build a concise verification pass over all 3 investigative tools if step budget allows.
         if self.tables["invoices"]:
             first_inv = self.tables["invoices"][0]
             self.verify_queue.append({"type": "get_document", "doc_id": first_inv["doc_id"]})
@@ -267,11 +271,11 @@ class InspectorPolicy(ScanPolicy):
         return action
 
 
-def create_policy(name, model_path="models/model.json"):
+def create_policy(name, model_path=DEFAULT_MODEL):
     if name == "micro":
         from .micro import MicroModel
 
-        return MicroModel.load(model_path).policy()
+        return MicroModel.load(model_path or DEFAULT_MODEL).policy()
     return {
         "reconcile": lambda: ScanPolicy(reconcile),
         "flag-all": lambda: ScanPolicy(flag_all),
@@ -289,7 +293,7 @@ def oracle(episode):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("policy", choices=["reconcile", "flag-all", "mark-all", "random", "expert", "inspector", "micro"])
-    parser.add_argument("--model", default="models/model.json")
+    parser.add_argument("--model", default=DEFAULT_MODEL)
     args = parser.parse_args()
     if args.policy == "micro":
         from .micro import MicroModel

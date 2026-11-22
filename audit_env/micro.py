@@ -78,7 +78,7 @@ def candidates(tables, manifest, policy):
                                         float(recognized), len(first["line_items"]) / 2)))
     for invoice in invoices:
         revenue = view.revenue_rows(invoice["invoice_id"])
-        if not revenue:
+        if not revenue or not invoice.get("line_items"):
             continue
         posted = sum(row["credit_minor"] for row in revenue)
         service_end = view.service_end(invoice)
@@ -88,7 +88,7 @@ def candidates(tables, manifest, policy):
         evidence = (invoice["doc_id"], *(row["row_id"] for row in revenue))
         found.append(Candidate("period_cutoff", (invoice["invoice_id"],), posted, base, evidence[:10],
                                (1.0, float(service_in), float(issue_in), float(service_in), float(issue_in), 0.0)))
-        if invoice["currency"] != base and (service_end, invoice["currency"]) in view.rates:
+        if invoice["currency"] != base and invoice["currency"] in view.units and (service_end, invoice["currency"]) in view.rates:
             fx = view.rate(service_end, invoice["currency"])
             correct = kzt(invoice["total_minor"], invoice["currency"], fx["rate"], view.units)
             issue_day = view.local_date(issued)
@@ -110,8 +110,8 @@ def candidates(tables, manifest, policy):
         extra = sum(line["total_minor"] - line["quantity"] * line["unit_price_minor"] for line in lines)
         vat_rows = [row["row_id"] for row in view.by_invoice[invoice["invoice_id"]]
                     if row["account"] == "3130" and row["credit_minor"]]
-        total = invoice["total_minor"] or 1
-        base_amount = sum(line["quantity"] * line["unit_price_minor"] for line in lines) or 1
+        total = abs(invoice["total_minor"]) or 1
+        base_amount = abs(sum(line["quantity"] * line["unit_price_minor"] for line in lines)) or 1
         found.append(Candidate("vat_on_top", (invoice["invoice_id"],), max(extra, 0), invoice["currency"],
                                (invoice["doc_id"], *vat_rows)[:10],
                                (1.0, max(extra, 0) / total, float(extra > 0), len(taxed) / len(lines),
@@ -151,6 +151,8 @@ def candidates(tables, manifest, policy):
                                 float(view.in_period(wall)), 1.0)))
         if payment["currency"] != base:
             day = view.local_date(moment)
+            if payment["currency"] not in view.units or (day, payment["currency"]) not in view.rates:
+                continue
             fx = view.rate(day, payment["currency"])
             correct = kzt(payment["amount_minor"], payment["currency"], fx["rate"], view.units)
             wall_fx = view.rates.get((wall.date(), payment["currency"]), fx)
@@ -193,7 +195,8 @@ class MicroModel:
         self.meta = meta or {}
 
     def probability(self, candidate):
-        return sigmoid(sum(w * x for w, x in zip(self.weights[candidate.type], candidate.features)))
+        weights = self.weights.get(candidate.type)
+        return 0.0 if weights is None else sigmoid(sum(w * x for w, x in zip(weights, candidate.features)))
 
     def findings(self, tables, manifest, policy):
         scored = sorted(((self.probability(c), c) for c in candidates(tables, manifest, policy)),
@@ -224,6 +227,8 @@ class MicroModel:
 
 
 def fit_logistic(rows, size, epochs=300, rate=0.5, l2=1e-3):
+    if not rows:
+        return [0.0] * size
     """Class-balanced batch gradient descent; deterministic, pure Python."""
     weights = [0.0] * size
     positives = sum(label for _, label in rows) or 1

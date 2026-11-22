@@ -123,15 +123,18 @@ def read_csv(path, name, problems):
     text = Path(path).read_text(encoding="utf-8-sig")
     reader = csv.reader(io.StringIO(text, newline=""))
     rows = list(reader)
-    if not rows or tuple(rows[0]) != TABLE_FIELDS[name]:
+    # The same columns in another order are read by name (fx.csv before v2.1 had fx_id first).
+    if not rows or len(rows[0]) != len(TABLE_FIELDS[name]) or set(rows[0]) != set(TABLE_FIELDS[name]):
         problems.append(f"{path.name}: header must be {','.join(TABLE_FIELDS[name])}")
         return []
+    header = tuple(rows[0])
     records = []
     for number, values in enumerate(rows[1:], start=2):
-        if len(values) != len(TABLE_FIELDS[name]):
-            problems.append(f"{path.name}:{number}: expected {len(TABLE_FIELDS[name])} columns")
+        if len(values) != len(header):
+            problems.append(f"{path.name}:{number}: expected {len(header)} columns")
             continue
-        records.append((number, dict(zip(TABLE_FIELDS[name], values))))
+        by_name = dict(zip(header, values))
+        records.append((number, {field: by_name[field] for field in TABLE_FIELDS[name]}))
     return records
 
 
@@ -176,7 +179,8 @@ def parse_fx(records, problems):
     for number, raw in records:
         where = f"fx.csv:{number}"
         try:
-            if Decimal(raw["rate"]) <= 0:
+            rate = Decimal(raw["rate"])
+            if not rate.is_finite() or rate <= 0:
                 problems.append(f"{where}: rate must be positive")
         except InvalidOperation:
             problems.append(f"{where}: rate must be a decimal string")
@@ -302,6 +306,11 @@ def load_episode(public_dir, answers_dir=None):
     }
     tables = {name: tables[name] for name in ("ledger", "invoices", "payments", "fx")}
     if not problems:
+        if not isinstance(manifest, dict):
+            problems.append("manifest.json: expected JSON object")
+        if not isinstance(policy, dict):
+            problems.append("policy.json: expected JSON object")
+    if not problems:
         validate(manifest, policy, tables, problems)
     if problems:
         raise FormatError(problems)
@@ -311,11 +320,13 @@ def load_episode(public_dir, answers_dir=None):
     documents = {}
     if (public / "documents.jsonl").is_file():
         for _, item in read_jsonl(public / "documents.jsonl", problems):
-            if not isinstance(item, dict) or item.get("doc_id") not in rows:
+            if not isinstance(item, dict) or not isinstance(item.get("doc_id"), str) or item["doc_id"] not in rows:
                 continue
             row = rows[item["doc_id"]]
             if all(key in item and item[key] == value for key, value in row.items()):
                 documents[item["doc_id"]] = item
+        if problems:
+            raise FormatError(problems)
     manifest = dict(manifest)
     manifest["counts"] = {name: len(rows) for name, rows in tables.items()}
     manifest["document_count"] = len(tables["invoices"]) + len(tables["payments"])

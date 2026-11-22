@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_8796ecbb380afe3ac0e449f1",
   "company": {
-    "name": "ИП «Дала Сауда»",
+    "name": "ОСИ «Дала Сервис»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-08-01T00:00:00+06:00",
   "timezone": "+06:00",
   "counts": {
-    "ledger": 301,
-    "invoices": 30,
+    "ledger": 309,
+    "invoices": 32,
     "payments": 33,
     "fx": 166
   },
-  "document_count": 63,
+  "document_count": 65,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

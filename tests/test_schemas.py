@@ -41,8 +41,33 @@ class SchemaTests(unittest.TestCase):
             item = json.loads(line)
             self.assertEqual(tuple(item), TABLE_FIELDS["invoices"])
             self.assertRegex(item["issued_at"], instant)
-        for line in (folder / "fx.csv").read_text(encoding="utf-8").splitlines()[1:]:
-            self.assertRegex(line.split(",")[-1], rate)
+        header, *lines = (folder / "fx.csv").read_text(encoding="utf-8").splitlines()
+        columns = header.split(",")
+        self.assertEqual(tuple(columns), TABLE_FIELDS["fx"])
+        self.assertEqual(columns[:4], ["date", "source_currency", "target_currency", "rate"])  # the brief's order
+        for line in lines:
+            self.assertRegex(line.split(",")[columns.index("rate")], rate)
+
+    def test_fx_csv_with_the_old_column_order_still_loads(self):
+        """Before v2.1 fx.csv started with fx_id; an import reads columns by name."""
+        import tempfile
+
+        from audit_env.contracts import Config
+        from audit_env.episode_io import load_episode, write_episode
+        from audit_env.generator import generate
+
+        episode = generate(17, Config(keyspace="open"))
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "ep"
+            write_episode(episode, folder)
+            path = next(folder.rglob("fx.csv"))
+            header, *lines = path.read_text(encoding="utf-8").splitlines()
+            old = ["fx_id", "date", "source_currency", "target_currency", "rate"]
+            index = [header.split(",").index(name) for name in old]
+            rows = [",".join(line.split(",")[i] for i in index) for line in lines]
+            path.write_text("\n".join([",".join(old), *rows]) + "\n", encoding="utf-8")
+            loaded = load_episode(folder)
+        self.assertEqual(loaded.tables["fx"], episode.tables["fx"])
 
 
 if __name__ == "__main__":

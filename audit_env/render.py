@@ -25,6 +25,7 @@ class Presenter:
         self.acts = {**world.acts, **overrides.extra_acts, **overrides.replace_acts}
         self.salt = (seed, config.semantic_json(), config.presentation_seed)
         self.key = key
+        self._oid_cache = {}
         self.rng = keys.stream(key, "presentation", *self.salt)
         self.episode_id = keys.opaque(key, "episode", *self.salt)
         currencies = {BASE_CURRENCY} | {customer.currency for customer in world.customers.values()}
@@ -47,7 +48,12 @@ class Presenter:
             self.esf[act.key] = f"ЭСФ-{base + index:06d}"
 
     def oid(self, kind, internal):
-        return keys.opaque(self.key, kind, *self.salt, internal)
+        cache_key = (kind, internal)
+        cached = self._oid_cache.get(cache_key)
+        if cached is None:
+            cached = keys.opaque(self.key, kind, *self.salt, internal)
+            self._oid_cache[cache_key] = cached
+        return cached
 
     def doc(self, key):
         return self.oid("doc", key)
@@ -206,8 +212,8 @@ def present(world, clean_rows, rows, overrides, specs, *, key, seed, config):
     payments = sorted((view.payment_row(payment) for payment in world.payments.values()),
                       key=lambda item: item["payment_id"])
     used = [code for code in view.currencies if code != BASE_CURRENCY]
-    fx = sorted(({"fx_id": view.fx(day, code), "date": day.isoformat(), "source_currency": code,
-                  "target_currency": BASE_CURRENCY, "rate": f"{rate:.2f}"}
+    fx = sorted(({"date": day.isoformat(), "source_currency": code, "target_currency": BASE_CURRENCY,
+                  "rate": f"{rate:.2f}", "fx_id": view.fx(day, code)}
                  for (day, code), rate in world.rates.items() if code in used), key=lambda item: item["fx_id"])
     tables = {"ledger": ledger, "invoices": invoices, "payments": payments, "fx": fx}
     for name, items in tables.items():
@@ -266,8 +272,15 @@ def build_provenance(view, world, clean_rows, rows, overrides, specs, issues, se
     for spec, issue in zip(specs, issues):
         group = groups.setdefault(spec.group, {"issue_ids": [], "scenario": spec.scenario, "causes": [],
                                                "targets": set(), "before": [], "after": [],
-                                               "documents_added": [], "documents_changed": []})
+                                               "documents_added": [], "documents_changed": [], "amounts": []})
         group["issue_ids"].append(issue.issue_id)
+        if spec.basis:
+            # The fx_rate part of an interaction is not a before/after difference (the receipt was not in
+            # the clean books at all), so the conversion is spelled out: posted minus correct, both rates.
+            basis = {name: view.public(value) if isinstance(value, tuple) else value
+                     for name, value in spec.basis.items()}
+            group["amounts"].append({"issue_id": issue.issue_id, "type": spec.type,
+                                     "expected_amount_minor": issue.expected_amount_minor, **basis})
         group["causes"].append(spec.cause)
         group["targets"] |= set(spec.acts) | set(spec.payments)
     for row_key in changed:
@@ -296,6 +309,7 @@ def build_provenance(view, world, clean_rows, rows, overrides, specs, issues, se
             "causes": group["causes"],
             "documents_added": group["documents_added"],
             "documents_changed": group["documents_changed"],
+            **({"amounts": group["amounts"]} if group["amounts"] else {}),
             "before": sorted(group["before"], key=lambda item: item["row_id"]),
             "after": sorted(group["after"], key=lambda item: item["row_id"]),
         })

@@ -25,9 +25,13 @@
           "maxLength": 32
         },
         "limit": {
-          "type": "integer",
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 1,
-          "maximum": 50
+          "maximum": 50,
+          "description": "null or absent means 50"
         }
       },
       "required": [

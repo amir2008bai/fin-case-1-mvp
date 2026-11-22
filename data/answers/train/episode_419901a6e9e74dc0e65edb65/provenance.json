@@ -1,6 +1,6 @@
 {
-  "schema_version": "2.0",
-  "generator_version": "2.0.0",
+  "schema_version": "2.1",
+  "generator_version": "2.1.0",
   "episode_id": "episode_419901a6e9e74dc0e65edb65",
   "seed": 2026002,
   "config": {
@@ -51,26 +51,26 @@
       "acts.late": 3,
       "acts.next_period": 3,
       "acts.prior_open": 6,
-      "acts.regular": 43,
+      "acts.regular": 45,
+      "acts.repeated_amount": 2,
       "documents.goods": 28,
-      "documents.service": 27,
+      "documents.service": 29,
       "filler": 40,
       "goods_deliveries": 7,
-      "opening_advances": 2,
+      "opening_advances": 1,
       "payments.after_period": 1,
       "payments.boundary_inside": 2,
       "payments.boundary_start": 1,
-      "payments.full": 28,
+      "payments.full": 27,
       "payments.overpayment": 1,
-      "payments.prepayment_next": 1,
-      "payments.refund": 1,
+      "payments.prepayment_next": 2,
       "payments.split": 14,
       "payments.unreferenced": 1
     },
     "customers": 25,
-    "invoices": 55,
-    "payments": 50
+    "invoices": 57,
+    "payments": 49
   },
-  "clean_ledger_sha256": "7a4a707a9306e02200c1253cf405d5821cb1130321b4eabea217388ee3c66f3d",
+  "clean_ledger_sha256": "3c787558aac15e7f39f22e2fa1bd3975a3dc9866683b3ee84d0c9dddb34d8b2b",
   "changes": []
 }

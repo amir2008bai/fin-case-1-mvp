@@ -5,7 +5,7 @@ import statistics
 from collections import defaultdict
 from pathlib import Path
 
-from .agents import create_policy, oracle
+from .agents import DEFAULT_MODEL, create_policy, oracle
 from .contracts import Config
 from .environment import AuditEnv
 from .episode_io import write_episode, write_json, write_lines
@@ -134,7 +134,7 @@ def failure_breakdown(cases, policies, *, key, model_path=None):
             if name == "micro":
                 from .micro import MicroModel
 
-                policy = MicroModel.load(model_path or "models/model.json").policy()
+                policy = MicroModel.load(model_path or DEFAULT_MODEL).policy()
             else:
                 policy = oracle(episode) if name == "oracle" else create_policy(name)
             env = AuditEnv(training=False)

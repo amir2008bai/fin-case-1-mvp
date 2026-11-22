@@ -1,8 +1,8 @@
 {
-  "schema_version": "2.0",
+  "schema_version": "2.1",
   "episode_id": "episode_4712fc0a77b544a7f2ca0caf",
   "company": {
-    "name": "АО «Аян Строй»",
+    "name": "ОСИ «Арна Сауда»",
     "country": "KZ"
   },
   "base_currency": "KZT",
@@ -10,12 +10,12 @@
   "period_end": "2026-04-01T00:00:00+05:00",
   "timezone": "+05:00",
   "counts": {
-    "ledger": 337,
-    "invoices": 40,
-    "payments": 35,
+    "ledger": 349,
+    "invoices": 42,
+    "payments": 37,
     "fx": 166
   },
-  "document_count": 75,
+  "document_count": 79,
   "minor_units": {
     "KZT": 2,
     "RUB": 2,

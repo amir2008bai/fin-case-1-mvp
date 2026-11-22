@@ -1,6 +1,6 @@
 {
-  "schema_version": "2.0",
-  "generator_version": "2.0.0",
+  "schema_version": "2.1",
+  "generator_version": "2.1.0",
   "episode_id": "episode_27f78b89946ce866415ffc44",
   "seed": 2026106,
   "config": {
@@ -70,7 +70,7 @@
     "invoices": 35,
     "payments": 30
   },
-  "clean_ledger_sha256": "1dfe9c1c8c02ea44cc4830f555e601a5337481b011708a9f35ecadd579a9d265",
+  "clean_ledger_sha256": "b54ab3decb7508a47d7af8516ab0fb665bef526d050e627a089d530ff88fe5c9",
   "changes": [
     {
       "issue_ids": [
@@ -82,12 +82,25 @@
       ],
       "documents_added": [],
       "documents_changed": [],
+      "amounts": [
+        {
+          "issue_id": "issue_fd6a0618a1be97c86de9d973",
+          "type": "fx_rate",
+          "expected_amount_minor": 90000,
+          "amount_minor": 4500000,
+          "currency": "RUB",
+          "posted_kzt_minor": 27630000,
+          "correct_kzt_minor": 27540000,
+          "rate_correct": "fx_df74cf23bc21695ee3374475",
+          "rate_used": "fx_1b8906740b931293ec4cb13e"
+        }
+      ],
       "before": [
         {
           "row_id": "row_a8f685cbeeb197d54726eaf9",
-          "timestamp": "2026-12-07T14:44:29+05:00",
+          "timestamp": "2026-12-17T14:44:29+05:00",
           "account": "1030",
-          "debit_minor": 27135000,
+          "debit_minor": 27540000,
           "credit_minor": 0,
           "currency": "KZT",
           "entity_id": "entity_cc8fac33707a61acb398ef36",
@@ -96,10 +109,10 @@
         },
         {
           "row_id": "row_f1b835965385bcf2f8cd10a7",
-          "timestamp": "2026-12-07T14:44:29+05:00",
-          "account": "7430",
-          "debit_minor": 270000,
-          "credit_minor": 0,
+          "timestamp": "2026-12-17T14:44:29+05:00",
+          "account": "6250",
+          "debit_minor": 0,
+          "credit_minor": 135000,
           "currency": "KZT",
           "entity_id": "entity_cc8fac33707a61acb398ef36",
           "invoice_id": null,
@@ -109,9 +122,9 @@
       "after": [
         {
           "row_id": "row_a8f685cbeeb197d54726eaf9",
-          "timestamp": "2026-12-07T14:44:29+05:00",
+          "timestamp": "2026-12-17T14:44:29+05:00",
           "account": "1030",
-          "debit_minor": 27270000,
+          "debit_minor": 27630000,
           "credit_minor": 0,
           "currency": "KZT",
           "entity_id": "entity_cc8fac33707a61acb398ef36",
@@ -120,10 +133,10 @@
         },
         {
           "row_id": "row_f1b835965385bcf2f8cd10a7",
-          "timestamp": "2026-12-07T14:44:29+05:00",
-          "account": "7430",
-          "debit_minor": 135000,
-          "credit_minor": 0,
+          "timestamp": "2026-12-17T14:44:29+05:00",
+          "account": "6250",
+          "debit_minor": 0,
+          "credit_minor": 225000,
           "currency": "KZT",
           "entity_id": "entity_cc8fac33707a61acb398ef36",
           "invoice_id": null,
@@ -141,7 +154,31 @@
       ],
       "documents_added": [],
       "documents_changed": [],
+      "amounts": [
+        {
+          "issue_id": "issue_e2790cf5261590f3770a34a7",
+          "type": "fx_rate",
+          "expected_amount_minor": 60000,
+          "amount_minor": 3000000,
+          "currency": "RUB",
+          "posted_kzt_minor": 18480000,
+          "correct_kzt_minor": 18420000,
+          "rate_correct": "fx_2983b412ec4f365a9b859772",
+          "rate_used": "fx_51f70974fdfc3cd67c5e2895"
+        }
+      ],
       "before": [
+        {
+          "row_id": "row_09c0577144e5a152da35b4dc",
+          "timestamp": "2026-12-25T15:56:12+05:00",
+          "account": "7430",
+          "debit_minor": 90000,
+          "credit_minor": 0,
+          "currency": "KZT",
+          "entity_id": "entity_cc8fac33707a61acb398ef36",
+          "invoice_id": null,
+          "payment_id": "payment_a53941badbc173dde58af031"
+        },
         {
           "row_id": "row_a50becc88590af4b52400269",
           "timestamp": "2026-12-24T00:00:00+05:00",
@@ -166,7 +203,7 @@
         },
         {
           "row_id": "row_e5e021b13ce072e9c5e690b9",
-          "timestamp": "2026-12-24T15:56:12+05:00",
+          "timestamp": "2026-12-25T15:56:12+05:00",
           "account": "1210",
           "debit_minor": 0,
           "credit_minor": 18420000,
@@ -179,9 +216,9 @@
       "after": [
         {
           "row_id": "row_09c0577144e5a152da35b4dc",
-          "timestamp": "2026-12-24T15:56:12+05:00",
+          "timestamp": "2026-12-25T15:56:12+05:00",
           "account": "7430",
-          "debit_minor": 60000,
+          "debit_minor": 150000,
           "credit_minor": 0,
           "currency": "KZT",
           "entity_id": "entity_cc8fac33707a61acb398ef36",
@@ -212,7 +249,7 @@
         },
         {
           "row_id": "row_e5e021b13ce072e9c5e690b9",
-          "timestamp": "2026-12-24T15:56:12+05:00",
+          "timestamp": "2026-12-25T15:56:12+05:00",
           "account": "1210",
           "debit_minor": 0,
           "credit_minor": 18480000,
