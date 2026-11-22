@@ -154,10 +154,10 @@ async function createEpisode(event) {
   const mode = $("mode").value;
   const config = { keyspace: mode === "closed" ? "secret" : "open", difficulty: $("difficulty").value, ...errorConfig() };
   await busy($("create-btn"), async () => {
-    status("Генерирую компанию…");
+    status("Создаю…");
     const data = await api("/api/episodes", { seed, mode, config });
     await openSession(data, mode === "open");
-    status(`Эпизод создан: seed ${seed}, ${config.difficulty}, ${mode === "open" ? "открытый" : "закрытый"} режим.`);
+    status(`Готово · seed ${seed} · ${config.difficulty} · ${mode === "open" ? "открытый" : "закрытый"}`);
   });
 }
 
@@ -169,7 +169,7 @@ async function importFolder(event) {
     status("Проверяю файлы…");
     const data = await api("/api/episodes/import", { folder });
     await openSession(data, false);
-    status("Папка загружена. Эталона нет, поэтому оценки не будет — только находки аудитора.");
+    status("Папка открыта · без эталона, оценки нет");
   });
 }
 
@@ -198,6 +198,7 @@ async function openSession(data, training) {
   $("agent-empty").hidden = false;
   $("empty").hidden = true;
   $("workspace").hidden = false;
+  $("tabs").hidden = false;
   $("agent-panel").hidden = false;
   showTab("overview");
 }
@@ -237,21 +238,20 @@ function renderOverview() {
   const m = state.files.manifest;
   const cards = clear($("overview-cards"));
   cards.append(
-    card("Проводок в книге", m.counts.ledger),
-    card("Счетов и накладных", m.counts.invoices),
-    card("Платежей", m.counts.payments),
-    card("Курсов валют", m.counts.fx),
+    card("Проводки", m.counts.ledger),
+    card("Счета", m.counts.invoices),
+    card("Платежи", m.counts.payments),
+    card("Курсы", m.counts.fx),
     card("Валюты", Object.keys(m.minor_units).join(", ")),
-    card("Базовая валюта", m.base_currency),
+    card("База", m.base_currency),
   );
   $("task-text").textContent = state.observation.task || "—";
   const rules = (state.files.policy && state.files.policy.findings) || {};
   const rows = Object.keys(TYPES).map((kind) => ({ kind, rule: rules[kind] || {} }));
   table($("types-table"), [
-    { title: "Тип", value: (r) => el("span", {}, TYPES[r.kind], el("br"), el("code", { class: "muted", text: r.kind })) },
-    { title: "affected_ids", value: (r) => r.rule.affected_ids || "—", wrap: true },
-    { title: "Сумма", value: (r) => r.rule.claimed_amount_minor || "—", wrap: true },
-    { title: "Доказательства", value: (r) => r.rule.evidence || "—", wrap: true },
+    { title: "Что ищем", value: (r) => TYPES[r.kind] },
+    { title: "Код", value: (r) => el("code", { class: "muted", text: r.kind }) },
+    { title: "Указать", value: (r) => r.rule.affected_ids || "—", wrap: true },
     { title: "Допуск", value: (r) => (r.rule.tolerance_minor ?? "—"), num: true },
   ], rows);
 }
@@ -312,7 +312,7 @@ function selectDoc(doc) {
     add("Время операции", dateText(doc.timestamp));
     add("Сумма", docAmount(doc));
     add("Назначение", doc.purpose);
-    add("Ссылки на счета", doc.invoice_refs ? el("span", {}, doc.invoice_refs.map((ref) => [idButton(ref), " "])) : "нет (null)");
+    add("Ссылки на счета", doc.invoice_refs ? el("span", {}, doc.invoice_refs.map((ref) => [idButton(ref), " "])) : "—");
   }
   const node = el("div", { class: "doc" + (state.marked.has(doc.doc_id) ? " mark" : "") },
     el("h4", { text: docTitle(doc) }), meta);
@@ -356,8 +356,8 @@ function ledgerTable(node, rows) {
     { title: "Дебет", value: (r) => (r.debit_minor ? money(r.debit_minor) : ""), num: true },
     { title: "Кредит", value: (r) => (r.credit_minor ? money(r.credit_minor) : ""), num: true },
     { title: "Контрагент", value: (r) => (r.entity_id ? entityName(r.entity_id) : "—") },
-    { title: "Счёт-документ", value: (r) => (r.invoice_id ? idButton(r.invoice_id) : "null") },
-    { title: "Платёж", value: (r) => (r.payment_id ? idButton(r.payment_id) : "null") },
+    { title: "Счёт-документ", value: (r) => (r.invoice_id ? idButton(r.invoice_id) : "—") },
+    { title: "Платёж", value: (r) => (r.payment_id ? idButton(r.payment_id) : "—") },
   ], rows, { rowClass: (r) => (state.marked.has(r.row_id) ? "mark" : null) });
 }
 
@@ -465,7 +465,7 @@ function scoreCards(box, score, steps, seconds) {
       card("F1", score.f1.toFixed(3)),
       card("Точность P", score.precision.toFixed(3)),
       card("Полнота R", score.recall.toFixed(3)),
-      card("Верные / ложные / пропущенные", `${score.tp} / ${score.fp} / ${score.fn}`),
+      card("Верно / ложно / пропуск", `${score.tp} / ${score.fp} / ${score.fn}`),
     );
   } else {
     box.append(card("Оценка", state.graded ? "у оценщика" : "нет эталона"));
