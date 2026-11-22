@@ -85,8 +85,13 @@ class AuditEnv:
         self.steps = 0
 
     def reset(self, seed: int, config: Config | dict | None = None) -> tuple[dict, dict]:
+        default_keyspace = "open" if self.training and self.key is None else "secret"
         if config is None:
-            config = Config(keyspace="open" if self.training and self.key is None else "secret")
+            config = Config(keyspace=default_keyspace)
+        elif isinstance(config, dict) and "keyspace" not in config:
+            # Training without an explicit keyspace must be reproducible in any process, like config=None:
+            # the secret default would use this process's in-memory key and give another episode elsewhere.
+            config = {**config, "keyspace": default_keyspace}
         config = Config.from_dict(config)
         if not self.training and config.keyspace != "secret":
             # A closed run on the published key could be regenerated, truth included, by guessing the seed.

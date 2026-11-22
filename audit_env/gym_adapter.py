@@ -8,6 +8,7 @@ API with `action_space = None` and `observation_space = None` so the offline
 core package keeps zero external dependencies.
 """
 import json
+import random
 
 from .contracts import MAX_FRAME_BYTES
 from .environment import AuditEnv
@@ -76,7 +77,16 @@ class GymAuditEnv(_BASE):
     def reset(self, *, seed=None, options=None):
         if _gym is not None:  # pragma: no cover - seeds Env.np_random as gymnasium expects
             super().reset(seed=seed)
-        episode_seed = 0 if seed is None else int(seed)
+        # Gymnasium semantics: reset(seed=s) re-seeds; reset() without a seed draws the next episode seed
+        # from that stream instead of replaying episode 0 forever.
+        # reset(seed=s) plays episode s, the same as AuditEnv.reset(s).
+        if seed is not None:
+            self._seed_stream = random.Random(int(seed))
+            episode_seed = int(seed)
+        else:
+            if not hasattr(self, "_seed_stream"):
+                self._seed_stream = random.Random(0)
+            episode_seed = self._seed_stream.randrange(2**31)
         config = (options or {}).get("config", self._default_config)
         observation, info = self._env.reset(episode_seed, config)
         return (self.encode(observation) if self.json_text else observation), info

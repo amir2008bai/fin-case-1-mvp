@@ -303,6 +303,24 @@ class TruthEvidenceAndIsolationGapTests(unittest.TestCase):
             outputs.append(proc.stdout)
         self.assertEqual(outputs[0], outputs[1])
 
+    def test_training_dict_config_reproducible_across_processes_without_secret(self):
+        """reset(seed, {...}) without a keyspace in training mode gives the same episode in every process,
+        even with no evaluator key configured (the secret default would use a per-process key)."""
+        script = (
+            "import json, sys; from audit_env.environment import AuditEnv; "
+            "env = AuditEnv(); obs, _ = env.reset(31, {'difficulty': 'easy'}); "
+            "step = env.step({'type': 'list_records', 'table': 'ledger', 'limit': 3}); "
+            "sys.stdout.write(json.dumps([obs, step], ensure_ascii=False, sort_keys=True))"
+        )
+        outputs = []
+        for hash_seed in ("0", "12345"):
+            env = {k: v for k, v in os.environ.items() if k not in ("AUDIT_ENV_SECRET", "AUDIT_ENV_KEY_FILE")}
+            env.update({"PYTHONHASHSEED": hash_seed, "PYTHONIOENCODING": "utf-8"})
+            proc = subprocess.run([sys.executable, "-c", script], cwd=str(REPO_ROOT), env=env,
+                                  capture_output=True, text=True, encoding="utf-8", check=True)
+            outputs.append(proc.stdout)
+        self.assertEqual(outputs[0], outputs[1])
+
     def test_committed_model_and_ledger_csv_integrity(self):
         """Committed models/model.json must exist and load; all 20 data/episodes ledger.csv files must be balanced."""
         model_path = REPO_ROOT / "models" / "model.json"
