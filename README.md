@@ -7,6 +7,7 @@
 - Задача различает агентов: простая сверка — F1 0.20 → 0.08 от easy к hard, LLM находят от 0 до 11 ошибок из 13 на одних и тех же эпизодах, аудитор по правилам — все 13.
 - Закрытый режим: эталон и награда остаются у оценщика, секретный ключ — только в его памяти, агент может работать в отдельном контейнере без сети и без ответов.
 
+- [Схема системы → docs/architecture.md](docs/architecture.md)
 - [Текущая стадия и история изменений](PROJECT_STATUS.md) · [Правила ведения журнала для агентов](AGENTS.md)
 - [Записка о дизайне](docs/design.md) · [Контракт и протокол](docs/protocol.md) · [API для UI](docs/api.md) · [Разбор сбоев](docs/failure_analysis.md) · [Как расширять](docs/extend.md) · [Микромодель](docs/micro-model.md) · [Каталог ошибок с разбором примеров](docs/error_catalog.md) · [Карточка среды](docs/environment_card.md) · [Паспорт данных](docs/datasheet.md) · [Чек-лист ABC](docs/abc_checklist.md) · [Защиты от взлома награды](docs/spec_gaming.md) · [Метаморфные отношения](docs/metamorphic_relations.md)
 
