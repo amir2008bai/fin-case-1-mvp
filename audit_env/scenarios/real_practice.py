@@ -1,8 +1,9 @@
 """Two error types from real practice of a Kazakhstan service and retail-equipment company.
 
 vat_on_top: the price was agreed and paid including VAT, but the invoice adds 16 %
-VAT on top (total = price × 1.16). Revenue is right, VAT and the receivable are
-overstated; the customer's payment leaves exactly the added VAT open.
+VAT on top (total = price × 1.16). The receivable is overstated by the added VAT,
+which is the declared amount; revenue and VAT payable are misstated too (net and VAT
+are split from the inflated total). The customer's payment leaves exactly that VAT open.
 
 uncollected_service: a monthly service was renewed (a new invoice issued) after the
 previous invoice of the same customer and service became overdue with no payment at
@@ -21,7 +22,7 @@ def vat_on_top(rng, world, overrides, act_key, payment_key, Spec):
     overrides.replace_acts[act_key] = replace(act, lines=lines)
     return [Spec(VAT_ON_TOP, "vat_on_top", acts=(act_key,), payments=(payment_key,),
                  cause="НДС 16 % начислен сверху согласованной цены вместо включения в цену; покупатель оплатил "
-                       "согласованную сумму, разница висит в дебиторке и в НДС к уплате.")]
+                       "согласованную сумму, разница висит в дебиторке, выручка и НДС к уплате искажены.")]
 
 
 def uncollected(rng, world, overrides, act_key, Spec):

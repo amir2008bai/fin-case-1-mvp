@@ -116,11 +116,19 @@ class App:
         if mode not in ("open", "closed"):
             raise ValueError("mode must be open or closed")
         config = body.get("config") or {"keyspace": "secret" if mode == "closed" else "open"}
+        if not isinstance(config, dict):
+            raise ValueError("config must be an object")
         if mode == "closed":
             # An open-key episode can be regenerated from the public code and seed, truth included.
-            if not isinstance(config, dict) or config.get("keyspace", "secret") != "secret":
+            if config.get("keyspace", "secret") != "secret":
                 raise ValueError("closed mode needs the secret keyspace")
             config = config | {"keyspace": "secret"}
+        else:
+            # Open mode returns the score. On the secret keyspace it would score the very episode a closed
+            # session with the same seed and config gets: an answer oracle for closed runs.
+            if config.get("keyspace", "open") != "open":
+                raise ValueError("open mode uses the open keyspace; closed episodes are created with mode closed")
+            config = config | {"keyspace": "open"}
         config = Config.from_dict(config)
         seed = body.get("seed", 202611)
         if type(seed) is not int or seed < 0:

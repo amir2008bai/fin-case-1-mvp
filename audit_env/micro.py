@@ -249,6 +249,3 @@ def labelled(episode):
     return [(candidate, int((candidate.type, tuple(sorted(candidate.affected))) in truth))
             for candidate in candidates(episode.tables, episode.manifest, episode.policy)]
 
-
-def deadline_check(started, seconds):
-    return datetime.now() - started < timedelta(seconds=seconds)

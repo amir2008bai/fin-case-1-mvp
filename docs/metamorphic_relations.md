@@ -1,0 +1,35 @@
+# Спецификация метаморфных отношений (`audit_env`)
+
+Документ фиксирует метаморфные отношения для среды и оценщика `audit_env` (`v2.1.0`, архив `fin-case-1-mvp-v2.1.4.zip`): как должны (или не должны) меняться `TP/FP/FN`, `F1`, награда и побайтовый вывод при контролируемых преобразованиях входа.
+
+---
+
+## 1. Проверенные метаморфные отношения
+
+| ID | Преобразование входа / среды | Ожидаемое отношение награды, F1 и метрик | Где проверяется (тест / команда) |
+|---|---|---|---|
+| **MR-1** | **Переименование всех ID и перестановка строк таблиц** (`transform_episode`: биективная перенумерация всех идентификаторов и перестановка строк с сохранением связей) | `TP`, `FP`, `FN`, `F1` и награда для `oracle`, `expert` и `micro` (ранжировщика поверх правил `checks.py`) **не меняются**. Восстановление чистой книги коммутирует с преобразованием (`transform` ∘ `restore_clean` == `restore_clean` ∘ `transform`). | `python -m audit_env verify` (разделы 2 и 5); `python -m audit_env jury` (20/20 парных проверок); `tests/test_metamorphic.py::test_transform_invariance_holds_for_oracle_expert_and_micro`; `tests/test_repro.py::test_transform_renames_and_reorders`; `tests/test_security_and_invariants.py::test_transform_and_restore_clean_commute` |
+| **MR-2** | **Смена `presentation_seed`** (изменение порядка представления/форматирования при фиксированных сущностях и ошибках) | Эталонные ошибки (`truth`) и итоговый ответ честного аудитора **не меняются**. | `tests/test_repro.py::test_presentation_seed_pairs_keep_the_answer` |
+| **MR-3** | **Удаление одной ошибки из книги** (каузальная абляция ошибки или удаление дублирующего документа) | Число эталонных ошибок уменьшается на 1: у агента, подающего прежний ответ, `TP` уменьшается на 1 (или, если ошибка не была найдена, `FN` уменьшается на 1); при повторном запуске честного аудитора соответствующая находка исчезает. | `tests/test_metamorphic.py::test_causal_error_ablation`; `tests/test_episode_io_hygiene.py::test_removing_a_duplicate_document_clears_the_finding` |
+| **MR-4** | **Добавление законных «двойников» и фонового шума** (увеличение числа корректных проводок/документов и look-alike дистракторов) | `truth` **не меняется**; честный аудитор не добавляет ложных срабатываний (`FP` не растёт, `F1` сохраняется), при этом остаток денежных средств остаётся неотрицательным. | `tests/test_metamorphic.py::test_filler_noise_monotonicity`; `tests/test_world.py::test_difficulty_scales_look_alikes_and_keeps_truth`; `tests/test_security_and_invariants.py::test_high_filler_keeps_non_negative_ending_cash` |
+| **MR-5** | **Изменение текста `explanation`** (замена пустого `explanation` на «убедительный» текст или наоборот при прочих равных полях находки) | `TP`, `FP`, `FN`, `F1` и награда **строго равны** (`reward(persuasion) == reward(persuasion-plain)`). | `python -m audit_env verify` (раздел 8, `persuasion` vs `persuasion-plain`); `tests/test_attacks.py::test_explanation_text_never_counts`; `tests/test_brief_criteria.py::test_brief_05_explanation_text_never_affects_reward` |
+| **MR-6** | **Повтор того же процесса с другим `PYTHONHASHSEED`** (и в `read-only` домашнем каталоге) | Сгенерированные файлы эпизода, наблюдения `reset`/`step` и итоговые оценки **побайтно идентичны**. | `python -m audit_env verify` (раздел 4); `tests/test_gaps.py::test_cross_process_reset_step_reproducibility_subprocess`; `tests/test_repro.py::test_files_are_byte_identical_across_hash_seeds`; `tests/test_metamorphic.py::test_default_reset_reproducible_across_processes_in_readonly_home` |
+| **MR-7** | **Сдвиг часового пояса** (согласованный сдвиг временных меток ISO-8601 и границ периода) | Множество ошибок (`truth`), `F1` и награда честного аудитора **инвариантны**. | `tests/test_metamorphic.py::test_timezone_shift_invariance` |
+| **MR-8** | **Перестановка порядка находок в `submit`** (и порядка ID внутри `affected_ids` / `evidence_ids`) | `TP`, `FP`, `FN`, `F1` и награда **не зависят от порядка** элементов в ответе. | `tests/test_scoring.py::test_matching_is_one_to_one_and_order_free` |
+| **MR-9** | **Вставка постороннего шумного эпизода между двумя `reset(seed=s)`** | Последовательность наблюдений и итог второго запуска с тем же `seed` **идентичны** первому (нет утечки состояния между эпизодами). | `tests/test_rlvr_standards.py::test_reset_determinism_after_intervening_noisy_episode`; `tests/test_brief_criteria.py::test_brief_04_reproducibility_and_reset_isolation` |
+| **MR-10** | **Усечение чтения книги** (агент читает половину или 0 страниц главной книги вместо полного чтения) | Награда **монотонно падает** относительно полного чтения (нельзя получить максимальную награду, пропустив часть данных). | `tests/test_economy.py::test_reading_half_or_none_of_the_ledger_loses_reward` |
+| **MR-11** | **Сжатие наблюдений (`compact` mode)** | Наблюдение существенно короче по токенам, но **информационно эквивалентно** полному режиму (без потерь для честного аудитора). | `tests/test_llm_agent_compat.py::test_compact_mode_cuts_tokens_significantly_and_is_lossless` |
+
+---
+
+## 2. Метаморфные отношения, которые НЕ проверены (честный список пробелов)
+
+Перечисленные ниже отношения сейчас **не имеют** автоматических тестов в репозитории и являются кандидатами на расширение набора проверок:
+
+1. **Пропорциональное масштабирование всех денежных сумм в `k` раз** (например, умножение всех сумм в таблицах, документах и допусков на `k = 2` или `k = 10` при неизменных курсах FX): ожидается, что множество ошибок, `F1` и награда не меняются, а `expected_amount_minor` масштабируется ровно в `k` раз. Не проверяется.
+2. **Смена базовой валюты отчётности** (например, замена `KZT` на `EUR` с пересчётом курсов): ожидается инвариантность логики аудита и `F1`. Не проверяется.
+3. **Перестановка порядка столбцов во всех CSV-таблицах**: для `fx.csv` есть регрессионный тест (`tests/test_schemas.py::test_fx_csv_with_the_old_column_order_still_loads`), но для остальных таблиц (`ledger.csv`, `invoices.csv`, `payments.csv` и др.) перестановка столбцов не проверяется.
+4. **Перефразирование текстовых полей документов (`memo` / `description`)**: ожидается, что изменение свободного текста без изменения реквизитов не меняет `truth` и ответы детерминированных политик; для LLM-агентов это дало бы проверку устойчивости к перефразированию. Не проверяется.
+5. **Смена размера страницы (`page_size`) при пагинации**: ожидается, что при любом допустимом `page_size` (например, `10` vs `50`) честный аудитор находит те же `TP/FP/FN` и `F1`, а награда различается только на детерминированную разницу `STEP_COST * delta_steps`. Отдельного метаморфного теста нет.
+6. **Композиция нескольких преобразований одновременно** (например, `transform_episode` + сдвиг часового пояса + добавление фонового шума в одном тесте): отношения проверяются по отдельности, но не в совместной композиции.
+7. **Монотонность при объединении двух независимых подмножеств ошибок** (если добавить ещё одну непересекающуюся ошибку другого типа, то `len(truth)` растёт на 1, а `oracle` находит обе): частично покрыто тестами взаимодействия на одном чеке, но общего аддитивного теста на произвольные пары типов нет.

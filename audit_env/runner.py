@@ -7,6 +7,7 @@ import json
 import math
 import os
 import queue
+import signal
 import subprocess
 import threading
 import uuid
@@ -104,6 +105,8 @@ class JsonAgent:
         self.process = subprocess.Popen(
             self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
             cwd=self.cwd, env=agent_environment(),
+            # its own process group, so that grandchildren are stopped with it (POSIX)
+            start_new_session=os.name == "posix",
         )
         self.stop_event = threading.Event()
         self.lines = queue.Queue(maxsize=16)
@@ -123,7 +126,9 @@ class JsonAgent:
     def __exit__(self, *_):
         self.stop_event.set()
         with suppress(OSError):
-            if self.process.poll() is None:
+            if os.name == "posix":
+                os.killpg(self.process.pid, signal.SIGKILL)  # the whole group: no grandchild outlives the episode
+            elif self.process.poll() is None:
                 self.process.kill()
         self.process.wait()
         self.reader.join(timeout=0.5)
@@ -199,7 +204,21 @@ class JsonAgent:
             raise ProtocolError("invalid JSON action") from exc
 
 
-def run_subprocess(env, observation, command, observer=None, cwd=None):
+class UntrustedSubprocess(ValueError):
+    pass
+
+
+def run_subprocess(env, observation, command, observer=None, cwd=None, trusted=False):
+    """Run an agent that speaks JSONL on stdin/stdout.
+
+    A process of the same user can read the evaluator's memory and its original environment through /proc,
+    whatever is removed from the child's environment, so it would see the key or the truth of a closed
+    episode. A closed episode therefore runs here only for code the evaluator trusts (`trusted=True`: our own
+    policies, or the docker client that `run_container` starts); an outside agent goes through `run_container`.
+    """
+    if not env.training and not trusted:
+        raise UntrustedSubprocess("closed episodes run an untrusted agent only in a container (run_container); "
+                                  "pass trusted=True for the evaluator's own code")
     with JsonAgent(command, env.clock, env.deadline, cwd) as agent:
         return execute(env, observation, agent, observer)
 
@@ -214,7 +233,7 @@ def run_container(env, observation, image, policy, observer=None):
         "--entrypoint=python", image, "-m", "audit_env.agents", policy,
     ]
     try:
-        return run_subprocess(env, observation, command, observer)
+        return run_subprocess(env, observation, command, observer, trusted=True)  # the container is the boundary
     finally:
         # Killing the client alone does not necessarily stop its container.
         with suppress(OSError, subprocess.TimeoutExpired):

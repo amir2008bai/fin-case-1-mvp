@@ -18,4 +18,5 @@ COPY configs/ configs/
 COPY data/ data/
 COPY schemas/ schemas/
 COPY models/ models/
+COPY tools/ tools/
 CMD ["python", "-m", "audit_env", "verify", "--report", "/tmp/verify-report.json"]

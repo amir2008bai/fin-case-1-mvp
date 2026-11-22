@@ -26,7 +26,32 @@ jobs:
       - name: One-command verification (no network, no extra packages)
         env:
           PYTHONIOENCODING: utf-8
-        run: python -m audit_env verify
+        run: python -m audit_env verify --report build/verify-report.json
+      - name: Keep the verification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-report-${{ matrix.os }}
+          path: build/verify-report.json
+          if-no-files-found: error
+
+  gymnasium:
+    # Tested with gymnasium 1.4.0. The optional adapter claims to pass gymnasium's own env checker; without the package that test skips.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install gymnasium (only for this job; the environment itself has no dependencies)
+        run: python -m pip install "gymnasium==1.4.0"
+      - name: Gymnasium adapter tests, check_env included, none skipped
+        run: |
+          python -m unittest -v tests.test_rlvr_standards 2>&1 | tee gym.log
+          if grep -q "skipped" gym.log; then echo "a gymnasium test was skipped"; exit 1; fi
 
   docker:
     runs-on: ubuntu-24.04

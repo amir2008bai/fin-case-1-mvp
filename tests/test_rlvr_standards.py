@@ -51,6 +51,21 @@ class RLVRStandardsTests(unittest.TestCase):
         self.assertEqual(reward, 0.0)
         self.assertFalse(terminated or truncated)
 
+    def test_gym_adapter_seedless_reset_moves_on_reproducibly(self):
+        """reset() without a seed draws the next episode from the last seed, like gymnasium; not episode 0 again."""
+        def ids(env, first_seed):
+            first, _ = env.reset(seed=first_seed)
+            second, _ = env.reset()
+            third, _ = env.reset()
+            return [obs["manifest"]["episode_id"] for obs in (first, second, third)]
+
+        a = ids(GymAuditEnv(training=True, default_config=MIXED), 5)
+        b = ids(GymAuditEnv(training=True, default_config=MIXED), 5)
+        self.assertEqual(a, b)
+        self.assertEqual(len(set(a)), 3)
+        direct, _ = AuditEnv().reset(5, MIXED)
+        self.assertEqual(a[0], direct["manifest"]["episode_id"])
+
     def test_gym_adapter_json_text_mode_without_gymnasium(self):
         env = GymAuditEnv(training=True, default_config=MIXED, json_text=True)
         obs, _ = env.reset(seed=42)
