@@ -5,7 +5,7 @@ import threading
 import unittest
 from pathlib import Path
 
-from audit_env.api import MAX_SESSIONS, App
+from audit_env.api import App
 from audit_env.contracts import Config
 from audit_env.diagnostics import evaluate_diagnostics
 from audit_env.environment import AuditEnv
@@ -84,13 +84,21 @@ class MLAndConcurrencyTests(unittest.TestCase):
             self.assertEqual(res["failure_modes"][FailureMode.PROTOCOL_ERROR.value], 1)
 
     def test_api_sessions_thread_safe_under_concurrent_eviction(self):
+        from unittest import mock
+
+        from audit_env import api
+
+        cap = 8  # the same race with a small cap: eviction starts after 8 sessions instead of 128
+        patcher = mock.patch.object(api, "MAX_SESSIONS", cap)
+        patcher.start()
+        self.addCleanup(patcher.stop)
         app = App()
         errors = []
         clean_cfg = {"keyspace": "open", "errors": {k: 0 for k in ERRORS}}
 
         def worker(offset):
             try:
-                for i in range(40):
+                for i in range(12):
                     created = app.create({"seed": offset * 100 + i, "config": clean_cfg})
                     try:
                         app.session(created["session_id"])
@@ -105,7 +113,7 @@ class MLAndConcurrencyTests(unittest.TestCase):
         for t in threads:
             t.join()
         self.assertEqual(errors, [])
-        self.assertLessEqual(len(app.sessions), MAX_SESSIONS)
+        self.assertLessEqual(len(app.sessions), cap)
 
 
 if __name__ == "__main__":

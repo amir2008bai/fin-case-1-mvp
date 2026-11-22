@@ -61,8 +61,8 @@ class MicroTests(unittest.TestCase):
 
     def test_committed_model_loads(self):
         path = ROOT / "models" / "model.json"
-        if path.is_file():
-            self.assertIsInstance(MicroModel.load(path), MicroModel)
+        self.assertTrue(path.is_file(), "models/model.json is part of the submission")
+        self.assertIsInstance(MicroModel.load(path), MicroModel)
 
 
 if __name__ == "__main__":
