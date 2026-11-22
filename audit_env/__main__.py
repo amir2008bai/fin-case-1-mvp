@@ -97,6 +97,13 @@ def leakage_lines(result):
     return "\n".join(lines)
 
 
+def command_llm_probe(args):
+    from .llm_probe import run_probe
+
+    return run_probe(HOLDOUT, episodes=args.episodes, seed=args.seed, provider=args.provider, model=args.model,
+                     base_url=args.base_url, compact=args.compact, timeout=args.timeout, emit=out)
+
+
 def command_mcp(args):
     from .mcp_server import serve_stdio
 
@@ -626,6 +633,14 @@ def main():
                      help="table pages as columns + rows (~40%% fewer characters, lossless); policy stays verbatim")
     mcp.add_argument("--timeout", type=int, default=1800,
                      help="episode wall clock in seconds, starts at initialize (scored runs use the runner: 60 s)")
+    probe = commands.add_parser("llm-probe", help="diagnostic only: an LLM agent via MCP on 5 closed episodes")
+    probe.add_argument("--episodes", type=int, default=5)
+    probe.add_argument("--seed", type=int, default=7, help="episode seeds (the evaluator key is always fresh)")
+    probe.add_argument("--provider", choices=("openai", "anthropic", "gemini"), default=None)
+    probe.add_argument("--model", default=None)
+    probe.add_argument("--base-url", default=None)
+    probe.add_argument("--no-compact", dest="compact", action="store_false", default=True)
+    probe.add_argument("--timeout", type=int, default=1800)
     truth = commands.add_parser("audit-truth", help="independently re-derive a folder's truth")
     truth.add_argument("public", type=Path)
     truth.add_argument("answers", type=Path)
@@ -633,7 +648,8 @@ def main():
     handlers = {"verify": command_verify, "benchmark": command_benchmark, "dataset": command_dataset,
                 "selfcheck": command_selfcheck, "demo": command_demo, "audit": command_audit,
                 "audit-truth": command_audit_truth, "train": command_train, "serve": command_serve,
-                "failures": command_failures, "attacks": command_attacks, "economy": command_economy, "leakage": command_leakage, "diagnostics": command_diagnostics, "rescore": command_rescore, "mcp": command_mcp}
+                "failures": command_failures, "attacks": command_attacks, "economy": command_economy, "leakage": command_leakage, "diagnostics": command_diagnostics, "rescore": command_rescore, "mcp": command_mcp,
+                "llm-probe": command_llm_probe}
     raise SystemExit(handlers[args.command](args))
 
 

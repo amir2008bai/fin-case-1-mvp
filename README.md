@@ -195,6 +195,8 @@ python -m audit_env demo --closed --policy expert --agent-image fintech-audit:ag
 
 ## Команды
 
+Сценарий демо и ответы на вопросы жюри с командами, которые воспроизводят каждое число: [docs/demo_cheatsheet.md](docs/demo_cheatsheet.md).
+
 ```bash
 python -m audit_env verify                    # единая проверка
 python -m audit_env demo --policy expert      # один эпизод, метрики
@@ -214,6 +216,7 @@ python -m audit_env audit <папка>             # проверить свои
 python -m audit_env audit-truth <папка> <ответы>   # независимо перепроверить эталон папки
 python -m audit_env serve                     # веб-интерфейс и API: http://127.0.0.1:8765/
 python -m audit_env mcp                       # MCP JSON-RPC 2.0 сервер по stdio для любого LLM-агента
+python -m audit_env llm-probe                 # диагностика: LLM через MCP на 5 закрытых эпизодах (ключ API из окружения)
                                               # (--compact: страницы таблиц колонками; --timeout: время эпизода, по умолчанию 30 мин)
 ```
 
