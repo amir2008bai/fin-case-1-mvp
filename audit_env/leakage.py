@@ -7,7 +7,10 @@ an agent cannot shortcut the audit via IDs, row order, or timestamp artifacts.
 """
 from datetime import datetime
 
-LEAKAGE_THRESHOLD = 0.08  # |AUROC - 0.50| <= 0.08 on presentation metadata
+# |AUROC - 0.50| <= 0.06 on 360 episodes: about four standard errors for the rarest label (payments),
+# while the `:00` seconds leak this audit once caught had a drift of 0.10.
+LEAKAGE_THRESHOLD = 0.06
+LEAKAGE_REPEATS = 10  # seeds per configuration: 36 configurations -> 360 episodes
 
 
 def roc_auc(pairs):

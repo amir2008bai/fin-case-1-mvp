@@ -3,7 +3,8 @@
 Exposes the exact 5 AuditEnv tools (`list_records`, `get_record`, `get_document`,
 `calculator`, `submit`) to any MCP-compatible client (Claude Desktop, Cursor,
 Codex, Gemini CLI, LangGraph, FinMCP-Bench) without leaking hidden truth or seed.
-Supports `--compact` mode for ~40-80% lower LLM token usage and self-correction hints.
+`--compact` sends table pages as columns + rows (about 40% fewer characters on the ledger, lossless)
+and drops the tool list from the first observation; the policy is always sent verbatim.
 """
 import json
 import sys
@@ -14,6 +15,7 @@ from .environment import AuditEnv
 from .tool_schemas import _TOOL_NAMES, compact_initial_observation, dispatch_tool_call, mcp_tools
 
 PROTOCOL_VERSION = "2025-03-26"
+MCP_TIMEOUT_SECONDS = 30 * 60
 
 
 def _error(req_id, code, message):
@@ -49,6 +51,7 @@ class MCPAuditServer:
         params = raw_params or {}
 
         if method == "initialize":
+            self.env.restart_clock()  # the client may connect long after the process started
             init_payload = compact_initial_observation(self.initial_observation) if self.compact else self.initial_observation
             return {
                 "jsonrpc": "2.0",
@@ -87,8 +90,13 @@ class MCPAuditServer:
         return _error(req_id, -32601, f"Method not found: {method}")
 
 
-def serve_stdio(seed=202601, config=None, *, closed=False, compact=False, stdin=None, stdout=None):
-    """Run an MCP JSON-RPC 2.0 loop over stdin/stdout with bounded frame reads until EOF."""
+def serve_stdio(seed=202601, config=None, *, closed=False, compact=False, stdin=None, stdout=None,
+                timeout_seconds=MCP_TIMEOUT_SECONDS):
+    """Run an MCP JSON-RPC 2.0 loop over stdin/stdout with bounded frame reads until EOF.
+
+    An LLM needs seconds per tool call, so the episode clock is `timeout_seconds` (30 min by default) and
+    starts at `initialize`. Scored runs go through the runner with the official 60 s limit instead.
+    """
     stdin = sys.stdin if stdin is None else stdin
     stdout = sys.stdout if stdout is None else stdout
     if config is None:
@@ -102,7 +110,7 @@ def serve_stdio(seed=202601, config=None, *, closed=False, compact=False, stdin=
         if closed and cfg.keyspace != "secret":
             raise ValueError("closed mode needs the secret keyspace")
 
-    env = AuditEnv(training=not closed)
+    env = AuditEnv(training=not closed, timeout_seconds=timeout_seconds, interactive=True)
     initial_obs, _ = env.reset(seed, cfg)
     server = MCPAuditServer(env, initial_obs, compact=compact)
     while True:

@@ -102,7 +102,8 @@ def command_mcp(args):
     from .mcp_server import serve_stdio
 
     config = json.loads(args.config) if args.config else None
-    serve_stdio(seed=args.seed, config=config, closed=args.closed, compact=args.compact)
+    serve_stdio(seed=args.seed, config=config, closed=args.closed, compact=args.compact,
+                timeout_seconds=args.timeout)
     return 0
 
 
@@ -155,7 +156,7 @@ def command_leakage(args):
     from .selfcheck import fresh_key
 
     key = fresh_key() if args.fresh_key else derived_key(args.seed)
-    result = audit_leakage(closed_episodes(random.Random(args.seed), key, repeats=args.repeats), threshold=0.08)
+    result = audit_leakage(closed_episodes(random.Random(args.seed), key, repeats=args.repeats))
     out(leakage_lines(result))
     if args.report:
         Path(args.report).parent.mkdir(parents=True, exist_ok=True)
@@ -224,13 +225,14 @@ def command_attacks(args):
     return 1 if result["violations"] else 0
 
 
-def holdout_cases(path, seed_source, by_split=False):
+def holdout_cases(path, seed_source, by_split=False, repeats=1):
     """Cases of a template; seeds are drawn here. by_split groups results by split (the difficulty level)."""
     from .dataset import suite
 
     for split, case_id, category, seed, config in suite(path):
-        yield (split, case_id, split if by_split else category,
-               seed if seed is not None else seed_source.randrange(2**31), config)
+        for _ in range(repeats):
+            yield (split, case_id, split if by_split else category,
+                   seed if seed is not None else seed_source.randrange(2**31), config)
 
 
 def command_verify(args):
@@ -344,9 +346,10 @@ def command_verify(args):
         failed.append("step economy")
 
     out("\n== 10. Statistical tell-leakage audit: presentation metadata AUROC near 0.50")
-    from .leakage import audit_leakage
+    from .leakage import LEAKAGE_REPEATS, audit_leakage
 
-    leak_result = audit_leakage(episodes, threshold=0.15)
+    # Its own, larger sample: on the 36 episodes above the noise alone is as large as a real leak.
+    leak_result = audit_leakage(closed_episodes(random.Random(os.urandom(8)), key, repeats=LEAKAGE_REPEATS))
     report["sections"]["leakage"] = leak_result
     out(leakage_lines(leak_result))
     if leak_result["violations"]:
@@ -372,22 +375,23 @@ def command_benchmark(args):
     from .dataset import benchmark_cases, suite
     from .selfcheck import fresh_key
 
+    # The secret key shapes the hidden world, so a table is reproducible only with a key fixed by --seed.
+    key = fresh_key() if args.fresh_key else derived_key(args.seed)
+    policies = (*POLICIES, "micro")
     if args.curriculum:
-        rows, problems = benchmark_cases(holdout_cases(CURRICULUM, random.Random(args.seed), by_split=True),
-                                         POLICIES, key=fresh_key())
+        cases = holdout_cases(CURRICULUM, random.Random(args.seed), by_split=True, repeats=args.repeats)
+        rows, problems = benchmark_cases(cases, policies, key=key)
         out(table(rows, order=LEVELS))
         for line in problems:
             out(f"FAIL {line}")
         return 1 if problems else 0
     if args.extended:
-        cases = holdout_cases(EXTENDED, random.Random(args.seed))
-        key = fresh_key()
+        cases = holdout_cases(EXTENDED, random.Random(args.seed), repeats=args.repeats)
     elif args.suite == HOLDOUT or args.holdout:
-        cases = holdout_cases(HOLDOUT, random.Random(args.seed))
-        key = fresh_key()
+        cases = holdout_cases(HOLDOUT, random.Random(args.seed), repeats=args.repeats)
     else:
         cases, key = suite(args.suite), None
-    rows, problems = benchmark_cases(cases, POLICIES, key=key)
+    rows, problems = benchmark_cases(cases, policies, key=key)
     out(table(rows))
     for line in problems:
         out(f"FAIL {line}")
@@ -552,7 +556,9 @@ def main():
     bench.add_argument("--holdout", action="store_true")
     bench.add_argument("--extended", action="store_true", help="real-practice error types and goods")
     bench.add_argument("--curriculum", action="store_true", help="easy / medium / hard difficulty levels")
-    bench.add_argument("--seed", type=int, default=7)
+    bench.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
+    bench.add_argument("--repeats", type=int, default=1, help="seeds per configuration of a hold-out template")
+    bench.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     failures = commands.add_parser("failures", help="measured failure breakdown per policy on hold-out configs")
     failures.add_argument("--repeats", type=int, default=5)
     failures.add_argument("--seed", type=int, default=5)
@@ -570,7 +576,7 @@ def main():
     economy.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     economy.add_argument("--report", help="write the full result as JSON")
     leak = commands.add_parser("leakage", help="statistical tell-leakage audit (AUROC on presentation metadata)")
-    leak.add_argument("--repeats", type=int, default=3, help="seeds per configuration")
+    leak.add_argument("--repeats", type=int, default=10, help="seeds per configuration")
     leak.add_argument("--seed", type=int, default=7, help="episode seeds and the derived secret key")
     leak.add_argument("--fresh-key", action="store_true", help="random secret key instead of one derived from --seed")
     leak.add_argument("--report", help="write the full result as JSON")
@@ -615,7 +621,10 @@ def main():
     mcp.add_argument("--seed", type=int, default=202601)
     mcp.add_argument("--config", help="JSON config")
     mcp.add_argument("--closed", action="store_true")
-    mcp.add_argument("--compact", action="store_true", help="compact policy & tabular pages (~40-80%% fewer tokens)")
+    mcp.add_argument("--compact", action="store_true",
+                     help="table pages as columns + rows (~40%% fewer characters, lossless); policy stays verbatim")
+    mcp.add_argument("--timeout", type=int, default=1800,
+                     help="episode wall clock in seconds, starts at initialize (scored runs use the runner: 60 s)")
     truth = commands.add_parser("audit-truth", help="independently re-derive a folder's truth")
     truth.add_argument("public", type=Path)
     truth.add_argument("answers", type=Path)

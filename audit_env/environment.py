@@ -62,10 +62,18 @@ def calculate(expression):
         return "0" if not value else format(value.normalize(), "f")
 
 
+EPISODE_TIMEOUT_SECONDS = 60
+# A person in the UI or an LLM behind MCP cannot finish an audit in 60 s of wall time.
+INTERACTIVE_TIMEOUT_SECONDS = 4 * 60 * 60
+
+
 class AuditEnv:
-    def __init__(self, *, training=True, timeout_seconds=60, clock=time.monotonic, key=None):
-        if not 0 < timeout_seconds <= 60:
-            raise ValueError("timeout_seconds must be in (0, 60]")
+    def __init__(self, *, training=True, timeout_seconds=EPISODE_TIMEOUT_SECONDS, clock=time.monotonic, key=None,
+                 interactive=False):
+        """`interactive` only raises the wall-clock ceiling for UI/MCP adapters; evaluation runs never set it."""
+        ceiling = INTERACTIVE_TIMEOUT_SECONDS if interactive else EPISODE_TIMEOUT_SECONDS
+        if not 0 < timeout_seconds <= ceiling:
+            raise ValueError(f"timeout_seconds must be in (0, {ceiling}]")
         self.training = training
         self.timeout_seconds = timeout_seconds
         self.clock = clock
@@ -106,6 +114,11 @@ class AuditEnv:
             "tools": TOOLS,
             "remaining_steps": MAX_STEPS,
         }), {}
+
+    def restart_clock(self):
+        """An adapter calls this when the agent connects; once the agent has acted the deadline is fixed."""
+        if self.episode is not None and self.steps == 0 and self.outcome is None:
+            self.deadline = self.clock() + self.timeout_seconds
 
     def step(self, action) -> tuple[dict, float | None, bool, bool, dict]:
         if self.episode is None:

@@ -14,10 +14,19 @@ from contextlib import suppress
 from time import perf_counter
 
 from .contracts import MAX_FRAME_BYTES
+from .keys import ENV_VAR, KEY_FILE_VAR
 
 
 class ProtocolError(Exception):
     pass
+
+
+def agent_environment():
+    """Environment of the agent process: the evaluator's key material is never inherited.
+
+    With the secret key an agent could regenerate a hidden episode, truth included, from the public code.
+    """
+    return {name: value for name, value in os.environ.items() if name not in (ENV_VAR, KEY_FILE_VAR)}
 
 
 def _object_pairs(pairs):
@@ -94,7 +103,7 @@ class JsonAgent:
     def __enter__(self):
         self.process = subprocess.Popen(
             self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0,
-            cwd=self.cwd,
+            cwd=self.cwd, env=agent_environment(),
         )
         self.stop_event = threading.Event()
         self.lines = queue.Queue(maxsize=16)

@@ -26,6 +26,19 @@ MAX_BODY = 4 * 1024 * 1024
 MAX_SESSIONS = 128
 POLICIES = ("expert", "micro", "reconcile", "random", "flag-all")
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+# A person stepping through an episode in the UI needs far more than the 60 s of an evaluation run.
+SESSION_TIMEOUT_SECONDS = 60 * 60
+
+
+def local_host(header):
+    """The Host a browser sends to a loopback server. Anything else is DNS rebinding: a foreign page whose
+    name was re-pointed at 127.0.0.1 would otherwise be same-origin and read every response."""
+    try:
+        parts = urlsplit("//" + header)
+        parts.port  # raises ValueError on a malformed port
+    except ValueError:
+        return False
+    return parts.hostname in LOCAL_HOSTS and parts.username is None and not parts.path
 
 
 def local_origin(origin):
@@ -48,13 +61,14 @@ class Session:
         self.episode = episode
         self.graded = graded
         self.training = training
-        self.env = AuditEnv(training=training)
+        self.env = AuditEnv(training=training, timeout_seconds=SESSION_TIMEOUT_SECONDS, interactive=True)
         self.observation, _ = self.env.load_episode(episode)
         self.lock = threading.Lock()
 
 
 class App:
-    def __init__(self, model_path=None, import_root=None):
+    def __init__(self, model_path=None, import_root=None, local_only=True):
+        self.local_only = local_only
         self.sessions = {}
         self._lock = threading.Lock()
         self._model_cache = None
@@ -208,7 +222,24 @@ def make_handler(app):
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.end_headers()
 
+        def refused(self, *, write):
+            """Requests a foreign web page could make a browser send to this loopback API. True if answered."""
+            if app.local_only and not local_host(self.headers.get("Host", "")):
+                self.send(403, {"error": "forbidden_host"})
+                return True
+            origin = self.headers.get("Origin")
+            if write and origin is not None and not local_origin(origin):
+                self.send(403, {"error": "forbidden_origin"})
+                return True
+            return False
+
+        def json_content(self):
+            # A form or text/plain POST needs no CORS preflight; application/json always does.
+            return self.headers.get("Content-Type", "").split(";")[0].strip().lower() == "application/json"
+
         def do_GET(self):
+            if self.refused(write=False):
+                return None
             parts = [part for part in self.path.split("?")[0].split("/") if part]
             try:
                 if parts == ["api", "health"]:
@@ -220,9 +251,13 @@ def make_handler(app):
                 return self.send(404, {"error": str(exc.args[0])})
 
         def do_POST(self):
+            if self.refused(write=True):
+                return None
             parts = [part for part in self.path.split("?")[0].split("/") if part]
             try:
                 body = self.body()
+                if not self.json_content():
+                    return self.send(415, {"error": "Content-Type must be application/json"})
                 if parts == ["api", "episodes"]:
                     return self.send(200, app.create(body))
                 if parts == ["api", "episodes", "import"]:
@@ -249,5 +284,6 @@ def make_handler(app):
 
 
 def serve(host="127.0.0.1", port=8765, model_path=None, import_root=None):
-    server = ThreadingHTTPServer((host, port), make_handler(App(model_path, import_root=import_root)))
-    return server
+    # Bound to another interface on purpose (a LAN demo): the Host check would refuse every remote client.
+    app = App(model_path, import_root=import_root, local_only=host in LOCAL_HOSTS)
+    return ThreadingHTTPServer((host, port), make_handler(app))

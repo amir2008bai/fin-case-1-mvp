@@ -82,7 +82,12 @@ class LLMAgentCompatibilityTests(unittest.TestCase):
 
         init_full = json.dumps(s_full.handle({"jsonrpc": "2.0", "id": 1, "method": "initialize"}), ensure_ascii=False)
         init_cmp = json.dumps(s_cmp.handle({"jsonrpc": "2.0", "id": 1, "method": "initialize"}), ensure_ascii=False)
-        self.assertLess(len(init_cmp), len(init_full) * 0.45)
+        self.assertLess(len(init_cmp), len(init_full))
+        # The rules are never paraphrased: an agent in compact mode reads the same policy the grader applies.
+        compact_view = compact_initial_observation(obs_cmp)
+        self.assertEqual(compact_view["policy"], obs_full["policy"])
+        self.assertEqual(compact_view["manifest"], obs_full["manifest"])
+        self.assertNotIn("tools", compact_view)
 
         page_full = s_full.handle({"jsonrpc": "2.0", "id": 2, "method": "tools/call",
                                    "params": {"name": "list_records", "arguments": {"table": "ledger", "limit": 50}}})

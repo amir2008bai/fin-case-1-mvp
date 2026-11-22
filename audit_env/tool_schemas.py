@@ -271,28 +271,16 @@ def tool_schemas(provider="openai", *, strict=False):
 
 
 def compact_initial_observation(initial_observation):
-    """Token-efficient summary (~80% smaller) preserving every rule, account code, tolerance, and manifest limit."""
-    manifest = initial_observation["manifest"]
-    policy = initial_observation["policy"]
+    """First observation without what an MCP client already has: the tool list comes from `tools/list`.
+
+    The policy stays verbatim. It is the only place that says what each finding type must put into
+    affected_ids, claimed_amount_minor and evidence_ids, and it differs between episodes; a paraphrase
+    would leave an agent unable to solve some types and would drift from the rules the grader applies.
+    """
     return {
-        "task": (
-            f"Audit company records for [{manifest['period_start']}, {manifest['period_end']}) "
-            f"(tz={manifest['timezone']}, base={manifest['base_currency']}). "
-            f"Types: {_TYPES_TEXT}. Books may be clean (findings: []). "
-            "Final step (remaining_steps==1) accepts only submit."
-        ),
-        "manifest": manifest,
-        "rules": {
-            "accounts": {"1030": "Bank", "1210": "AR", "1330": "Inventory", "1420": "VAT_in",
-                         "3130": "VAT_out", "3310": "AP", "3510": "Advances", "5610": "Opening",
-                         "6010": "Revenue", "6250": "FX_gain", "7010": "COGS", "7430": "FX_loss"},
-            "revenue": "Recognize at max(line.service_period_end) 00:00 in company tz (Dr 1210 / Cr 6010 + Cr 3130).",
-            "vat": "16% included in price (total=qty*unit_price; vat=round_half_up(total*0.16/1.16)); foreign/null=0.",
-            "fx": "Table 'fx': invoice at service_period_end, payment at local_date(timestamp); tol=2 minor units.",
-            "allocation": "Apply payment across invoice_refs: open AR (Cr 1210) -> prepayment (Cr 3510) -> excess (Cr 3510).",
-            "tolerances": {k: v["tolerance_minor"] for k, v in policy.get("findings", {}).items()},
-            "evidence": "1..10 unique seen IDs (doc_id, row_id, fx_id) related to the issue.",
-        },
+        "task": initial_observation["task"],
+        "manifest": initial_observation["manifest"],
+        "policy": initial_observation["policy"],
         "remaining_steps": initial_observation["remaining_steps"],
     }
 
