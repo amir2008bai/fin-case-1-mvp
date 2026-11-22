@@ -70,7 +70,7 @@
     "invoices": 62,
     "payments": 52
   },
-  "clean_ledger_sha256": "fe73435751e8239d06943722873bf7e5b583917cd5761adcb76e55e846d9fab2",
+  "clean_ledger_sha256": "77f60554da90431f4911120f6b30353ddd4a470aba47e4b67eac41d79c5f1e2f",
   "changes": [
     {
       "issue_ids": [
@@ -117,7 +117,7 @@
       "issue_ids": [
         "issue_012cea7ac7b2c82b9a8a2e81"
       ],
-      "scenario": "payment_allocation.partial",
+      "scenario": "payment_allocation.missing",
       "causes": [
         "Поступление со ссылкой на открытый счёт отнесено в авансы полученные вместо погашения дебиторки."
       ],
@@ -142,21 +142,10 @@
           "timestamp": "2026-04-25T17:15:45+03:00",
           "account": "3510",
           "debit_minor": 0,
-          "credit_minor": 7656000,
+          "credit_minor": 11600000,
           "currency": "KZT",
           "entity_id": "entity_da59989a5497421170592e9e",
           "invoice_id": null,
-          "payment_id": "payment_90381551eae689cf11683322"
-        },
-        {
-          "row_id": "row_a8e2ddea2cabf7da416888b2",
-          "timestamp": "2026-04-25T17:15:45+03:00",
-          "account": "1210",
-          "debit_minor": 0,
-          "credit_minor": 3944000,
-          "currency": "KZT",
-          "entity_id": "entity_da59989a5497421170592e9e",
-          "invoice_id": "invoice_a10d8835932d2d10d715af98",
           "payment_id": "payment_90381551eae689cf11683322"
         }
       ]
@@ -165,9 +154,9 @@
       "issue_ids": [
         "issue_26a4e1ed4919d7dd27b4449f"
       ],
-      "scenario": "fx_rate.receipt_wrong_rate",
+      "scenario": "fx_rate.receipt_wrong_date",
       "causes": [
-        "При пересчёте поступления введён неверный курс."
+        "Поступление пересчитано по курсу не той даты (нужна дата операции)."
       ],
       "documents_added": [],
       "documents_changed": [],
@@ -199,9 +188,9 @@
         {
           "row_id": "row_78fe16f057bf384c524f0f50",
           "timestamp": "2026-04-12T13:32:04+03:00",
-          "account": "6250",
-          "debit_minor": 0,
-          "credit_minor": 53960400,
+          "account": "7430",
+          "debit_minor": 33600,
+          "credit_minor": 0,
           "currency": "KZT",
           "entity_id": "entity_e4fe817e1e48f042f0aac7fa",
           "invoice_id": null,
@@ -211,7 +200,7 @@
           "row_id": "row_eac999fb50e6a40950b09893",
           "timestamp": "2026-04-12T13:32:04+03:00",
           "account": "1030",
-          "debit_minor": 113426400,
+          "debit_minor": 59432400,
           "credit_minor": 0,
           "currency": "KZT",
           "entity_id": "entity_e4fe817e1e48f042f0aac7fa",

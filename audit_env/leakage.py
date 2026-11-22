@@ -1,12 +1,17 @@
-"""Screen for rank associations between presentation metadata and error labels.
+"""Statistical tell-leakage audit: verify superficial metadata never predicts errors above chance.
 
 Computes exact tie-adjusted ROC-AUC (Mann-Whitney U) over closed episodes for
 presentation and metadata features (table row positions, HMAC ID hex values,
-timestamp seconds). Each feature is measured individually on the sampled episodes.
+timestamp seconds). Every feature must stay near 0.50 on the sample; this screens for the listed
+shortcuts only, it does not prove that no other shortcut exists.
 """
 from datetime import datetime
 
-LEAKAGE_THRESHOLD = 0.08  # |AUROC - 0.50| <= 0.08 on presentation metadata
+# |AUROC - 0.50| <= 0.06 on 360 episodes: about four standard errors for the rarest label (payments),
+# while the `:00` seconds leak this audit once caught had a drift of 0.10.
+LEAKAGE_THRESHOLD = 0.06
+LEAKAGE_REPEATS = 10  # seeds per configuration: 36 configurations -> 360 episodes
+LEAKAGE_SEED = 7  # fixed sample, so `verify` prints the same table on every run
 
 
 def roc_auc(pairs):

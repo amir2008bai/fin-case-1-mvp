@@ -14,7 +14,8 @@ MIXED = Config(keyspace="open", errors={"duplicate_invoice": 1, "payment_allocat
 
 
 class FuzzAndBoundaryTests(unittest.TestCase):
-    def test_out_of_range_claimed_amount_is_rejected(self):
+    def test_huge_claimed_amount_is_rejected_and_never_crashes_json(self):
+        """An adversarial 5000-digit integer must fail validation cleanly instead of crashing json.dumps."""
         episode = generate(17, MIXED)
         ep_id = episode.manifest["episode_id"]
         finding = episode.issues[0].as_finding()

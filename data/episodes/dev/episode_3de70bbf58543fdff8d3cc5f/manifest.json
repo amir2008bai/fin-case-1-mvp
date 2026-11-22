@@ -10,7 +10,7 @@
   "period_end": "2026-05-01T00:00:00+03:00",
   "timezone": "+03:00",
   "counts": {
-    "ledger": 465,
+    "ledger": 464,
     "invoices": 62,
     "payments": 52,
     "fx": 164

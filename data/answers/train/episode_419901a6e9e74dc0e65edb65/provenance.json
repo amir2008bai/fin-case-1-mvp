@@ -71,6 +71,6 @@
     "invoices": 55,
     "payments": 50
   },
-  "clean_ledger_sha256": "7a4a707a9306e02200c1253cf405d5821cb1130321b4eabea217388ee3c66f3d",
+  "clean_ledger_sha256": "714a191a10b2c8a12703fd91cfe50596920c7b27ed3f0d5cc478581666d96042",
   "changes": []
 }

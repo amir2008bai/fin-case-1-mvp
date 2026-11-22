@@ -45,4 +45,4 @@
 {"doc_id": "doc_1eefa5c0549e470e4a21ed77", "payment_id": "payment_fb1812aa2f93699773afc15b", "timestamp": "2026-05-09T15:19:19+06:00", "currency": "KZT", "amount_minor": 2000000, "invoice_refs": ["invoice_d69370635c93ef10a61c3093"]}
 {"doc_id": "doc_624b4503b2a9c0cd6fa77503", "payment_id": "payment_fbc33f4db13fe683df08fdbb", "timestamp": "2026-05-02T21:57:14+06:00", "currency": "USD", "amount_minor": 60000, "invoice_refs": ["invoice_0ffc7597fdd062d117a95fcd"]}
 {"doc_id": "doc_016b654ab0825e1ec524b058", "payment_id": "payment_fce58550bb408711dc513d85", "timestamp": "2026-05-29T15:22:27+06:00", "currency": "KZT", "amount_minor": 2079000, "invoice_refs": ["invoice_6f93bb0a89b033612b454d9e"]}
-{"doc_id": "doc_21b8a1f29ba5ac89b6ae1204", "payment_id": "payment_ff53849b045eb001cdf509c9", "timestamp": "2026-06-02T13:37:28+06:00", "currency": "KZT", "amount_minor": 4200000, "invoice_refs": ["invoice_4bdba33a9ad38d84a2edf970"]}
+{"doc_id": "doc_21b8a1f29ba5ac89b6ae1204", "payment_id": "payment_ff53849b045eb001cdf509c9", "timestamp": "2026-05-31T20:29:37+00:00", "currency": "KZT", "amount_minor": 4200000, "invoice_refs": ["invoice_4bdba33a9ad38d84a2edf970"]}

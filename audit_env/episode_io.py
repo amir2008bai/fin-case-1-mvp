@@ -176,7 +176,8 @@ def parse_fx(records, problems):
     for number, raw in records:
         where = f"fx.csv:{number}"
         try:
-            if Decimal(raw["rate"]) <= 0:
+            rate = Decimal(raw["rate"])
+            if not rate.is_finite() or rate <= 0:
                 problems.append(f"{where}: rate must be positive")
         except InvalidOperation:
             problems.append(f"{where}: rate must be a decimal string")
@@ -302,6 +303,11 @@ def load_episode(public_dir, answers_dir=None):
     }
     tables = {name: tables[name] for name in ("ledger", "invoices", "payments", "fx")}
     if not problems:
+        if not isinstance(manifest, dict):
+            problems.append("manifest.json: expected JSON object")
+        if not isinstance(policy, dict):
+            problems.append("policy.json: expected JSON object")
+    if not problems:
         validate(manifest, policy, tables, problems)
     if problems:
         raise FormatError(problems)
@@ -311,11 +317,13 @@ def load_episode(public_dir, answers_dir=None):
     documents = {}
     if (public / "documents.jsonl").is_file():
         for _, item in read_jsonl(public / "documents.jsonl", problems):
-            if not isinstance(item, dict) or item.get("doc_id") not in rows:
+            if not isinstance(item, dict) or not isinstance(item.get("doc_id"), str) or item["doc_id"] not in rows:
                 continue
             row = rows[item["doc_id"]]
             if all(key in item and item[key] == value for key, value in row.items()):
                 documents[item["doc_id"]] = item
+        if problems:
+            raise FormatError(problems)
     manifest = dict(manifest)
     manifest["counts"] = {name: len(rows) for name, rows in tables.items()}
     manifest["document_count"] = len(tables["invoices"]) + len(tables["payments"])

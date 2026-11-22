@@ -188,6 +188,8 @@ class World:
     def rate(self, day, currency):
         return self.rates[(day, currency)]
 
+MIN_DOCUMENTS = 20  # the brief's lower bound: invoices plus payments
+
 
 class Builder:
     def __init__(self, rng, config):
@@ -292,14 +294,25 @@ class Builder:
         return lines
 
     def new_act(self, customer, origin, service_end, issued_at=None, lines=1, max_lag=7, kind="service",
-                code=None, due_days=None):
+                code=None, due_days=None, window=(None, None)):
+        """`window` = (first, last) allowed service end, None for an open side.
+
+        Looking for a free slot, the service end walks a day at a time. A scenario target must not walk out
+        of the period its scenario assumes: a "prior period" act that lands inside the period, or an
+        in-period target that lands in the opening balance, would make the recorded truth false.
+        """
+        # Every act keeps the accounting period it was drawn in (prior, current or next); `window` narrows it.
         day = timedelta(days=1)
         if service_end < self.first:
-            earliest, latest = date.min, self.first - day
+            low, high = None, self.first - day
         elif service_end > self.last:
-            earliest, latest = self.last + day, date.max
+            low, high = self.last + day, None
         else:
-            earliest, latest = self.first, self.last
+            low, high = self.first, self.last
+        if window[0] is not None:
+            low = window[0] if low is None else max(low, window[0])
+        if window[1] is not None:
+            high = window[1] if high is None else min(high, window[1])
         for _ in range(60):
             items = tuple(Line(index, *values) for index, values in
                           enumerate(self.lines_for(customer, service_end, lines, kind, code), 1))
@@ -311,10 +324,11 @@ class Builder:
                 self.starts |= starts
                 self.nexts |= nexts
                 break
-            # A collision may change the service date, but must preserve its accounting period.
-            step = -day if self.rng.randrange(2) else day
-            next_end = service_end + step
-            service_end = next_end if earliest <= next_end <= latest else service_end - step
+            step = timedelta(days=-1 if self.rng.randrange(2) else 1)
+            moved = service_end + step
+            if (low is not None and moved < low) or (high is not None and moved > high):
+                step = -step  # bounce off the edge; the random draw is the same, so other episodes do not change
+            service_end += step
         else:
             raise RuntimeError("could not place a unique act")
         self.busy |= marks
@@ -416,6 +430,10 @@ class Builder:
         if self.hard_on("paid_renewals"):
             for _ in range(self.scaled(1.5)):
                 self.paid_renewal(self.rng.choice(self.domestic))
+        # The smallest configuration with every look-alike switched off can fall short of the 20 documents
+        # an episode must have; only such worlds get extra regular acts, all others are unchanged.
+        while len(self.acts) + len(self.payments) < MIN_DOCUMENTS:
+            self.regular_act(self.rng.choice(self.domestic))
         self.multi_act_payments()
         self.opening()
         self.boundaries()
@@ -453,7 +471,8 @@ class Builder:
         count = lines or (2 if currency == BASE_CURRENCY and self.chance(18) else 1)
         if target:
             service_end = self.day_between(self.first, self.last - timedelta(days=7))
-            act = self.new_act(customer, "regular", service_end, lines=count, max_lag=2, kind=kind)
+            act = self.new_act(customer, "regular", service_end, lines=count, max_lag=2, kind=kind,
+                               window=(self.first, self.last))
             self.reserved.add(act.key)
             return act
         act = self.new_act(customer, "regular", self.day_between(self.first, self.last), lines=count, kind=kind)
@@ -561,7 +580,8 @@ class Builder:
 
     def prior_act(self, customer):
         service_end = self.day_between(self.first - timedelta(days=40), self.first - timedelta(days=12))
-        act = self.new_act(customer, "prior_open", service_end, max_lag=3)
+        act = self.new_act(customer, "prior_open", service_end, max_lag=3,
+                           window=(None, self.first - timedelta(days=1)))
         if self.chance(70):
             self.pay(customer, act.total_minor, self.moment(self.day_between(self.first, self.last)),
                      [act.key], "full")
@@ -570,12 +590,14 @@ class Builder:
     def late_act(self, customer):
         service_end = self.day_between(self.first - timedelta(days=10), self.first - timedelta(days=1))
         issued = self.moment(self.day_between(self.first, self.first + timedelta(days=9)), 10, 18)
-        return self.new_act(customer, "late", service_end, issued_at=issued)
+        return self.new_act(customer, "late", service_end, issued_at=issued,
+                            window=(None, self.first - timedelta(days=1)))
 
     def next_act(self, customer):
         issued = self.moment(self.day_between(self.last - timedelta(days=3), self.last), 10, 18)
         service_end = self.day_between(self.last + timedelta(days=5), self.last + timedelta(days=30))
-        return self.new_act(customer, "next_period", service_end, issued_at=issued)
+        return self.new_act(customer, "next_period", service_end, issued_at=issued,
+                            window=(self.last + timedelta(days=1), None))
 
     # ---- dedicated targets for configured errors -----------------------
     def reserve_targets(self):
@@ -630,14 +652,21 @@ class Builder:
             self.candidates[FX_PARTIAL].append((act.key, payment.key))
         for _ in range(errors[VAT_ON_TOP]):
             kind = "goods" if self.config.goods_percent and self.chance(50) else "service"
-            act = self.regular_act(self.rng.choice(domestic), target=True, kind=kind)
+            if kind == "goods":
+                act = self.regular_act(self.rng.choice(domestic), target=True, kind="goods")
+            else:
+                end = self.day_between(self.first, max(self.first, self.last - timedelta(days=7)))
+                act = self.new_act(self.rng.choice(domestic), "regular", end, lines=1, max_lag=2,
+                                   code=self.rng.choice(("SUP", "IMP", "TRN", "DEV")),
+                                   window=(self.first, self.last))
+                self.reserved.add(act.key)
             payment = self.full_in_period(act)  # the customer pays the agreed price
             self.candidates["vat"].append((act.key, payment.key))
         for _ in range(errors[UNCOLLECTED]):
             customer = self.new_customer(BASE_CURRENCY)  # dedicated: no other documents of this customer
             service_end = self.day_between(self.first, self.first + timedelta(days=6))
             act = self.new_act(customer, "regular", service_end, lines=1, max_lag=1,
-                               code=self.rng.choice(("SUB", "SUP")), due_days=10)
+                               code=self.rng.choice(("SUB", "SUP")), due_days=10, window=(self.first, self.last))
             self.reserved.add(act.key)
             self.candidates["uncollected"].append(act.key)
 
@@ -695,7 +724,7 @@ class Builder:
                 made += 1
 
     def opening(self):
-        self.opening_bank = self.rng.randrange(2_000_000, 9_000_000) * 100
+        self.opening_bank = (self.rng.randrange(2_000_000, 9_000_000) + self.config.filler * 150_000) * 100
         if not self.on["opening_balances"]:
             return
         acts_of = {}
@@ -734,9 +763,13 @@ class Builder:
             if options:
                 self.pay(act.customer, act.total_minor, instant, [act.key], "boundary_inside",
                          shown=self.rng.choice(options))
-        for act in open_acts[inside:inside + after]:  # after the period end, shown in the company offset
-            instant = self.end + timedelta(hours=self.rng.randrange(1, 40), minutes=self.rng.randrange(60), seconds=self.rng.randrange(60))
-            self.pay(act.customer, act.total_minor, instant, [act.key], "after_period", shown=self.tz_text)
+        for act in open_acts[inside:inside + after]:  # after the period end, shown in a western offset (not booked)
+            minutes = self.rng.randrange(5, 150)
+            instant = self.end + timedelta(minutes=minutes, seconds=self.rng.randrange(60))
+            options = [text for text in SHOWN_OFFSETS
+                       if parse_offset(text).utcoffset(None) < own - timedelta(minutes=minutes)]
+            self.pay(act.customer, act.total_minor, instant, [act.key], "after_period",
+                     shown=self.rng.choice(options) if options else self.tz_text)
         prior = [act for act in self.acts.values() if act.origin == "prior_open" and self.paid[act.key] == 0]
         for act in prior[:after]:  # inside the period, but the shown wall date is in the previous month
             minutes = self.rng.randrange(5, 120)
@@ -747,16 +780,21 @@ class Builder:
                      shown=self.rng.choice(options))
 
     def filler(self):
+        ap_balance = Counter()
         for index in range(self.config.filler):
             at = self.moment(self.day_between(self.first, self.last), 8, 20)
             kind = self.rng.randrange(3)
             supplier = f"S{self.rng.randrange(len(SUPPLIERS))}"
             if kind == 0:
                 item = Filler(f"F{index:03d}", at, "7210", "1030", self.rng.randrange(300, 2_500) * 100, None)
-            elif kind == 1:
-                item = Filler(f"F{index:03d}", at, "7210", "3310", self.rng.randrange(5_000, 300_000) * 100, supplier)
+            elif kind == 1 or ap_balance[supplier] <= 0:
+                amount = self.rng.randrange(5_000, 300_000) * 100
+                ap_balance[supplier] += amount
+                item = Filler(f"F{index:03d}", at, "7210", "3310", amount, supplier)
             else:
-                item = Filler(f"F{index:03d}", at, "3310", "1030", self.rng.randrange(5_000, 300_000) * 100, supplier)
+                amount = min(self.rng.randrange(5_000, 300_000) * 100, ap_balance[supplier])
+                ap_balance[supplier] -= amount
+                item = Filler(f"F{index:03d}", at, "3310", "1030", amount, supplier)
             self.fillers.append(item)
         self.summary["filler"] = self.config.filler
         goods_acts = sum(act.kind == "goods" for act in self.acts.values())

@@ -245,7 +245,8 @@ class Books:
                     legs.append((f"ar:{ref}", RECEIVABLE, 0, credit, ref, key))
                     self.settle(ref, right, credit)
                 if wrong:
-                    legs.append(("park", ADVANCES, 0, kzt(wrong), ref if self.ov.parked_ref.get(key) else None, key))
+                    park_kzt = kzt(alloc) - (kzt(right) if right else 0)
+                    legs.append(("park", ADVANCES, 0, park_kzt, ref if self.ov.parked_ref.get(key) else None, key))
                 remaining -= alloc
             elif act.currency == BASE_CURRENCY and payment.currency == BASE_CURRENCY:
                 held = sum(amount for _, amount in self.prepaid[ref])

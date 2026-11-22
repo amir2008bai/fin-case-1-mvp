@@ -63,7 +63,8 @@ def valid_finding(finding):
 
 def matches(finding, issue, seen):
     evidence = set(finding["evidence_ids"])
-    related = set(issue.relevant_ids) if issue.relevant_ids else evidence
+    related = (set(issue.relevant_ids) if issue.relevant_ids else
+               set(issue.affected_ids) | {item for proof in issue.evidence_sets for item in proof})
     return (
         finding["type"] == issue.type
         and set(finding["affected_ids"]) == set(issue.affected_ids)
@@ -146,11 +147,11 @@ class MaterialityScore:
 
 
 def _materiality_weight(amount_minor):
-    return 1.0 + math.log1p(abs(amount_minor))
+    return 1.0 + math.log1p(max(0, abs(amount_minor)))
 
 
 def materiality_reward(payload, episode_id, issues, seen, steps, trace=None, termination="submitted"):
-    """Weight findings by amount and report tool compliance as a separate metric."""
+    """Separate risk-aware reward weighting findings by log1p(|amount_minor|) + tool compliance."""
     base = score(payload, episode_id, issues, seen, steps, termination=termination)
     compliance = 1.0
     if trace:

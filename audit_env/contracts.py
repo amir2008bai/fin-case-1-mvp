@@ -68,7 +68,7 @@ def _int_in(name, value, low, high):
 class Config:
     """Episode configuration. Unknown keys and out-of-range values are rejected."""
 
-    keyspace: str = "secret"
+    keyspace: str = "secret"  # fail safe: an open-key episode can be regenerated from the public code
     presentation_seed: int = 0
     difficulty: str = "medium"
     month: int | None = None
