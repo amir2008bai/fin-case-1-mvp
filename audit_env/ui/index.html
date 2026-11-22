@@ -19,6 +19,7 @@
     <span class="steps" title="Шагов осталось"><span id="steps-left">100</span>/100</span>
   </span>
   <span class="version" id="version"></span>
+  <button class="theme-btn" id="theme-btn" type="button" title="Светлая / тёмная тема">Тема</button>
 </header>
 
 <div class="ribbon" role="toolbar">
@@ -71,7 +72,7 @@
 
   <form class="group" id="import-form" novalidate>
     <div class="group-body">
-      <label>Папка <input id="folder" type="text" placeholder="C:\data\episode" autocomplete="off"></label>
+      <label>Папка <input id="folder" type="text" value="data/episodes/dev/episode_01aad47789ce2be8074fd17d" title="Пример из репозитория; можно указать свою папку" autocomplete="off"></label>
       <button type="submit" class="big" id="import-btn"><span class="ico">⇪</span>Открыть</button>
     </div>
     <div class="group-name">Свои данные</div>

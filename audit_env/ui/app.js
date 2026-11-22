@@ -705,6 +705,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("preset").addEventListener("change", () => { $("custom-errors").hidden = $("preset").value !== "custom"; });
   $("create-form").addEventListener("submit", createEpisode);
   $("import-form").addEventListener("submit", importFolder);
+  const applyTheme = (t) => { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; };
+  try { applyTheme(localStorage.getItem("theme")); } catch (e) { /* storage unavailable */ }
+  $("theme-btn").addEventListener("click", () => {
+    const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    const next = dark ? "light" : "dark";
+    applyTheme(next);
+    try { localStorage.setItem("theme", next); } catch (e) { /* storage unavailable */ }
+  });
   $("run-btn").addEventListener("click", runAgent);
   $("tabs").addEventListener("click", (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
   $("doc-search").addEventListener("input", renderDocuments);
