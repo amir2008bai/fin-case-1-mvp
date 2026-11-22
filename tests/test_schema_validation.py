@@ -104,7 +104,9 @@ class CommittedDataValidatesTests(unittest.TestCase):
                 self.assert_valid(row, "fx_row.schema.json", f"{folder.name}/fx.csv")
 
     def test_truth_files(self):
-        for path in sorted((DATA / "answers").rglob("truth.json")):
+        paths = sorted((DATA / "answers").rglob("truth.json"))
+        self.assertEqual(len(paths), 20)  # an empty answers folder must not pass silently
+        for path in paths:
             self.assert_valid(json.loads(path.read_text(encoding="utf-8")), "truth.schema.json", str(path))
 
     def test_trajectory_records(self):

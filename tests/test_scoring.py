@@ -111,7 +111,8 @@ class ScoringTests(unittest.TestCase):
         merged = first.as_finding() | {"evidence_ids": list(dict.fromkeys(first.evidence_sets[0] + second.evidence_sets[0]))[:10]}
         result = score({"episode_id": self.episode.manifest["episode_id"], "findings": [merged]},
                        self.episode.manifest["episode_id"], (first, second), seen_all(self.episode), 0)
-        self.assertLessEqual(result.tp, 1)
+        self.assertEqual(result.tp, 1)  # exactly one: the finding matches one issue, never both
+        self.assertEqual(result.fn, 1)
 
     def test_malformed_submissions(self):
         episode_id = self.episode.manifest["episode_id"]
