@@ -15,3 +15,6 @@ audit-env = "audit_env.__main__:main"
 
 [tool.setuptools.packages.find]
 include = ["audit_env*"]
+
+[tool.setuptools.package-data]
+audit_env = ["ui/*"]

@@ -4,12 +4,16 @@
 !audit_env/*.py
 !audit_env/scenarios/
 !audit_env/scenarios/*.py
+!audit_env/ui/
+!audit_env/ui/*
 !tests/
 !tests/*.py
 !configs/
 !configs/*.json
 !schemas/
 !schemas/*.json
+!tools/
+!tools/*.py
 !models/
 !models/*.json
 !data/

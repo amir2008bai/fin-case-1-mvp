@@ -8,7 +8,7 @@
 - Закрытый режим: эталон и награда остаются у оценщика, секретный ключ — только в его памяти, агент может работать в отдельном контейнере без сети и без ответов.
 
 - [Текущая стадия и история изменений](PROJECT_STATUS.md) · [Правила ведения журнала для агентов](AGENTS.md)
-- [Записка о дизайне](docs/design.md) · [Контракт и протокол](docs/protocol.md) · [API для UI](docs/api.md) · [Разбор сбоев](docs/failure_analysis.md) · [Как расширять](docs/extend.md) · [Микромодель](docs/micro-model.md)
+- [Записка о дизайне](docs/design.md) · [Контракт и протокол](docs/protocol.md) · [API для UI](docs/api.md) · [Разбор сбоев](docs/failure_analysis.md) · [Как расширять](docs/extend.md) · [Микромодель](docs/micro-model.md) · [Каталог ошибок с разбором примеров](docs/error_catalog.md) · [Карточка среды](docs/environment_card.md) · [Паспорт данных](docs/datasheet.md)
 
 ## Соответствие ТЗ
 
